@@ -70,7 +70,7 @@
 	
 	var cm = _CodeMirror2.default.fromTextArea(document.getElementById("code"), { theme: '3024-day' });
 	
-	cm.setValue("(sum (+   (- 1 2)  3)\n (*  3  4)\n (/ 5 6))");
+	cm.setValue("(sum (+   (- 1 2)  3)\n (*  3  4)\n (/ 5 6))\n(product 5 6 7)");
 	//cm.setValue("(+ 1 2)")
 	
 	var blocks = new _blocks2.default(cm, new _parser2.default());
@@ -14671,8 +14671,6 @@
 	  }, {
 	    key: 'getToken',
 	    value: function getToken() {
-	      var depth = arguments.length <= 0 || arguments[0] === undefined ? 0 : arguments[0];
-	
 	      var IDENTIFIER_RE = /[\w-+\/*]/;
 	      if (this.charIndex >= this.code.length) {
 	        return new Token({ line: this.lineIndex, ch: this.colIndex }, { line: this.lineIndex, ch: this.colIndex }, TOKENS.EOF, '');
@@ -14689,7 +14687,7 @@
 	        while (this.code[this.charIndex] == ' ') {
 	          this.getch();
 	        }
-	        return this.getToken(depth + 1);
+	        return this.getToken();
 	      } else if (this.code[this.charIndex] >= '0' && this.code[this.charIndex] <= '9') {
 	        var startIndex = this.colIndex;
 	        var number = '';
@@ -14706,10 +14704,22 @@
 	        return new Token({ line: this.lineIndex, ch: startIndex }, { line: this.lineIndex, ch: startIndex + identifier.length }, TOKENS.IDENTIFIER, identifier);
 	      } else if (this.code[this.charIndex] == '\n') {
 	        this.getch();
-	        return this.getToken(depth + 1);
+	        return this.getToken();
 	      } else {
 	        throw new Error("parse error");
 	      }
+	    }
+	  }, {
+	    key: 'peekToken',
+	    value: function peekToken() {
+	      var oldCharIndex = this.charIndex;
+	      var oldLineIndex = this.lineIndex;
+	      var oldColIndex = this.colIndex;
+	      var token = this.getToken();
+	      this.charIndex = oldCharIndex;
+	      this.lineIndex = oldLineIndex;
+	      this.colIndex = oldColIndex;
+	      return token;
 	    }
 	  }, {
 	    key: 'parse',
@@ -14719,7 +14729,11 @@
 	      this.lineIndex = 0;
 	      this.colIndex = 0;
 	
-	      return new _ast.AST(this.parseExpression());
+	      var rootNodes = [];
+	      while (this.peekToken().token != TOKENS.EOF) {
+	        rootNodes.push(this.parseExpression());
+	      }
+	      return new _ast.AST(rootNodes);
 	    }
 	  }, {
 	    key: 'parseExpression',
@@ -14728,28 +14742,26 @@
 	      if (token.token != TOKENS.OPEN_PAREN) {
 	        throw new Error("Expected an open paren");
 	      }
-	      var identifierToken = this.getToken();
-	      if (identifierToken.token != TOKENS.IDENTIFIER) {
+	      if (this.peekToken().token != TOKENS.IDENTIFIER) {
 	        throw new Error("Expected an identifier");
 	      }
+	      var identifierToken = this.getToken();
 	      var args = [];
-	      var currentToken = this.getToken();
-	      while (currentToken.token != TOKENS.CLOSE_PAREN) {
-	        switch (currentToken.token) {
+	      while (this.peekToken().token != TOKENS.CLOSE_PAREN) {
+	        switch (this.peekToken().token) {
 	          case TOKENS.OPEN_PAREN:
-	            this.charIndex--;
-	            this.colIndex--;
 	            args.push(this.parseExpression());
 	            break;
 	          case TOKENS.NUMBER:
-	            args.push(new _ast.Literal(currentToken.from, currentToken.to, parseInt(currentToken.text)));
+	            var literalToken = this.getToken();
+	            args.push(new _ast.Literal(literalToken.from, literalToken.to, parseInt(literalToken.text)));
 	            break;
 	          default:
 	            throw new Error("Expected either a number or another expression");
 	        }
-	        currentToken = this.getToken();
 	      }
-	      return new _ast.Expression(token.from, currentToken.to, identifierToken.text, args);
+	      var closeParenToken = this.getToken();
+	      return new _ast.Expression(token.from, closeParenToken.to, identifierToken.text, args);
 	    }
 	  }]);
 	
@@ -14783,20 +14795,42 @@
 	
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 	
-	var AST = exports.AST = function AST(rootNode) {
+	var AST = exports.AST = function AST(rootNodes) {
 	  _classCallCheck(this, AST);
 	
 	  this.nodeMap = new Map();
-	  this.rootNode = rootNode;
+	  this.rootNodes = rootNodes;
 	  var _iteratorNormalCompletion = true;
 	  var _didIteratorError = false;
 	  var _iteratorError = undefined;
 	
 	  try {
-	    for (var _iterator = this.rootNode[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-	      var node = _step.value;
+	    for (var _iterator = this.rootNodes[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+	      var rootNode = _step.value;
+	      var _iteratorNormalCompletion2 = true;
+	      var _didIteratorError2 = false;
+	      var _iteratorError2 = undefined;
 	
-	      this.nodeMap.set(node.id, node);
+	      try {
+	        for (var _iterator2 = rootNode[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+	          var node = _step2.value;
+	
+	          this.nodeMap.set(node.id, node);
+	        }
+	      } catch (err) {
+	        _didIteratorError2 = true;
+	        _iteratorError2 = err;
+	      } finally {
+	        try {
+	          if (!_iteratorNormalCompletion2 && _iterator2.return) {
+	            _iterator2.return();
+	          }
+	        } finally {
+	          if (_didIteratorError2) {
+	            throw _iteratorError2;
+	          }
+	        }
+	      }
 	    }
 	  } catch (err) {
 	    _didIteratorError = true;
@@ -14839,7 +14873,7 @@
 	  _createClass(Expression, [{
 	    key: Symbol.iterator,
 	    value: regeneratorRuntime.mark(function value() {
-	      var _iteratorNormalCompletion2, _didIteratorError2, _iteratorError2, _iterator2, _step2, arg, _iteratorNormalCompletion3, _didIteratorError3, _iteratorError3, _iterator3, _step3, node;
+	      var _iteratorNormalCompletion3, _didIteratorError3, _iteratorError3, _iterator3, _step3, arg, _iteratorNormalCompletion4, _didIteratorError4, _iteratorError4, _iterator4, _step4, node;
 	
 	      return regeneratorRuntime.wrap(function value$(_context) {
 	        while (1) switch (_context.prev = _context.next) {
@@ -14848,37 +14882,37 @@
 	            return this;
 	
 	          case 2:
-	            _iteratorNormalCompletion2 = true;
-	            _didIteratorError2 = false;
-	            _iteratorError2 = undefined;
+	            _iteratorNormalCompletion3 = true;
+	            _didIteratorError3 = false;
+	            _iteratorError3 = undefined;
 	            _context.prev = 5;
-	            _iterator2 = this.args[Symbol.iterator]();
+	            _iterator3 = this.args[Symbol.iterator]();
 	
 	          case 7:
-	            if (_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done) {
+	            if (_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done) {
 	              _context.next = 38;
 	              break;
 	            }
 	
-	            arg = _step2.value;
-	            _iteratorNormalCompletion3 = true;
-	            _didIteratorError3 = false;
-	            _iteratorError3 = undefined;
+	            arg = _step3.value;
+	            _iteratorNormalCompletion4 = true;
+	            _didIteratorError4 = false;
+	            _iteratorError4 = undefined;
 	            _context.prev = 12;
-	            _iterator3 = arg[Symbol.iterator]();
+	            _iterator4 = arg[Symbol.iterator]();
 	
 	          case 14:
-	            if (_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done) {
+	            if (_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done) {
 	              _context.next = 21;
 	              break;
 	            }
 	
-	            node = _step3.value;
+	            node = _step4.value;
 	            _context.next = 18;
 	            return node;
 	
 	          case 18:
-	            _iteratorNormalCompletion3 = true;
+	            _iteratorNormalCompletion4 = true;
 	            _context.next = 14;
 	            break;
 	
@@ -14889,26 +14923,26 @@
 	          case 23:
 	            _context.prev = 23;
 	            _context.t0 = _context['catch'](12);
-	            _didIteratorError3 = true;
-	            _iteratorError3 = _context.t0;
+	            _didIteratorError4 = true;
+	            _iteratorError4 = _context.t0;
 	
 	          case 27:
 	            _context.prev = 27;
 	            _context.prev = 28;
 	
-	            if (!_iteratorNormalCompletion3 && _iterator3.return) {
-	              _iterator3.return();
+	            if (!_iteratorNormalCompletion4 && _iterator4.return) {
+	              _iterator4.return();
 	            }
 	
 	          case 30:
 	            _context.prev = 30;
 	
-	            if (!_didIteratorError3) {
+	            if (!_didIteratorError4) {
 	              _context.next = 33;
 	              break;
 	            }
 	
-	            throw _iteratorError3;
+	            throw _iteratorError4;
 	
 	          case 33:
 	            return _context.finish(30);
@@ -14917,7 +14951,7 @@
 	            return _context.finish(27);
 	
 	          case 35:
-	            _iteratorNormalCompletion2 = true;
+	            _iteratorNormalCompletion3 = true;
 	            _context.next = 7;
 	            break;
 	
@@ -14928,26 +14962,26 @@
 	          case 40:
 	            _context.prev = 40;
 	            _context.t1 = _context['catch'](5);
-	            _didIteratorError2 = true;
-	            _iteratorError2 = _context.t1;
+	            _didIteratorError3 = true;
+	            _iteratorError3 = _context.t1;
 	
 	          case 44:
 	            _context.prev = 44;
 	            _context.prev = 45;
 	
-	            if (!_iteratorNormalCompletion2 && _iterator2.return) {
-	              _iterator2.return();
+	            if (!_iteratorNormalCompletion3 && _iterator3.return) {
+	              _iterator3.return();
 	            }
 	
 	          case 47:
 	            _context.prev = 47;
 	
-	            if (!_didIteratorError2) {
+	            if (!_didIteratorError3) {
 	              _context.next = 50;
 	              break;
 	            }
 	
-	            throw _iteratorError2;
+	            throw _iteratorError3;
 	
 	          case 50:
 	            return _context.finish(47);
@@ -19107,8 +19141,11 @@
 	
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 	
+	function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) arr2[i] = arr[i]; return arr2; } else { return Array.from(arr); } }
+	
 	var RETURN_KEY = 13;
 	var TAB_KEY = 9;
+	var DELETE_KEY = 8;
 	
 	var CodeMirrorBlocks = (function () {
 	  function CodeMirrorBlocks(cm, parser) {
@@ -19118,8 +19155,9 @@
 	    this.parser = parser;
 	    this.ast = null;
 	    this.blockMode = false;
-	
+	    this.selectedNodes = new Set();
 	    this.cm.getWrapperElement().onkeydown = this.handleKeyDown.bind(this);
+	    this.cm.on('change', this.handleChange.bind(this));
 	  }
 	
 	  _createClass(CodeMirrorBlocks, [{
@@ -19141,6 +19179,13 @@
 	    key: 'toggleBlockMode',
 	    value: function toggleBlockMode() {
 	      this.setBlockMode(!this.blockMode);
+	    }
+	  }, {
+	    key: 'handleChange',
+	    value: function handleChange() {
+	      if (this.blockMode) {
+	        this.render();
+	      }
 	    }
 	  }, {
 	    key: '_clearMarks',
@@ -19175,14 +19220,55 @@
 	    key: 'render',
 	    value: function render() {
 	      this.ast = this.parser.parse(this.cm.getValue());
+	      this.selectedNodes.clear();
 	      this._clearMarks();
-	      (0, _render3.default)(this.ast.rootNode, this.cm, this.didRenderNode.bind(this));
+	      var _iteratorNormalCompletion2 = true;
+	      var _didIteratorError2 = false;
+	      var _iteratorError2 = undefined;
+	
+	      try {
+	        for (var _iterator2 = this.ast.rootNodes[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+	          var rootNode = _step2.value;
+	
+	          (0, _render3.default)(rootNode, this.cm, this.didRenderNode.bind(this));
+	        }
+	      } catch (err) {
+	        _didIteratorError2 = true;
+	        _iteratorError2 = err;
+	      } finally {
+	        try {
+	          if (!_iteratorNormalCompletion2 && _iterator2.return) {
+	            _iterator2.return();
+	          }
+	        } finally {
+	          if (_didIteratorError2) {
+	            throw _iteratorError2;
+	          }
+	        }
+	      }
+	    }
+	  }, {
+	    key: 'toggleSelectNode',
+	    value: function toggleSelectNode(node, nodeEl, event) {
+	      if (this.selectedNodes.has(node)) {
+	        this.deselectNode(node, nodeEl, event);
+	      } else {
+	        this.selectNode(node, nodeEl, event);
+	      }
 	    }
 	  }, {
 	    key: 'selectNode',
 	    value: function selectNode(node, nodeEl, event) {
 	      event.stopPropagation();
 	      nodeEl.classList.add('blocks-selected');
+	      this.selectedNodes.add(node);
+	    }
+	  }, {
+	    key: 'deselectNode',
+	    value: function deselectNode(node, nodeEl, event) {
+	      event.stopPropagation();
+	      nodeEl.classList.remove('blocks-selected');
+	      this.selectedNodes.delete(node);
 	    }
 	  }, {
 	    key: 'saveEdit',
@@ -19191,13 +19277,33 @@
 	      nodeEl.contentEditable = false;
 	      nodeEl.classList.remove('blocks-editing');
 	      this.cm.replaceRange(nodeEl.innerText, node.from, node.to);
-	      var lines = nodeEl.innerText.split('\n');
-	      node.to.line = node.from.line + lines.length - 1;
-	      if (lines.length == 1) {
-	        node.to.ch = node.from.ch + nodeEl.innerText.length;
-	      } else {
-	        node.to.ch = lines[lines.length - 1].length;
-	      }
+	    }
+	  }, {
+	    key: 'editWhiteSpace',
+	    value: function editWhiteSpace(whiteSpaceEl, node, nodeEl, event) {
+	      event.stopPropagation();
+	      whiteSpaceEl.contentEditable = true;
+	      whiteSpaceEl.classList.add('blocks-editing');
+	      whiteSpaceEl.onblur = this.saveWhiteSpace.bind(this, whiteSpaceEl, node, nodeEl);
+	      whiteSpaceEl.onkeydown = function (e) {
+	        e.stopPropagation();
+	        e.codemirrorIgnore = true;
+	        if (e.which == RETURN_KEY || e.which == TAB_KEY) {
+	          whiteSpaceEl.blur();
+	        }
+	      };
+	      var range = document.createRange();
+	      range.setStart(whiteSpaceEl, 0);
+	      window.getSelection().removeAllRanges();
+	      window.getSelection().addRange(range);
+	    }
+	  }, {
+	    key: 'saveWhiteSpace',
+	    value: function saveWhiteSpace(whiteSpaceEl, node, nodeEl, event) {
+	      whiteSpaceEl.onkeydown = null;
+	      whiteSpaceEl.contentEditable = false;
+	      whiteSpaceEl.classList.remove('blocks-editing');
+	      this.cm.replaceRange(' ' + whiteSpaceEl.innerText, whiteSpaceEl.location, whiteSpaceEl.location);
 	    }
 	  }, {
 	    key: 'editNode',
@@ -19215,8 +19321,45 @@
 	      };
 	      var range = document.createRange();
 	      range.setStart(nodeEl, 0);
+	      range.setEnd(nodeEl, nodeEl.innerText.length);
 	      window.getSelection().removeAllRanges();
 	      window.getSelection().addRange(range);
+	    }
+	  }, {
+	    key: 'deleteSelectedNodes',
+	    value: function deleteSelectedNodes() {
+	      var _this = this;
+	
+	      var nodes = [].concat(_toConsumableArray(this.selectedNodes));
+	      nodes.sort(function (a, b) {
+	        return _this.cm.indexFromPos(b.from) - _this.cm.indexFromPos(a.from);
+	      });
+	      this.cm.operation(function () {
+	        var _iteratorNormalCompletion3 = true;
+	        var _didIteratorError3 = false;
+	        var _iteratorError3 = undefined;
+	
+	        try {
+	          for (var _iterator3 = nodes[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
+	            var node = _step3.value;
+	
+	            _this.cm.replaceRange('', node.from, node.to);
+	          }
+	        } catch (err) {
+	          _didIteratorError3 = true;
+	          _iteratorError3 = err;
+	        } finally {
+	          try {
+	            if (!_iteratorNormalCompletion3 && _iterator3.return) {
+	              _iterator3.return();
+	            }
+	          } finally {
+	            if (_didIteratorError3) {
+	              throw _iteratorError3;
+	            }
+	          }
+	        }
+	      });
 	    }
 	  }, {
 	    key: 'handleDragStart',
@@ -19241,22 +19384,23 @@
 	  }, {
 	    key: 'handleDrop',
 	    value: function handleDrop(node, nodeEl, event) {
+	      var _this2 = this;
+	
 	      event.codemirrorIgnore = true;
 	      event.preventDefault();
 	      event.target.classList.remove('blocks-over-target');
 	      var sourceNode = this.ast.nodeMap.get(event.dataTransfer.getData('text'));
 	      var sourceNodeText = this.cm.getRange(sourceNode.from, sourceNode.to);
 	      var destination = event.target.location;
-	      this.cm.operation((function () {
-	        if (this.cm.indexFromPos(sourceNode.from) < this.cm.indexFromPos(destination)) {
-	          this.cm.replaceRange(' ' + sourceNodeText, destination, destination);
-	          this.cm.replaceRange('', sourceNode.from, sourceNode.to);
+	      this.cm.operation(function () {
+	        if (_this2.cm.indexFromPos(sourceNode.from) < _this2.cm.indexFromPos(destination)) {
+	          _this2.cm.replaceRange(' ' + sourceNodeText, destination, destination);
+	          _this2.cm.replaceRange('', sourceNode.from, sourceNode.to);
 	        } else {
-	          this.cm.replaceRange('', sourceNode.from, sourceNode.to);
-	          this.cm.replaceRange(' ' + sourceNodeText, destination, destination);
+	          _this2.cm.replaceRange('', sourceNode.from, sourceNode.to);
+	          _this2.cm.replaceRange(' ' + sourceNodeText, destination, destination);
 	        }
-	      }).bind(this));
-	      this.render();
+	      });
 	    }
 	  }, {
 	    key: 'didRenderNode',
@@ -19264,12 +19408,14 @@
 	      switch (node.type) {
 	        case 'literal':
 	          nodeEl.ondblclick = this.editNode.bind(this, node, nodeEl);
-	          nodeEl.onclick = this.selectNode.bind(this, node, nodeEl);
+	          nodeEl.onclick = this.toggleSelectNode.bind(this, node, nodeEl);
 	          nodeEl.ondragstart = this.handleDragStart.bind(this, node, nodeEl);
 	          break;
 	        case 'expression':
 	          nodeEl.onclick = this.selectNode.bind(this, node, nodeEl);
 	          nodeEl.ondragstart = this.handleDragStart.bind(this, node, nodeEl);
+	
+	          // set up drop targets
 	          var dropTargetEls = nodeEl.querySelectorAll('#' + nodeEl.id + ' > .blocks-args > .blocks-drop-target');
 	          for (var i = 0; i < dropTargetEls.length; i++) {
 	            var el = dropTargetEls[i];
@@ -19277,12 +19423,24 @@
 	            el.ondragleave = this.handleDragLeave.bind(this, node, nodeEl);
 	            el.ondrop = this.handleDrop.bind(this, node, nodeEl);
 	          }
+	
+	          // set up white space
+	          var whiteSpaceEls = nodeEl.querySelectorAll('#' + nodeEl.id + ' > .blocks-args > .blocks-white-space');
+	          for (var i = 0; i < whiteSpaceEls.length; i++) {
+	            var el = whiteSpaceEls[i];
+	            el.onclick = this.editWhiteSpace.bind(this, el, node, nodeEl);
+	          }
 	          break;
 	      }
 	    }
 	  }, {
 	    key: 'handleKeyDown',
-	    value: function handleKeyDown(e) {}
+	    value: function handleKeyDown(event) {
+	      if (event.which == DELETE_KEY) {
+	        event.preventDefault();
+	        this.deleteSelectedNodes();
+	      }
+	    }
 	  }]);
 	
 	  return CodeMirrorBlocks;
@@ -19302,8 +19460,8 @@
 	exports.default = render;
 	function makeDropTarget(location) {
 	  var dropEl = document.createElement('span');
-	  dropEl.className = 'blocks-drop-target';
-	  dropEl.appendChild(document.createTextNode(' '));
+	  dropEl.className = 'blocks-drop-target blocks-white-space';
+	  dropEl.appendChild(document.createTextNode(''));
 	  dropEl.location = location;
 	  return dropEl;
 	}
@@ -19392,7 +19550,7 @@
 	
 	
 	// module
-	exports.push([module.id, ".blocks-expression {\n  display: inline-flex;\n  align-items: stretch;\n  color: black;\n  border: 2px solid black;\n  border-radius: 500px 0px 0px 500px;\n  margin: 5px;\n  background: #ccc;\n  cursor: default;\n}\n\n.blocks-operator {\n  display: flex;\n  justify-content: center;\n  flex-direction: column;\n  font-weight: bold;\n  border-right: 2px solid black;\n  padding: 5px;\n  min-width: 20px;\n  text-align: center;\n}\n\n.blocks-args {\n  flex-grow: 1;\n  background: #eee;\n}\n\n.blocks-literal {\n  display: inline-block;\n  color: black;\n  border-radius: 5px;\n  padding: 5px;\n  margin: 5px;\n}\n\n\n.blocks-expression.blocks-selected {\n  border-color: red;\n}\n.blocks-expression.blocks-selected .blocks-operator {\n  border-color: red;\n}\n.blocks-literal.blocks-selected {\n  border: 1px solid red;\n}\n\n.blocks-literal.blocks-editing {\n  border: 1px solid green;\n}\n\n.blocks-over-target {\n  background-color: red;\n}", ""]);
+	exports.push([module.id, ".blocks-expression {\n  display: inline-flex;\n  align-items: stretch;\n  color: black;\n  border: 2px solid black;\n  border-radius: 500px 0px 0px 500px;\n  margin: 5px;\n  background: #ccc;\n  cursor: default;\n}\n\n.blocks-operator {\n  display: flex;\n  justify-content: center;\n  flex-direction: column;\n  font-weight: bold;\n  border-right: 2px solid black;\n  padding: 5px;\n  min-width: 20px;\n  text-align: center;\n}\n\n.blocks-args {\n  flex-grow: 1;\n  background: #eee;\n}\n\n.blocks-literal {\n  display: inline-block;\n  color: black;\n  border-radius: 5px;\n  padding: 5px;\n  border: 1px solid transparent;\n}\n\n\n.blocks-expression.blocks-selected {\n  border-color: red;\n}\n.blocks-expression.blocks-selected .blocks-operator {\n  border-color: red;\n}\n.blocks-literal.blocks-selected {\n  border-color: red;\n}\n\n.blocks-editing {\n  outline: 0;\n}\n\n.blocks-literal.blocks-editing {\n  border: 1px solid green;\n}\n\n.blocks-over-target {\n  background-color: red;\n}\n\n.blocks-white-space:before {\n  content: ' ';\n}\n.blocks-white-space {\n  padding: 5px;\n  border: 2px solid transparent;\n  font-weight: bold;\n}\n\n.blocks-white-space:hover {\n  border-color: black;\n  border-radius: 5px;\n}\n.blocks-white-space:hover:before {\n  content: '+';\n}\n\n.blocks-white-space.blocks-editing:before {\n  content: '';\n}\n.blocks-white-space.blocks-editing {\n  font-weight: normal;\n  margin: 15px;\n}", ""]);
 	
 	// exports
 
