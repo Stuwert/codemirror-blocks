@@ -67,19 +67,32 @@
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
 	__webpack_require__(225);
+	__webpack_require__(227);
 	
 	var cm = _CodeMirror2.default.fromTextArea(document.getElementById("code"), { theme: '3024-day' });
 	
+	var cm2 = _CodeMirror2.default.fromTextArea(document.getElementById('code2'), { theme: '3024-day' });
+	
 	cm.setValue("(sum (+   (- 1 2)  3)\n (*  3  4)\n (/ 5 6))\n(product 5 6 7)");
 	//cm.setValue("(+ 1 2)")
+	cm2.swapDoc(cm.getDoc().linkedDoc({ sharedHist: true }));
 	
-	var blocks = new _blocks2.default(cm, new _parser2.default());
+	var blocks = new _blocks2.default(cm2, new _parser2.default(), {
+	  willInsertNode: function willInsertNode(sourceNodeText, sourceNode, destination, destinationNode) {
+	    var line = cm2.getLine(destination.line);
+	    if (destination.ch > 0 && line[destination.ch - 1].match(/[\w\d]/)) {
+	      // previous character is a letter or number, so prefix a space
+	      sourceNodeText = ' ' + sourceNodeText;
+	    }
+	
+	    if (destination.ch < line.length && line[destination.ch].match(/[\w\d]/)) {
+	      // next character is a letter or a number, so append a space
+	      sourceNodeText += ' ';
+	    }
+	    return sourceNodeText;
+	  }
+	});
 	blocks.setBlockMode(true);
-	
-	document.getElementById("blocks").onclick = function () {
-	  blocks.toggleBlockMode();
-	  this.innerText = 'Turn block mode ' + (blocks.blockMode ? "off" : "on");
-	};
 
 /***/ },
 /* 1 */
@@ -14876,122 +14889,124 @@
 	      var _iteratorNormalCompletion3, _didIteratorError3, _iteratorError3, _iterator3, _step3, arg, _iteratorNormalCompletion4, _didIteratorError4, _iteratorError4, _iterator4, _step4, node;
 	
 	      return regeneratorRuntime.wrap(function value$(_context) {
-	        while (1) switch (_context.prev = _context.next) {
-	          case 0:
-	            _context.next = 2;
-	            return this;
+	        while (1) {
+	          switch (_context.prev = _context.next) {
+	            case 0:
+	              _context.next = 2;
+	              return this;
 	
-	          case 2:
-	            _iteratorNormalCompletion3 = true;
-	            _didIteratorError3 = false;
-	            _iteratorError3 = undefined;
-	            _context.prev = 5;
-	            _iterator3 = this.args[Symbol.iterator]();
+	            case 2:
+	              _iteratorNormalCompletion3 = true;
+	              _didIteratorError3 = false;
+	              _iteratorError3 = undefined;
+	              _context.prev = 5;
+	              _iterator3 = this.args[Symbol.iterator]();
 	
-	          case 7:
-	            if (_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done) {
-	              _context.next = 38;
+	            case 7:
+	              if (_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done) {
+	                _context.next = 38;
+	                break;
+	              }
+	
+	              arg = _step3.value;
+	              _iteratorNormalCompletion4 = true;
+	              _didIteratorError4 = false;
+	              _iteratorError4 = undefined;
+	              _context.prev = 12;
+	              _iterator4 = arg[Symbol.iterator]();
+	
+	            case 14:
+	              if (_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done) {
+	                _context.next = 21;
+	                break;
+	              }
+	
+	              node = _step4.value;
+	              _context.next = 18;
+	              return node;
+	
+	            case 18:
+	              _iteratorNormalCompletion4 = true;
+	              _context.next = 14;
 	              break;
-	            }
 	
-	            arg = _step3.value;
-	            _iteratorNormalCompletion4 = true;
-	            _didIteratorError4 = false;
-	            _iteratorError4 = undefined;
-	            _context.prev = 12;
-	            _iterator4 = arg[Symbol.iterator]();
-	
-	          case 14:
-	            if (_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done) {
-	              _context.next = 21;
+	            case 21:
+	              _context.next = 27;
 	              break;
-	            }
 	
-	            node = _step4.value;
-	            _context.next = 18;
-	            return node;
+	            case 23:
+	              _context.prev = 23;
+	              _context.t0 = _context['catch'](12);
+	              _didIteratorError4 = true;
+	              _iteratorError4 = _context.t0;
 	
-	          case 18:
-	            _iteratorNormalCompletion4 = true;
-	            _context.next = 14;
-	            break;
+	            case 27:
+	              _context.prev = 27;
+	              _context.prev = 28;
 	
-	          case 21:
-	            _context.next = 27;
-	            break;
+	              if (!_iteratorNormalCompletion4 && _iterator4.return) {
+	                _iterator4.return();
+	              }
 	
-	          case 23:
-	            _context.prev = 23;
-	            _context.t0 = _context['catch'](12);
-	            _didIteratorError4 = true;
-	            _iteratorError4 = _context.t0;
+	            case 30:
+	              _context.prev = 30;
 	
-	          case 27:
-	            _context.prev = 27;
-	            _context.prev = 28;
+	              if (!_didIteratorError4) {
+	                _context.next = 33;
+	                break;
+	              }
 	
-	            if (!_iteratorNormalCompletion4 && _iterator4.return) {
-	              _iterator4.return();
-	            }
+	              throw _iteratorError4;
 	
-	          case 30:
-	            _context.prev = 30;
+	            case 33:
+	              return _context.finish(30);
 	
-	            if (!_didIteratorError4) {
-	              _context.next = 33;
+	            case 34:
+	              return _context.finish(27);
+	
+	            case 35:
+	              _iteratorNormalCompletion3 = true;
+	              _context.next = 7;
 	              break;
-	            }
 	
-	            throw _iteratorError4;
-	
-	          case 33:
-	            return _context.finish(30);
-	
-	          case 34:
-	            return _context.finish(27);
-	
-	          case 35:
-	            _iteratorNormalCompletion3 = true;
-	            _context.next = 7;
-	            break;
-	
-	          case 38:
-	            _context.next = 44;
-	            break;
-	
-	          case 40:
-	            _context.prev = 40;
-	            _context.t1 = _context['catch'](5);
-	            _didIteratorError3 = true;
-	            _iteratorError3 = _context.t1;
-	
-	          case 44:
-	            _context.prev = 44;
-	            _context.prev = 45;
-	
-	            if (!_iteratorNormalCompletion3 && _iterator3.return) {
-	              _iterator3.return();
-	            }
-	
-	          case 47:
-	            _context.prev = 47;
-	
-	            if (!_didIteratorError3) {
-	              _context.next = 50;
+	            case 38:
+	              _context.next = 44;
 	              break;
-	            }
 	
-	            throw _iteratorError3;
+	            case 40:
+	              _context.prev = 40;
+	              _context.t1 = _context['catch'](5);
+	              _didIteratorError3 = true;
+	              _iteratorError3 = _context.t1;
 	
-	          case 50:
-	            return _context.finish(47);
+	            case 44:
+	              _context.prev = 44;
+	              _context.prev = 45;
 	
-	          case 51:
-	            return _context.finish(44);
+	              if (!_iteratorNormalCompletion3 && _iterator3.return) {
+	                _iterator3.return();
+	              }
 	
-	          case 52:
-	          case 'end':
-	            return _context.stop();
+	            case 47:
+	              _context.prev = 47;
+	
+	              if (!_didIteratorError3) {
+	                _context.next = 50;
+	                break;
+	              }
+	
+	              throw _iteratorError3;
+	
+	            case 50:
+	              return _context.finish(47);
+	
+	            case 51:
+	              return _context.finish(44);
+	
+	            case 52:
+	            case 'end':
+	              return _context.stop();
+	          }
 	        }
 	      }, value, this, [[5, 40, 44, 52], [12, 23, 27, 35], [28,, 30, 34], [45,, 47, 51]]);
 	    })
@@ -15021,14 +15036,16 @@
 	    key: Symbol.iterator,
 	    value: regeneratorRuntime.mark(function value() {
 	      return regeneratorRuntime.wrap(function value$(_context2) {
-	        while (1) switch (_context2.prev = _context2.next) {
-	          case 0:
-	            _context2.next = 2;
-	            return this;
+	        while (1) {
+	          switch (_context2.prev = _context2.next) {
+	            case 0:
+	              _context2.next = 2;
+	              return this;
 	
-	          case 2:
-	          case 'end':
-	            return _context2.stop();
+	            case 2:
+	            case 'end':
+	              return _context2.stop();
+	          }
 	        }
 	      }, value, this);
 	    })
@@ -16792,7 +16809,7 @@
 	      }
 	
 	      // valid surrogate pair
-	      codePoint = leadSurrogate - 0xD800 << 10 | codePoint - 0xDC00 | 0x10000
+	      codePoint = (leadSurrogate - 0xD800 << 10 | codePoint - 0xDC00) + 0x10000
 	    } else if (leadSurrogate) {
 	      // valid bmp char, but last char was a lead
 	      if ((units -= 3) > -1) bytes.push(0xEF, 0xBF, 0xBD)
@@ -19141,22 +19158,32 @@
 	
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 	
-	function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) arr2[i] = arr[i]; return arr2; } else { return Array.from(arr); } }
+	function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
 	
 	var RETURN_KEY = 13;
 	var TAB_KEY = 9;
 	var DELETE_KEY = 8;
 	
 	var CodeMirrorBlocks = (function () {
-	  function CodeMirrorBlocks(cm, parser) {
+	  function CodeMirrorBlocks(cm, parser, _ref) {
+	    var _this = this;
+	
 	    _classCallCheck(this, CodeMirrorBlocks);
+	
+	    var willInsertNode = _ref.willInsertNode;
+	    var didInsertNode = _ref.didInsertNode;
 	
 	    this.cm = cm;
 	    this.parser = parser;
+	    this.willInsertNode = willInsertNode;
+	    this.didInsertNode = didInsertNode;
 	    this.ast = null;
 	    this.blockMode = false;
 	    this.selectedNodes = new Set();
 	    this.cm.getWrapperElement().onkeydown = this.handleKeyDown.bind(this);
+	    this.cm.on('drop', function (cm, event) {
+	      return _this.handleDrop(event);
+	    });
 	    this.cm.on('change', this.handleChange.bind(this));
 	  }
 	
@@ -19328,11 +19355,11 @@
 	  }, {
 	    key: 'deleteSelectedNodes',
 	    value: function deleteSelectedNodes() {
-	      var _this = this;
+	      var _this2 = this;
 	
 	      var nodes = [].concat(_toConsumableArray(this.selectedNodes));
 	      nodes.sort(function (a, b) {
-	        return _this.cm.indexFromPos(b.from) - _this.cm.indexFromPos(a.from);
+	        return _this2.cm.indexFromPos(b.from) - _this2.cm.indexFromPos(a.from);
 	      });
 	      this.cm.operation(function () {
 	        var _iteratorNormalCompletion3 = true;
@@ -19343,7 +19370,7 @@
 	          for (var _iterator3 = nodes[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
 	            var node = _step3.value;
 	
-	            _this.cm.replaceRange('', node.from, node.to);
+	            _this2.cm.replaceRange('', node.from, node.to);
 	          }
 	        } catch (err) {
 	          _didIteratorError3 = true;
@@ -19367,7 +19394,8 @@
 	      event.stopPropagation();
 	      nodeEl.classList.add('blocks-dragging');
 	      event.dataTransfer.effectAllowed = 'move';
-	      event.dataTransfer.setData('text', node.id);
+	      event.dataTransfer.setData('text/plain', this.cm.getRange(node.from, node.to));
+	      event.dataTransfer.setData('text/id', node.id);
 	    }
 	  }, {
 	    key: 'handleDragEnter',
@@ -19382,23 +19410,49 @@
 	      event.target.classList.remove('blocks-over-target');
 	    }
 	  }, {
+	    key: 'findNodeFromEl',
+	    value: function findNodeFromEl(el) {
+	      while (el !== document.body && !el.classList.contains('blocks-node')) {
+	        el = el.parentNode;
+	      }
+	      var match = el.id.match(/block-node-(.*)/);
+	      if (match && match.length > 1) {
+	        return this.ast.nodeMap.get(match[1]);
+	      }
+	    }
+	  }, {
 	    key: 'handleDrop',
-	    value: function handleDrop(node, nodeEl, event) {
-	      var _this2 = this;
+	    value: function handleDrop(event) {
+	      var _this3 = this;
 	
-	      event.codemirrorIgnore = true;
 	      event.preventDefault();
-	      event.target.classList.remove('blocks-over-target');
-	      var sourceNode = this.ast.nodeMap.get(event.dataTransfer.getData('text'));
+	      event.stopPropagation();
+	      var sourceNode = this.ast.nodeMap.get(event.dataTransfer.getData('text/id'));
 	      var sourceNodeText = this.cm.getRange(sourceNode.from, sourceNode.to);
 	      var destination = event.target.location;
+	      if (!destination) {
+	        // event.target probably isn't a drop target, so just get the location from the event
+	        destination = this.cm.coordsChar({ left: event.pageX, top: event.pageY });
+	        if (destination.outside) {
+	          sourceNodeText = '\n' + sourceNodeText;
+	        }
+	      }
 	      this.cm.operation(function () {
-	        if (_this2.cm.indexFromPos(sourceNode.from) < _this2.cm.indexFromPos(destination)) {
-	          _this2.cm.replaceRange(' ' + sourceNodeText, destination, destination);
-	          _this2.cm.replaceRange('', sourceNode.from, sourceNode.to);
+	        var destinationNode = _this3.findNodeFromEl(event.target);
+	        if (_this3.willInsertNode) {
+	          // give client code an opportunity to modify the sourceNodeText before
+	          // it gets dropped in. For example, to add proper spacing
+	          sourceNodeText = _this3.willInsertNode(sourceNodeText, sourceNode, destination, destinationNode);
+	        }
+	        if (_this3.cm.indexFromPos(sourceNode.from) < _this3.cm.indexFromPos(destination)) {
+	          _this3.cm.replaceRange(sourceNodeText, destination, destination);
+	          _this3.cm.replaceRange('', sourceNode.from, sourceNode.to);
 	        } else {
-	          _this2.cm.replaceRange('', sourceNode.from, sourceNode.to);
-	          _this2.cm.replaceRange(' ' + sourceNodeText, destination, destination);
+	          _this3.cm.replaceRange('', sourceNode.from, sourceNode.to);
+	          _this3.cm.replaceRange(sourceNodeText, destination, destination);
+	        }
+	        if (_this3.didInsertNode) {
+	          _this3.didInsertNode(sourceNodeText, sourceNode, destination, destinationNode);
 	        }
 	      });
 	    }
@@ -19412,7 +19466,7 @@
 	          nodeEl.ondragstart = this.handleDragStart.bind(this, node, nodeEl);
 	          break;
 	        case 'expression':
-	          nodeEl.onclick = this.selectNode.bind(this, node, nodeEl);
+	          nodeEl.onclick = this.toggleSelectNode.bind(this, node, nodeEl);
 	          nodeEl.ondragstart = this.handleDragStart.bind(this, node, nodeEl);
 	
 	          // set up drop targets
@@ -19421,7 +19475,7 @@
 	            var el = dropTargetEls[i];
 	            el.ondragenter = this.handleDragEnter.bind(this, node, nodeEl);
 	            el.ondragleave = this.handleDragLeave.bind(this, node, nodeEl);
-	            el.ondrop = this.handleDrop.bind(this, node, nodeEl);
+	            el.ondrop = this.handleDrop.bind(this);
 	          }
 	
 	          // set up white space
@@ -19469,7 +19523,6 @@
 	var nodes = exports.nodes = {
 	  expression: function expression(node, cm, callback) {
 	    var expressionEl = document.createElement('span');
-	    expressionEl.id = 'block-node-' + node.id;
 	    expressionEl.className = 'blocks-expression';
 	    expressionEl.draggable = true;
 	
@@ -19481,10 +19534,11 @@
 	    expressionEl.appendChild(document.createTextNode(' '));
 	    var argsEl = document.createElement('span');
 	    argsEl.className = 'blocks-args';
-	    argsEl.appendChild(makeDropTarget({
-	      line: node.from.line,
-	      ch: node.from.ch + 1 + node.func.length
-	    }));
+	    var location = Object.assign({}, node.to);
+	    if (node.args.length > 0) {
+	      Object.assign(location, node.args[0].from);
+	    }
+	    argsEl.appendChild(makeDropTarget(location));
 	    for (var i = 0; i < node.args.length; i++) {
 	      argsEl.appendChild(render(node.args[i], cm, callback));
 	      argsEl.appendChild(makeDropTarget({
@@ -19500,7 +19554,6 @@
 	  },
 	  literal: function literal(node, cm) {
 	    var literalEl = document.createElement('span');
-	    literalEl.id = 'block-node-' + node.id;
 	    literalEl.appendChild(document.createTextNode(node.toString()));
 	    literalEl.className = 'blocks-literal';
 	    literalEl.draggable = true;
@@ -19511,6 +19564,8 @@
 	
 	function render(node, cm, callback) {
 	  var nodeEl = nodes[node.type](node, cm, callback);
+	  nodeEl.id = 'block-node-' + node.id;
+	  nodeEl.classList.add('blocks-node');
 	  callback(node, nodeEl);
 	  return nodeEl;
 	}
@@ -19550,7 +19605,47 @@
 	
 	
 	// module
-	exports.push([module.id, ".blocks-expression {\n  display: inline-flex;\n  align-items: stretch;\n  color: black;\n  border: 2px solid black;\n  border-radius: 500px 0px 0px 500px;\n  margin: 5px;\n  background: #ccc;\n  cursor: default;\n}\n\n.blocks-operator {\n  display: flex;\n  justify-content: center;\n  flex-direction: column;\n  font-weight: bold;\n  border-right: 2px solid black;\n  padding: 5px;\n  min-width: 20px;\n  text-align: center;\n}\n\n.blocks-args {\n  flex-grow: 1;\n  background: #eee;\n}\n\n.blocks-literal {\n  display: inline-block;\n  color: black;\n  border-radius: 5px;\n  padding: 5px;\n  border: 1px solid transparent;\n}\n\n\n.blocks-expression.blocks-selected {\n  border-color: red;\n}\n.blocks-expression.blocks-selected .blocks-operator {\n  border-color: red;\n}\n.blocks-literal.blocks-selected {\n  border-color: red;\n}\n\n.blocks-editing {\n  outline: 0;\n}\n\n.blocks-literal.blocks-editing {\n  border: 1px solid green;\n}\n\n.blocks-over-target {\n  background-color: red;\n}\n\n.blocks-white-space:before {\n  content: ' ';\n}\n.blocks-white-space {\n  padding: 5px;\n  border: 2px solid transparent;\n  font-weight: bold;\n}\n\n.blocks-white-space:hover {\n  border-color: black;\n  border-radius: 5px;\n}\n.blocks-white-space:hover:before {\n  content: '+';\n}\n\n.blocks-white-space.blocks-editing:before {\n  content: '';\n}\n.blocks-white-space.blocks-editing {\n  font-weight: normal;\n  margin: 15px;\n}", ""]);
+	exports.push([module.id, ".blocks-expression {\n  display: inline-flex;\n  align-items: stretch;\n  color: black;\n  border: 2px solid black;\n  border-radius: 15px 0px 0px 15px;\n  margin: 5px;\n  background: #ccc;\n  cursor: default;\n}\n\n.blocks-operator {\n  display: flex;\n  justify-content: center;\n  flex-direction: column;\n  font-weight: bold;\n  border-right: 2px solid black;\n  padding: 5px;\n  min-width: 20px;\n  text-align: center;\n}\n\n.blocks-args {\n  display: inline-flex;\n  flex-wrap: wrap;\n  flex-grow: 1;\n  background: #eee;\n}\n\n.blocks-literal {\n  display: inline-block;\n  color: black;\n  border-radius: 5px;\n  padding: 5px;\n  border: 1px solid transparent;\n}\n\n\n.blocks-expression.blocks-selected {\n  border-color: red;\n}\n.blocks-expression.blocks-selected .blocks-operator {\n  border-color: red;\n}\n.blocks-literal.blocks-selected {\n  border-color: red;\n}\n\n.blocks-editing {\n  outline: 0;\n}\n\n.blocks-literal.blocks-editing {\n  border: 1px solid green;\n}\n\n.blocks-over-target {\n  background-color: red;\n}\n\n.blocks-white-space:before {\n  content: ' ';\n}\n.blocks-white-space {\n  padding: 5px;\n  border: 2px solid transparent;\n  font-weight: bold;\n}\n\n.blocks-white-space:hover {\n  border-color: black;\n  border-radius: 5px;\n}\n.blocks-white-space:hover:before {\n  content: '+';\n}\n\n.blocks-white-space.blocks-editing:before {\n  content: '';\n}\n.blocks-white-space.blocks-editing {\n  font-weight: normal;\n  margin: 15px;\n}", ""]);
+	
+	// exports
+
+
+/***/ },
+/* 227 */
+/***/ function(module, exports, __webpack_require__) {
+
+	// style-loader: Adds some css to the DOM by adding a <style> tag
+	
+	// load the styles
+	var content = __webpack_require__(228);
+	if(typeof content === 'string') content = [[module.id, content, '']];
+	// add the styles to the DOM
+	var update = __webpack_require__(195)(content, {});
+	if(content.locals) module.exports = content.locals;
+	// Hot Module Replacement
+	if(false) {
+		// When the styles change, update the <style> tags
+		if(!content.locals) {
+			module.hot.accept("!!./../node_modules/css-loader/index.js!./example-page.css", function() {
+				var newContent = require("!!./../node_modules/css-loader/index.js!./example-page.css");
+				if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
+				update(newContent);
+			});
+		}
+		// When the module is disposed, remove the <style> tags
+		module.hot.dispose(function() { update(); });
+	}
+
+/***/ },
+/* 228 */
+/***/ function(module, exports, __webpack_require__) {
+
+	exports = module.exports = __webpack_require__(194)();
+	// imports
+	
+	
+	// module
+	exports.push([module.id, "body {\n  background-color: #ddd;\n  color: #333;\n  font-family: sans-serif;\n}\n\n.container {\n  display: flex;\n  justify-content: center;\n}\n\n.container .col {\n  width: 50%;\n  padding: 10px;\n}\n\n.container .col p {\n  font-weight: bold;\n}\n\n.CodeMirror {\n  box-shadow: 3px 4px 21px -4px rgba(0,0,0,0.75);\n}", ""]);
 	
 	// exports
 
