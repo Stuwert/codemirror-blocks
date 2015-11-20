@@ -56,13 +56,13 @@
 	
 	__webpack_require__(196);
 	
-	var _parser = __webpack_require__(198);
-	
-	var _parser2 = _interopRequireDefault(_parser);
-	
 	var _blocks = __webpack_require__(223);
 	
 	var _blocks2 = _interopRequireDefault(_blocks);
+	
+	var _weschemeParser = __webpack_require__(229);
+	
+	var _weschemeParser2 = _interopRequireDefault(_weschemeParser);
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
@@ -77,21 +77,7 @@
 	//cm.setValue("(+ 1 2)")
 	cm2.swapDoc(cm.getDoc().linkedDoc({ sharedHist: true }));
 	
-	var blocks = new _blocks2.default(cm2, new _parser2.default(), {
-	  willInsertNode: function willInsertNode(sourceNodeText, sourceNode, destination, destinationNode) {
-	    var line = cm2.getLine(destination.line);
-	    if (destination.ch > 0 && line[destination.ch - 1].match(/[\w\d]/)) {
-	      // previous character is a letter or number, so prefix a space
-	      sourceNodeText = ' ' + sourceNodeText;
-	    }
-	
-	    if (destination.ch < line.length && line[destination.ch].match(/[\w\d]/)) {
-	      // next character is a letter or a number, so append a space
-	      sourceNodeText += ' ';
-	    }
-	    return sourceNodeText;
-	  }
-	});
+	var blocks = new _blocks2.default(cm2, new _weschemeParser2.default());
 	blocks.setBlockMode(true);
 
 /***/ },
@@ -14621,169 +14607,7 @@
 
 
 /***/ },
-/* 198 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
-	
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-	
-	var _ast = __webpack_require__(199);
-	
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-	
-	var TOKENS = {
-	  OPEN_PAREN: 'open-paren',
-	  CLOSE_PAREN: 'close-paren',
-	  IDENTIFIER: 'identifier',
-	  NUMBER: 'number',
-	  EOF: 'eof'
-	};
-	
-	var Token = (function () {
-	  function Token(from, to, token, text) {
-	    _classCallCheck(this, Token);
-	
-	    this.from = from;
-	    this.to = to;
-	    this.token = token;
-	    this.text = text;
-	  }
-	
-	  _createClass(Token, [{
-	    key: 'toString',
-	    value: function toString() {
-	      return this.token + ': ' + this.from.line + ',' + this.from.ch + ' ' + this.to.line + ',' + this.to.ch + ' "' + this.text + '"';
-	    }
-	  }]);
-	
-	  return Token;
-	})();
-	
-	var Parser = (function () {
-	  function Parser() {
-	    _classCallCheck(this, Parser);
-	  }
-	
-	  _createClass(Parser, [{
-	    key: 'getch',
-	    value: function getch() {
-	      var ch = this.code[this.charIndex];
-	      this.charIndex++;
-	      this.colIndex++;
-	      if (ch == '\n') {
-	        this.lineIndex++;
-	        this.colIndex = 0;
-	      }
-	      return ch;
-	    }
-	  }, {
-	    key: 'getToken',
-	    value: function getToken() {
-	      var IDENTIFIER_RE = /[\w-+\/*]/;
-	      if (this.charIndex >= this.code.length) {
-	        return new Token({ line: this.lineIndex, ch: this.colIndex }, { line: this.lineIndex, ch: this.colIndex }, TOKENS.EOF, '');
-	      }
-	      if (this.code[this.charIndex] == '(') {
-	        var token = new Token({ line: this.lineIndex, ch: this.colIndex }, { line: this.lineIndex, ch: this.colIndex + 1 }, TOKENS.OPEN_PAREN, '(');
-	        this.getch();
-	        return token;
-	      } else if (this.code[this.charIndex] == ')') {
-	        var token = new Token({ line: this.lineIndex, ch: this.colIndex }, { line: this.lineIndex, ch: this.colIndex + 1 }, TOKENS.CLOSE_PAREN, ')');
-	        this.getch();
-	        return token;
-	      } else if (this.code[this.charIndex] == ' ') {
-	        while (this.code[this.charIndex] == ' ') {
-	          this.getch();
-	        }
-	        return this.getToken();
-	      } else if (this.code[this.charIndex] >= '0' && this.code[this.charIndex] <= '9') {
-	        var startIndex = this.colIndex;
-	        var number = '';
-	        while (this.code[this.charIndex] >= '0' && this.code[this.charIndex] <= '9') {
-	          number += this.getch();
-	        }
-	        return new Token({ line: this.lineIndex, ch: startIndex }, { line: this.lineIndex, ch: startIndex + number.length }, TOKENS.NUMBER, number);
-	      } else if (this.code[this.charIndex].match(IDENTIFIER_RE)) {
-	        var identifier = '';
-	        var startIndex = this.colIndex;
-	        while (this.code[this.charIndex].match(IDENTIFIER_RE)) {
-	          identifier += this.getch();
-	        }
-	        return new Token({ line: this.lineIndex, ch: startIndex }, { line: this.lineIndex, ch: startIndex + identifier.length }, TOKENS.IDENTIFIER, identifier);
-	      } else if (this.code[this.charIndex] == '\n') {
-	        this.getch();
-	        return this.getToken();
-	      } else {
-	        throw new Error("parse error");
-	      }
-	    }
-	  }, {
-	    key: 'peekToken',
-	    value: function peekToken() {
-	      var oldCharIndex = this.charIndex;
-	      var oldLineIndex = this.lineIndex;
-	      var oldColIndex = this.colIndex;
-	      var token = this.getToken();
-	      this.charIndex = oldCharIndex;
-	      this.lineIndex = oldLineIndex;
-	      this.colIndex = oldColIndex;
-	      return token;
-	    }
-	  }, {
-	    key: 'parse',
-	    value: function parse(code) {
-	      this.code = code;
-	      this.charIndex = 0;
-	      this.lineIndex = 0;
-	      this.colIndex = 0;
-	
-	      var rootNodes = [];
-	      while (this.peekToken().token != TOKENS.EOF) {
-	        rootNodes.push(this.parseExpression());
-	      }
-	      return new _ast.AST(rootNodes);
-	    }
-	  }, {
-	    key: 'parseExpression',
-	    value: function parseExpression() {
-	      var token = this.getToken();
-	      if (token.token != TOKENS.OPEN_PAREN) {
-	        throw new Error("Expected an open paren");
-	      }
-	      if (this.peekToken().token != TOKENS.IDENTIFIER) {
-	        throw new Error("Expected an identifier");
-	      }
-	      var identifierToken = this.getToken();
-	      var args = [];
-	      while (this.peekToken().token != TOKENS.CLOSE_PAREN) {
-	        switch (this.peekToken().token) {
-	          case TOKENS.OPEN_PAREN:
-	            args.push(this.parseExpression());
-	            break;
-	          case TOKENS.NUMBER:
-	            var literalToken = this.getToken();
-	            args.push(new _ast.Literal(literalToken.from, literalToken.to, parseInt(literalToken.text)));
-	            break;
-	          default:
-	            throw new Error("Expected either a number or another expression");
-	        }
-	      }
-	      var closeParenToken = this.getToken();
-	      return new _ast.Expression(token.from, closeParenToken.to, identifierToken.text, args);
-	    }
-	  }]);
-	
-	  return Parser;
-	})();
-	
-	exports.default = Parser;
-
-/***/ },
+/* 198 */,
 /* 199 */
 /***/ function(module, exports, __webpack_require__) {
 
@@ -19652,6 +19476,8397 @@
 	// exports
 
 
+/***/ },
+/* 229 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
+	
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	
+	var _ast = __webpack_require__(199);
+	
+	var _lex = __webpack_require__(230);
+	
+	var _parser = __webpack_require__(238);
+	
+	var _structures = __webpack_require__(231);
+	
+	var structures = _interopRequireWildcard(_structures);
+	
+	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	function parseNode(node) {
+	  var from = {
+	    line: node.location.startRow - 1,
+	    ch: node.location.startCol
+	  };
+	  var to = {
+	    line: node.location.endRow - 1,
+	    ch: node.location.endCol
+	  };
+	
+	  if (node instanceof structures.callExpr) {
+	    return new _ast.Expression(from, to, node.func.stx, node.args.map(parseNode));
+	  } else if (node instanceof structures.literal) {
+	    return new _ast.Literal(from, to, node.stx);
+	  }
+	}
+	
+	var Parser = (function () {
+	  function Parser() {
+	    _classCallCheck(this, Parser);
+	  }
+	
+	  _createClass(Parser, [{
+	    key: 'parse',
+	    value: function parse(code) {
+	      var ast = (0, _parser.parse)((0, _lex.lex)(code, 'foo', true));
+	      var rootNodes = ast.map(parseNode);
+	      return new _ast.AST(rootNodes);
+	    }
+	  }]);
+	
+	  return Parser;
+	})();
+	
+	exports.default = Parser;
+
+/***/ },
+/* 230 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	// if not defined, declare the compiler object as part of plt
+	window.plt = window.plt || {};
+	plt.compiler = __webpack_require__(231);
+	var types = __webpack_require__(232);
+	var jsnums = __webpack_require__(233);
+	
+	/*
+	 
+	 Follows WeScheme's current implementation of Advanced Student
+	 http://docs.racket-lang.org/htdp-langs/advanced.html
+	
+	 NOT SUPPORTED BY MOBY, WESCHEME, OR THIS COMPILER: define-datatype, begin0, set!, time, delay, shared, recur,
+	    match, check-member-of, check-range, (require planet), byetstrings (#"Apple"),
+	    regexps (#rx or #px), hashtables (#hash), graphs (#1=100 #1# #1#), #reader and #lang
+	 
+	 
+	 TODO
+	 - JSLint
+	 - convert Location structs to use those from the Pyret lexer
+	 */
+	
+	//////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////// LEXER OBJECT //////////////////////////////
+	//////////////////////////////////////////////////////////////////////////////
+	
+	// Parse a program into SExps
+	//
+	// A SExp is either:
+	// - Literal x Location
+	// - symbolExpr x Location
+	// - [ListOf SExp] x Location
+	//
+	// A Literal is either:
+	// - types.<number>
+	// - types.string
+	// - types.char
+	// - types.vector
+	
+	/////////////////////
+	/*      Data       */
+	/////////////////////
+	
+	(function () {
+	  'use strict'
+	
+	  // import frequently-used bindings
+	  ;
+	  var literal = plt.compiler.literal;
+	  var symbolExpr = plt.compiler.symbolExpr;
+	  var unsupportedExpr = plt.compiler.unsupportedExpr;
+	  var throwError = plt.compiler.throwError;
+	
+	  // a collection of common RegExps
+	  var leftListDelims = /[(\u005B\u007B]/,
+	      rightListDelims = /[)\u005D\u007D]/,
+	      matchUntilDelim = /^[^(\u005B\u007B)\u005D\u007D\s]+/,
+	      quotes = /[\'`,]/,
+	      hex2 = new RegExp("^([0-9a-f]{1,2})", "i"),
+	      hex4 = new RegExp("^([0-9a-f]{1,4})", "i"),
+	      hex6 = new RegExp("^([0-9a-f]{1,6})", "i"),
+	      hex8 = new RegExp("^([0-9a-f]{1,8})", "i"),
+	      oct3 = new RegExp("^([0-7]{1,3})", "i");
+	
+	  // the delimiters encountered so far, line and column, and case-sensitivity
+	  var delims, line, column, startCol, startRow, source, caseSensitiveSymbols, i;
+	  // UGLY HACK to track index if an error occurs. We should remove this if we can make i entirely stateful
+	  var endOfError;
+	
+	  // the location struct
+	  // endCol and endRow are included for pyret error location
+	  var Location = function Location(startCol, startRow, startChar, span, theSource) {
+	    this.startCol = startCol; // starting index into the line
+	    this.startRow = startRow; // starting line # (1-index)
+	    this.startChar = startChar; // ch index of lexeme start, from beginning
+	    this.span = span; // num chrs between lexeme start and end
+	    this.source = theSource || source; // [OPTIONAL] id of the containing DOM element
+	
+	    this.endCol = column; // ending index into the line
+	    this.endRow = line; // ending index into the line
+	    this.endChar = startChar + span; // ch index of lexeme end, from beginning
+	
+	    this.start = function () {
+	      return new Location("", "", this.startChar, 1);
+	    };
+	    this.end = function () {
+	      return new Location("", "", this.startChar + this.span - 1, 1);
+	    };
+	    this.toString = function () {
+	      return "Loc(" + this.startCol + ", " + this.startRow + ", " + (this.startChar + 1) + "," + this.span + ")";
+	    };
+	    this.toVector = function () {
+	      return new types.vector(['"' + this.source + '"' // add quotes to the source, since it's a str (not a symbol)
+	      , this.startChar + 1, this.startRow, this.startCol, this.span]);
+	    };
+	    this.toString = function () {
+	      return { line: this.startRow.toString(), id: this.source, span: this.span.toString(),
+	        offset: (this.startChar + 1).toString(), column: this.startCol.toString() };
+	    };
+	  };
+	
+	  /////////////////////
+	  /* Utility Methods */
+	  /////////////////////
+	
+	  // some important string methods
+	  function isWhiteSpace(str) {
+	    return (/\s/.test(str)
+	    );
+	  }
+	
+	  // determines if a character string is in one of the three sets of delimiters
+	  function isDelim(x) {
+	    return x === '(' || x === ')' || x === '[' || x === ']' || x === '{' || x === '}';
+	  }
+	
+	  // this is returned when a comment is read
+	  function Comment(txt) {
+	    this.txt = txt;
+	  }
+	
+	  // determines if the character is valid as a part of a symbol
+	  function isValidSymbolCharP(x) {
+	    return !isDelim(x) && !isWhiteSpace(x) && x !== '"' && x !== ',' && x !== "'" && x !== '`' && x !== ';';
+	  }
+	
+	  // determines if they are matching delimiter pairs
+	  // ie ( and ) [ and ] { and }
+	  function matchingDelims(x, y) {
+	    return x === '(' && y === ')' || x === '[' && y === ']' || x === '{' && y === '}';
+	  }
+	
+	  // gets the matching delim given the other delim in a pair
+	  function otherDelim(x) {
+	    return x === '(' ? ')' : x === '[' ? ']' : x === '{' ? '}' : x === ')' ? '(' : x === ']' ? '[' : x === '}' ? '{' :
+	    /* else */throwError(new types.Message(["otherDelim: Unknown delimiter: ", x]));
+	  }
+	
+	  // reads through whitespace
+	  function chewWhiteSpace(str, i) {
+	    var p;
+	    if (i < str.length) {
+	      p = str.charAt(i);
+	      while (isWhiteSpace(p) && i < str.length) {
+	        // increment column/line counters
+	        if (p === "\n") {
+	          line++;column = 0;
+	        } else {
+	          column++;
+	        }
+	        p = str.charAt(++i);
+	      }
+	    }
+	    return i;
+	  }
+	
+	  Array.prototype.toString = function () {
+	    return this.join(" ");
+	  };
+	  function sexpToString(sexp) {
+	    return sexp instanceof Array ? "(" + sexp.map(sexpToString).toString() + ")" : sexp.toString();
+	  }
+	
+	  /////////////////////
+	  /* Primary Methods */
+	  /////////////////////
+	
+	  // readProg : String String -> SExp
+	  // reads multiple sexps encoded into this string and converts them to a SExp
+	  // datum
+	  function readProg(str, strSource) {
+	    var i = 0;startCol = column = 0;startRow = line = 1, // initialize all position indices
+	    caseSensitiveSymbols = true; // initialize case sensitivity
+	    source = strSource || "<definitions>";
+	    var sexp,
+	        sexps = [];
+	    delims = [];
+	    // get rid of any whitespace at the start of the string
+	    i = chewWhiteSpace(str, 0);
+	    while (i < str.length) {
+	      sexp = readSExpByIndex(str, i);
+	      if (!(sexp instanceof Comment)) {
+	        sexps.push(sexp);
+	      }
+	      i = chewWhiteSpace(str, sexp.location.startChar + sexp.location.span);
+	    }
+	    sexps.location = new Location(startCol, startRow, 0, i, source);
+	    return sexps;
+	  }
+	
+	  // readSSFile : String String -> SExp
+	  // removes the first three lines of the string that contain DrScheme meta data
+	  function readSSFile(str, strSource) {
+	    var i = 0;startCol = column = 0;startRow = line = 1, // initialize all position indices
+	    caseSensitiveSymbols = true; // initialize case sensitivity
+	    source = strSource || "<definitions>";
+	    var crs = 0;
+	
+	    while (i < str.length && crs < 3) {
+	      if (str.charAt(i++) === "\n") {
+	        crs++;
+	      }
+	    }
+	
+	    var sexp,
+	        sexps = [];
+	    delims = [];
+	    while (i < str.length) {
+	      sexp = readSExpByIndex(str, i);
+	      if (!(sexp instanceof Comment)) {
+	        sexps.push(sexp);
+	      }
+	      i = chewWhiteSpace(str, sexp.location.startChar + sexp.location.span);
+	    }
+	    return sexps;
+	  }
+	
+	  // readSExp : String String -> SExp
+	  // reads the first sexp encoded in this string and converts it to a SExp datum
+	  function readSExp(str, source) {
+	    delims = [];
+	    var sexp = readSExpByIndex(str, 0);
+	    return sexp instanceof Comment ? null : sexp;
+	  }
+	
+	  // readSExpByIndex : String Number -> SExp
+	  // reads a sexp encoded as a string starting at the i'th character and converts
+	  // it to a SExp datum
+	  function readSExpByIndex(str, i) {
+	    startCol = column;startRow = line;var iStart = i;
+	    i = chewWhiteSpace(str, i);
+	    var p = str.charAt(i);
+	    if (i >= str.length) {
+	      endOfError = i; // remember where we are, so readList can pick up reading
+	      throwError(new types.Message([source, ":", startRow.toString(), ":", (startCol - 1).toString(), ": read: (found end-of-file)"]), new Location(startCol - 1, startRow, i - 2, 2) // back up the startChar before #;, make the span include only those 2
+	      , "Error-GenericReadError");
+	    }
+	    var sexp = rightListDelims.test(p) ? throwError(new types.Message(["read: expected a ", otherDelim(p), " to open ", new types.ColoredPart(p, new Location(column, startRow, iStart, 1))]), new Location(column, startRow, iStart, 1)) : leftListDelims.test(p) ? readList(str, i) : p === '"' ? readString(str, i) : p === '#' ? readPoundSExp(str, i) : p === ';' ? readLineComment(str, i) : quotes.test(p) ? readQuote(str, i) :
+	    /* else */readSymbolOrNumber(str, i);
+	    return sexp;
+	  }
+	
+	  // readList : String Number -> SExp
+	  // reads a list encoded in this string with the left delimiter at index i
+	  function readList(str, i) {
+	    var startCol = column,
+	        startRow = line,
+	        iStart = i,
+	        innerError = false,
+	        errorLocation = new Location(startCol, startRow, iStart, 1),
+	        openingDelim = str.charAt(i++),
+	        dot1Idx = false,
+	        dot2Idx = false; // indices of the dot operator
+	    column++; // move forward to count the closing delimeter
+	    var sexp,
+	        list = [];
+	    delims.push(openingDelim);
+	    i = chewWhiteSpace(str, i);
+	
+	    // read a single list item
+	    // To allow optimization in v8, this function is broken out into its own (named) function
+	    // see http://www.html5rocks.com/en/tutorials/speed/v8/#toc-topic-compilation
+	    function readListItem(str, i, list) {
+	      var sexp = readSExpByIndex(str, i); // read the next s-exp
+	      i = sexp.location.end().startChar + 1; // move i to the character at the end of the sexp
+	      // if it's a dot, treat it as a cons
+	      if (sexp instanceof symbolExpr && sexp.val == '.') {
+	        if (dot2Idx) {
+	          var msg = new types.Message(["A syntax list may have only 2 `.'s"]);
+	          throwError(msg, list[dot1Idx].location);
+	        }
+	        dot2Idx = dot1Idx ? list.length : false; // if we've seen dot1, save this idx to dot2Idx
+	        dot1Idx = dot1Idx || list.length; // if we haven't seen dot1, save this idx to dot1Idx
+	      }
+	      if (!(sexp instanceof Comment)) {
+	        // if it's not a comment, add it to the list
+	        sexp.parent = list; // set this list as it's parent
+	        list.push(sexp); // and add the sexp to the list
+	      }
+	      return i;
+	    }
+	
+	    // if we have one dot, splice the element at that idx into the list
+	    // if we have two dots, move the element they surround to the front
+	    // throw errors for everything else
+	    function processDots(list, dot1Idx, dot2Idx) {
+	      // if the dot is the first element in the list, throw an error
+	      if (dot1Idx === 0) {
+	        var msg = new types.Message(["A `.' cannot be the first element in a syntax list"]);
+	        throwError(msg, list[dot1Idx].location);
+	      }
+	      // if a dot is the last element in the list, throw an error
+	      if (dot1Idx === list.length - 1 || dot2Idx === list.length - 1) {
+	        var msg = new types.Message(["A `.' cannot be the last element in a syntax list"]);
+	        throwError(msg, list[dot2Idx || dot1Idx].location);
+	      }
+	
+	      // assuming they are legal, if there are two dots in legal places...
+	      if (dot2Idx) {
+	        // if they are not surrounding a single element, throw an error
+	        if (dot2Idx - dot1Idx !== 2) {
+	          var msg = new types.Message(["Two `.'s may only surround one syntax item"]);
+	          throwError(msg, list[dot2Idx].location);
+	          // if they are, move that element to the front of the list and remove the dots
+	        } else {
+	            return list.slice(dot1Idx + 1, dot1Idx + 2).concat(list.slice(0, dot1Idx), list.slice(dot2Idx + 1));
+	          }
+	      }
+	      // okay, we know there's just one dot, so the next element had better be a list AND the last element of the outer list
+	      if (!(list[dot1Idx + 1] instanceof Array)) {
+	        var msg = new types.Message(["A `.' must be followed by a syntax list, but found ", new types.ColoredPart("something else", list[dot1Idx + 1].location)]);
+	        throwError(msg, list[dot1Idx + 1].location);
+	      }
+	      if (list.length > dot1Idx + 2) {
+	        var msg = new types.Message(["A `.' followed by a syntax list must be followed by a closing delimeter, but found ", new types.ColoredPart("something else", list[dot1Idx + 2].location)]);
+	        throwError(msg, list[dot1Idx + 1].location);
+	        // splice that element into the list, removing the dots
+	      } else {
+	          return list.slice(0, dot1Idx).concat(list[dot1Idx + 1], list.slice(dot1Idx + 2));
+	        }
+	    }
+	
+	    // if we see an error while reading a listItem
+	    function handleError(e) {
+	      // Some errors we throw immediately, without reading the rest of the list...
+	      if (/expected a .+ to (close|open)/.exec(e) // brace or dot errors
+	       || /unexpected/.exec(e) // unexpected delimiter
+	       || /syntax list/.exec(e) // improper use of .
+	       || /bad syntax/.exec(e) // bad syntax
+	       || /bad character constant/.exec(e) // bad character constant
+	      ) {
+	          throw e;
+	        } else {
+	        // when we reconstruct the location from an error, we use Racket-style fieldnames, for historical reasons
+	        var eLoc = JSON.parse(JSON.parse(e)["structured-error"]).location;
+	        errorLocation = new Location(Number(eLoc.column), Number(eLoc.line), Number(eLoc.offset) - 1, Number(eLoc.span));
+	        i = endOfError; // keep reading from the last error location
+	        innerError = e;
+	      }
+	      return i;
+	    }
+	
+	    // read forward until we see a closing delim, saving the last known-good location
+	    while (i < str.length && !rightListDelims.test(str.charAt(i))) {
+	      // check for newlines
+	      if (str.charAt(i) === "\n") {
+	        line++;column = 0;
+	      }
+	      try {
+	        i = readListItem(str, i, list);
+	      } // read a list item, hopefully without error
+	      catch (e) {
+	        var i = handleError(e);
+	      } // try to keep reading from endOfError...
+	      // move reader to the next token
+	      i = chewWhiteSpace(str, i);
+	    }
+	    // if we reached the end of an otherwise-successful list but there's no closing delim...
+	    if (i >= str.length) {
+	      var msg = new types.Message(["read: expected a ", otherDelim(openingDelim), " to close ", new types.ColoredPart(openingDelim.toString(), new Location(startCol, startRow, iStart, 1))]);
+	      // throw an error
+	      throwError(msg, errorLocation);
+	    }
+	    // if we reached the end of an otherwise-successful list and it's the wrong closing delim...
+	    if (!matchingDelims(openingDelim, str.charAt(i))) {
+	      var msg = new types.Message(["read: expected a ", otherDelim(openingDelim), " to close ", new types.ColoredPart(openingDelim.toString(), new Location(startCol, startRow, iStart, 1)), " but found a ", new types.ColoredPart(str.charAt(i).toString(), new Location(column, line, i, 1))]);
+	      throwError(msg, new Location(column, line, i, 1));
+	    }
+	
+	    column++;i++; // move forward to count the closing delimeter
+	    // if an error occured within the list, set endOfError to the end, and throw it
+	    if (innerError) {
+	      endOfError = i;throw innerError;
+	    }
+	
+	    // deal with dots, if they exist
+	    if (dot1Idx || dot2Idx) list = processDots(list, dot1Idx, dot2Idx);
+	    list.location = new Location(startCol, startRow, iStart, i - iStart);
+	    return list;
+	  }
+	
+	  // readString : String Number -> SExp
+	  // reads a string encoded in this string with the leftmost quotation mark
+	  // at index i
+	  function readString(str, i) {
+	    var startCol = column,
+	        startRow = line,
+	        iStart = i;
+	    // greedily match to the end of the string, before examining escape sequences
+	    var closedString = /^\"[^\"]*(\\\"[^\"]*)*[^\\]\"|\"\"/.test(str.slice(i)),
+	        greedy = /^\"[^\"]*(\\"[^\"]*)*/.exec(str.slice(iStart))[0];
+	    i++;column++; // skip over the opening quotation mark char
+	    // it's a valid string, so let's make sure it's got proper escape sequences
+	    var chr,
+	        datum = "";
+	    while (i < str.length && str.charAt(i) !== '"') {
+	      chr = str.charAt(i++);
+	      // track line/char values while we scan
+	      if (chr === "\n") {
+	        line++;column = 0;
+	      } else {
+	        column++;
+	      }
+	      if (chr === '\\') {
+	        column++; // move the column forward to skip over the escape character
+	        chr = str.charAt(i++);
+	        if (i >= str.length) break; // if there's nothing there, break out
+	        switch (true) {
+	          case /a/.test(chr):
+	            chr = '\u0007';break;
+	          case /b/.test(chr):
+	            chr = '\b';break;
+	          case /t/.test(chr):
+	            chr = '\t';break;
+	          case /n/.test(chr):
+	            chr = '\n';break;
+	          case /v/.test(chr):
+	            chr = '\v';break;
+	          case /f/.test(chr):
+	            chr = '\f';break;
+	          case /r/.test(chr):
+	            chr = '\r';break;
+	          case /e/.test(chr):
+	            chr = '\'';break;
+	          case /\n/.test(chr):
+	            chr = '';break; // newlines disappear
+	          case /[\"\'\\]/.test(chr):
+	            break;
+	          // if it's a charCode symbol, match with a regexp and move i forward
+	          case /[xuU]/.test(chr):
+	            var regexp = chr === "x" ? hex2 : chr === "u" ? hex4
+	            /* else */ : hex8;
+	            if (!regexp.test(str.slice(i))) {
+	              // remember where we are, so readList can pick up reading
+	              endOfError = iStart + greedy.length + 1;
+	              throwError(new types.Message([source, ":", startRow.toString(), ":", startCol.toString(), ": read: no hex digit following \\" + chr + " in string"]), new Location(startCol, startRow, iStart, i - iStart + 1), "Error-GenericReadError");
+	            }
+	            var match = regexp.exec(str.slice(i))[1];
+	            chr = String.fromCharCode(parseInt(match, 16));
+	            i += match.length;column += match.length;
+	            break;
+	          case oct3.test(str.slice(i - 1)):
+	            var match = oct3.exec(str.slice(i - 1))[1];
+	            chr = String.fromCharCode(parseInt(match, 8));
+	            i += match.length - 1;column += match.length - 1;
+	            break;
+	          default:
+	            // remember where we are, so readList can pick up reading
+	            endOfError = iStart + greedy.length + 1;
+	            throwError(new types.Message([source, ":", startRow.toString(), ":", startCol.toString(), ": read: unknown escape sequence \\" + chr + " in string"]), new Location(startCol, startRow, iStart, i - iStart), "Error-GenericReadError");
+	        }
+	      }
+	      datum += chr;
+	    }
+	
+	    // if the next char after iStart+openquote+greedy isn't a closing quote, it's an unclosed string
+	    if (!closedString) {
+	      endOfError = iStart + greedy.length; // remember where we are, so readList can pick up reading
+	      throwError(new types.Message([source, ":", startRow.toString(), ":", startCol.toString(), ": read: expected a closing \'\"\'"]), new Location(startCol, startRow, iStart, 1), "Error-GenericReadError");
+	    }
+	    var strng = new literal(new types.string(datum));
+	    i++;column++; // move forward to include the ending quote
+	    strng.location = new Location(startCol, startRow, iStart, i - iStart);
+	    return strng;
+	  }
+	
+	  // readPoundSExp : String Number -> SExp
+	  // based on http://docs.racket-lang.org/reference/reader.html#%28part._default-readtable-dispatch%29
+	  // NOTE: bytestrings, regexps, hashtables, graphs, reader and lang extensions are not supported
+	  function readPoundSExp(str, i) {
+	    var startCol = column,
+	        startRow = line,
+	        iStart = i,
+	        datum;
+	    i++;column++; // skip over the pound sign
+	    // construct an unsupported error string
+	    var unsupportedError;
+	
+	    // throwUnsupportedError : ErrorString token -> Error
+	    function throwUnsupportedError(errorStr, token) {
+	      var msg = new types.Message([source, ":", line.toString(), ":", (column - 1).toString(), errorStr]);
+	      throwError(msg, new Location(startCol, startRow, iStart, token.length + 1), "Error-GenericReadError");
+	    }
+	
+	    if (i < str.length) {
+	      var p = str.charAt(i).toLowerCase();
+	      // fl and fx Vectors, structs, and hashtables are not supported
+	      var unsupportedMatch = new RegExp("^(((fl|fx|s|hash|hasheq)[\[\(\{])|((rx|px)\#{0,1}\"))", 'g'),
+	          unsupportedTest = unsupportedMatch.exec(str.slice(i));
+	      // Reader or Language Extensions are not allowed
+	      var badExtensionMatch = /^(!(?!\/)|reader|lang[\s]{0,1})/,
+	          badExtensionTest = badExtensionMatch.exec(str.slice(i));
+	      // Case sensitivity flags ARE allowed
+	      var caseSensitiveMatch = new RegExp("^(c|C)(i|I|s|S)"),
+	          caseSensitiveTest = caseSensitiveMatch.exec(str.slice(i));
+	      // Vector literals ARE allowed
+	      var vectorMatch = new RegExp("^([0-9]*)[\[\(\{]", 'g'),
+	          vectorTest = vectorMatch.exec(str.slice(i));
+	      if (unsupportedTest && unsupportedTest[0].length > 0) {
+	        var sexp = readSExpByIndex(str, i + unsupportedTest[0].length - 1),
+	            kind,
+	            span = unsupportedTest[0].length,
+	            // save different error strings and spans
+	        base = unsupportedTest[0].replace(/[\(\[\{\"|#\"]/g, '');
+	        switch (base) {
+	          case "fl":
+	            kind = "flvectors";break;
+	          case "fx":
+	            kind = "fxvectors";break;
+	          case "s":
+	            kind = "structs";break;
+	          case "hash":
+	          case "hasheq":
+	            kind = "hashtables";break;
+	          case "px":
+	          case "rx":
+	            kind = "regular expressions";break;
+	          default:
+	            throw "IMPOSSIBLE: unsupportedMatch captured something it shouldn't: " + base;
+	        }
+	        var error = new types.Message([source, ":", line.toString(), ":", "0", ": read-syntax: literal " + kind + " not allowed"]);
+	        datum = new unsupportedExpr(sexp, error, span);
+	        datum.location = new Location(startCol, startRow, iStart, unsupportedTest[0].length + sexp.location.span);
+	        return datum;
+	      } else if (badExtensionTest && badExtensionTest[0].length > 0) {
+	        throwUnsupportedError(": read: #" + badExtensionTest[0].trim() + " not enabled in the current context", badExtensionTest[0]);
+	      } else if (caseSensitiveTest && caseSensitiveTest[0].length > 0) {
+	        caseSensitiveSymbols = caseSensitiveTest[0].toLowerCase() === "cs";
+	        i += 2;column += 2;
+	        return readSExpByIndex(str, i);
+	      } else if (vectorTest && vectorTest[0].length > 0) {
+	        var size = vectorTest[1] ? parseInt(vectorTest[1]) : "",
+	            // do we have a size string?
+	        sizeChars = size.toString().length; // how long is the size string?
+	        i += sizeChars;column += sizeChars; // start reading after the vectorsize was specified
+	        var elts = readList(str, i),
+	            len = size === "" ? elts.length : parseInt(vectorTest[1]); // set the size to a number
+	        // test vector size
+	        if (elts.length > len) {
+	          var msg = new types.Message(["read: vector length " + len + " is too small, ", elts.length + " value" + (elts.length > 1 ? "s" : ""), " provided"]);
+	          throwError(msg, new Location(startCol, startRow, iStart, vectorTest[0].length));
+	        }
+	
+	        i += elts.location.span;
+	        datum = new literal(new Vector(len, elts));
+	        datum.location = new Location(startCol, startRow, iStart, i - iStart);
+	        return datum;
+	      } else {
+	        // match every valid (or *almost-valid*) sequence of characters, or the empty string
+	        var poundChunk = new RegExp("^(hasheq|hash|fl|fx|\\d+|true|false|[tfeibdox]|\\<\\<|[\\\\\\\"\\%\\:\\&\\|\\;\\!\\`\\,\\']|)", 'i'),
+	            chunk = poundChunk.exec(str.slice(i))[0],
+	
+	        // match the next character
+	        nextChar = str.charAt(i + chunk.length);
+	        // grab the first non-whitespace character
+	        var p = chunk.charAt(0).toLowerCase();
+	        switch (p) {
+	          // CHARACTERS
+	          case '\\':
+	            datum = readChar(str, i - 1);
+	            i += datum.location.span - 1;break;
+	          // BYTE-STRINGS (unsupported)
+	          case '"':
+	            throwUnsupportedError(": byte strings are not supported in WeScheme", "#\"");
+	          // SYMBOLS
+	          case '%':
+	            datum = readSymbolOrNumber(str, i);
+	            datum.val = '#' + datum.val;
+	            i += datum.location.span;break;
+	          // KEYWORDS (lex to a symbol, then strip out the contents)
+	          case ':':
+	            datum = readSymbolOrNumber(str, i - 1);
+	            var error = new types.Message([source, ":", line.toString(), ":", "0", ": read-syntax: Keyword internment is not supported in WeScheme"]);
+	            datum = new unsupportedExpr(datum.val, error, datum.location.span);
+	            i += datum.val.length - 1;
+	            break;
+	          // BOXES
+	          case '&':
+	            column++;
+	            sexp = readSExpByIndex(str, i + 1);
+	            var boxCall = new symbolExpr("box"),
+	                datum = [boxCall, sexp];
+	            i += sexp.location.span + 1;
+	            boxCall.location = new Location(startCol, startRow, iStart, i - iStart);
+	            break;
+	          // BLOCK COMMENTS
+	          case '|':
+	            i--;
+	            datum = readBlockComment(str, i);
+	            i += datum.location.span + 1;break;
+	          // SEXP COMMENTS
+	          case ';':
+	            datum = readSExpComment(str, i + 1);
+	            i += datum.location.span + 1;break;
+	          // LINE COMMENTS
+	          case '!':
+	            datum = readLineComment(str, i - 1);
+	            i += datum.location.span;break;
+	          // SYNTAX QUOTES, UNQUOTES, AND QUASIQUOTES
+	          case '`':
+	          case ',':
+	          case '\'':
+	            datum = readQuote(str, i);
+	            datum.location.startChar--;datum.location.span++; // expand the datum to include leading '#'
+	            endOfError = i + datum.location.span;
+	            var msg = new types.Message([source, ":", startRow.toString(), ":", (column - 1).toString(), " read: WeScheme does not support the '#" + p + "' notation for ", p === "," ? "unsyntax" : p === "'" ? "syntax" : "quasisyntax"]);
+	            throwError(msg, datum.location);
+	            break;
+	          // STRINGS
+	          case '<<':
+	            datum = readString(str, i - 1);
+	            i += datum.location.span;break;
+	          // NUMBERS
+	          case 'e': // exact
+	          case 'i': // inexact
+	          case 'b': // binary
+	          case 'o': // octal
+	          case 'd': // decimal
+	          case 'x':
+	            // hexadecimal
+	            column--; //  back up the column one char
+	            datum = readSymbolOrNumber(str, i - 1);
+	            i += datum.location.span - 1;break;
+	          // BOOLEANS
+	          case 'true':
+	          case 'false':
+	          case 't': // true
+	          case 'f':
+	            // false
+	            if (!matchUntilDelim.exec(nextChar)) {
+	              // if there's no other chars aside from space or delims...
+	              datum = new literal(p === 't' || chunk === 'true'); // create a Boolean literal
+	              i += chunk.length;column += chunk.length; // move i/col ahead by the char
+	              break;
+	            }
+	          default:
+	            endOfError = i; // remember where we are, so readList can pick up reading
+	            var msg = new types.Message([source, ":", line.toString(), ":", (column - 1).toString(), ": read: bad syntax `#", chunk + nextChar, "'"]);
+	            throwError(msg, new Location(startCol, startRow, iStart, (chunk + nextChar).length + 1), "Error-GenericReadError");
+	        }
+	      }
+	      // only reached if # is the end of the string...
+	    } else {
+	        endOfError = i; // remember where we are, so readList can pick up reading
+	        throwError(new types.Message([source, ":", line.toString(), ":", (column - 1).toString(), ": read: bad syntax `#'"]), new Location(startCol, startRow, iStart, i - iStart), "Error-GenericReadError");
+	      }
+	    datum.location = new Location(startCol, startRow, iStart, i - iStart);
+	    return datum;
+	  }
+	
+	  // readChar : String Number -> types.char
+	  // reads a character encoded in the string and returns a representative datum
+	  // see http://docs.racket-lang.org/reference/reader.html#%28part._parse-character%29
+	  function readChar(str, i) {
+	    var startCol = column,
+	        startRow = line,
+	        iStart = i;
+	    i += 2;column++; // skip over the #\\
+	    var datum = "",
+	        isFirstChar = true,
+	        regexp;
+	
+	    // read until we hit the end of the string, another char, or whitespace when it's not the first char
+	    while (i < str.length && str.slice(i, i + 2) !== "#\\" && !(!isFirstChar && (isWhiteSpace(str.charAt(i)) || isDelim(str.charAt(i))))) {
+	      isFirstChar = false;
+	      column++;
+	      datum += str.charAt(i++);
+	    }
+	
+	    // a special char is one of the following, as long as the next char is not alphabetic
+	    // unlike DrRacket, there is no JS equivalent for nul, null, page and rubout
+	    var special = new RegExp("(backspace|tab|newline|space|vtab)[^a-zA-Z]*", "i"),
+	        match = special.exec(datum);
+	    // check for special chars
+	    if (special.test(datum)) {
+	      datum = datum === 'backspace' ? '\b' : datum === 'tab' ? '\t' : datum === 'newline' ? '\n' : datum === 'space' ? ' ' : datum === 'vtab' ? '\v' : "Impossible: unknown special char was matched by special char!";
+	      i = iStart + 2 + match[1].length; // set the reader to the end of the char
+	
+	      // octal charCodes
+	    } else if (/^[0-9].*/.test(datum) // if it starts with a number...
+	       && oct3.test(datum) // it had better have some octal digits..
+	       && oct3.exec(datum)[0] === datum // in fact, all of them should be octal..
+	       && parseInt(oct3.exec(datum)[0], 8) < 256 // and less than 256...
+	       && parseInt(oct3.exec(datum)[0], 8) > 31 // and greater than 31,
+	      ) {
+	          var match = /[0-7]+/.exec(datum)[0];
+	          datum = String.fromCharCode(parseInt(match, 8));
+	          i = iStart + 2 + match.length; // set the reader to the end of the char
+	
+	          // check for hex4 or hex6
+	        } else if (/[uU]/.test(datum) // if it declares itself to be hexidecimal...
+	         && (regexp = datum.charAt(0) === "u" ? hex4 : hex6) // and we have a regexp for it...
+	         && regexp.test(datum.slice(1)) // and it's a valid hex code for that regexp...
+	        ) {
+	            var match = regexp.exec(datum.slice(1))[0];
+	            column += match.length - datum.length + 1; // adjust column if only a subset of the datum matched
+	            datum = String.fromCharCode(parseInt(match, 16));
+	            i = iStart + 3 + match.length; // fast-forward past (1) hash, (2) backslash, (3) u and (4) number
+	            // check for a single character, or a character that is NOT followed by a unicode-alphabetic character
+	          } else if (datum.length === 1 || /[^\u00C0-\u1FFF\u2C00-\uD7FF\w]$/.test(datum.charAt(1))) {
+	            datum = datum.charAt(0);
+	            i = iStart + 3; // fast-forward past (1) hash, (2) backslash and (3) single char
+	          } else {
+	              throwError(new types.Message([source, ":", startRow.toString(), ":", (startCol - 1).toString(), ": read: bad character constant: #\\", datum]), new Location(startCol - 1, startRow, iStart, i - iStart), "Error-GenericReadError");
+	            }
+	    var chr = new literal(new types['char'](datum));
+	    chr.location = new Location(startCol, startRow, iStart, i - iStart);
+	    return chr;
+	  }
+	
+	  // readBlockComment : String Number -> Atom
+	  // reads a multiline comment
+	  function readBlockComment(str, i) {
+	    var startCol = column,
+	        startRow = line,
+	        iStart = i;
+	    i += 2;column += 2; // skip over the #|
+	    var txt = "";
+	    while (i + 1 < str.length && !(str.charAt(i) === '|' && str.charAt(i + 1) === '#')) {
+	      // check for newlines
+	      if (str.charAt(i) === "\n") {
+	        line++;column = 0;
+	      }
+	      txt += str.charAt(i);
+	      i++;column++; // move ahead
+	    }
+	    if (i + 1 >= str.length) {
+	      throwError(new types.Message(["read: Unexpected EOF when reading a multiline comment"]), new Location(startCol, startRow, iStart, i - iStart));
+	    }
+	    i++;column++; // hop over '|#'
+	    var comment = new Comment(txt);
+	    comment.location = new Location(startCol, startRow, iStart, i - iStart);
+	    return comment;
+	  }
+	
+	  // readSExpComment : String Number -> Atom
+	  // reads exactly one SExp and ignores it entirely
+	  function readSExpComment(str, i) {
+	    var startCol = column++,
+	        startRow = line,
+	        iStart = i,
+	        nextSExp;
+	    // keep reading s-exprs while...
+	    while ((i = chewWhiteSpace(str, i)) && // there's whitespace to chew
+	    i + 1 < str.length && ( // we're not out of string
+	    nextSExp = readSExpByIndex(str, i)) && // there's an s-expr to be read
+	    nextSExp instanceof Comment) {
+	      // and it's not a comment
+	      i = nextSExp.location.endChar;
+	    }
+	
+	    // if we're done reading, make sure we didn't read past the end of the file
+	    if (i + 1 >= str.length) {
+	      endOfError = i; // remember where we are, so readList can pick up reading
+	      throwError(new types.Message([source, ":", startRow.toString(), ":", (startCol - 1).toString(), ": read: expected a commented-out element for `#;' (found end-of-file)"]), new Location(startCol - 1, startRow, i - 2, 2) // back up the startChar before #;, make the span include only those 2
+	      , "Error-GenericReadError");
+	    }
+	    // if we're here, then we read a proper s-expr
+	    var atom = new Comment("(" + nextSExp.toString() + ")");
+	    i = nextSExp.location.endChar;
+	    atom.location = new Location(startCol, startRow, iStart, i - iStart);
+	    return atom;
+	  }
+	
+	  // readLineComment : String Number -> Atom
+	  // reads a single line comment
+	  function readLineComment(str, i) {
+	    var startCol = column,
+	        startRow = line,
+	        iStart = i;
+	    i++;column++; // skip over the ;
+	    var txt = "";
+	    while (i < str.length && str.charAt(i) !== '\n') {
+	      // track column values while we scan
+	      txt += str.charAt(i);column++;i++;
+	    }
+	    if (i > str.length) {
+	      endOfError = i; // remember where we are, so readList can pick up reading
+	      throwError(new types.Message(["read: Unexpected EOF when reading a line comment"]), new Location(startCol, startRow, iStart, i - iStart));
+	    }
+	    var atom = new Comment(txt);
+	    atom.location = new Location(startCol, startRow, iStart, i + 1 - iStart);
+	    // at the end of the line, reset line/col values
+	    line++;column = 0;
+	    return atom;
+	  }
+	
+	  // readQuote : String Number -> SExp
+	  // reads a quote, quasiquote, or unquote encoded as a string
+	  // NOT OPTIMIZED BY V8, due to presence of try/catch
+	  function readQuote(str, i) {
+	    var startCol = column,
+	        startRow = line,
+	        iStart = i,
+	        nextSExp;
+	    var p = str.charAt(i);
+	    var symbol = p == "'" ? new symbolExpr("quote") : p == "`" ? new symbolExpr("quasiquote") :
+	    /* else */"";
+	    function eofError(i) {
+	      endOfError = i + 1; // remember where we are, so readList can pick up reading
+	      var action = p == "'" ? " quoting " : p == "`" ? " quasiquoting " : p == "," ? " unquoting " : p == ",@" ? " unquoting " :
+	      /* else */"";
+	      throwError(new types.Message([source, ":", startRow.toString(), ":", startCol.toString(), ": read: expected an element for" + action, p, " (found end-of-file)"]), new Location(startCol, startRow, iStart, p.length), "Error-GenericReadError");
+	    }
+	    if (i + 1 >= str.length) {
+	      eofError(i);
+	    }
+	    i++;column++; // read forward one char
+	    if (p == ',') {
+	      if (str.charAt(i) == '@') {
+	        i++;column++;p += '@'; // read forward one char, and add @ to the option
+	        symbol = new symbolExpr("unquote-splicing");
+	      } else {
+	        symbol = new symbolExpr("unquote");
+	      }
+	    }
+	
+	    symbol.location = new Location(column - 1, startRow, iStart, i - iStart);
+	
+	    // read the next non-comment sexp
+	    while (!nextSExp || nextSExp instanceof Comment) {
+	      i = chewWhiteSpace(str, i);
+	      try {
+	        nextSExp = readSExpByIndex(str, i);
+	      } catch (e) {
+	        // if it's the end of file, throw a special EOF for quoting
+	        if (/read\: \(found end-of-file\)/.test(e)) eofError(i);
+	        var unexpected = /expected a .* to open \",\"(.)\"/.exec(e);
+	        if (unexpected) {
+	          endOfError = i + 1; // remember where we are, so readList can pick up reading
+	          throwError(new types.Message([source, ":", line.toString(), ":", column.toString(), ": read: unexpected `" + unexpected[1] + "'"]), new Location(column, line, i, 1), "Error-GenericReadError");
+	        }
+	        throw e;
+	      }
+	      i = nextSExp.location.end().startChar + 1;
+	    }
+	    var quotedSexp = [symbol, nextSExp],
+	        quotedSpan = nextSExp.location.end().startChar + 1 - iStart;
+	
+	    quotedSexp.location = new Location(startCol, startRow, iStart, quotedSpan);
+	    return quotedSexp;
+	  }
+	
+	  // readSymbolOrNumber : String Number -> symbolExpr | types.Number
+	  // NOT OPTIMIZED BY V8, due to presence of try/catch
+	  function readSymbolOrNumber(str, i) {
+	    var startCol = column,
+	        startRow = line,
+	        iStart = i;
+	    // match anything consisting of stuff between two |bars|, **OR**
+	    // non-whitespace characters that do not include:  ( ) { } [ ] , ' ` | \\ " ;
+	    var symOrNum = new RegExp("(\\|(.|\\n)*\\||\\\\(.|\\n)|[^\\(\\)\\{\\}\\[\\]\\,\\'\\`\\s\\\"\\;])+", 'mg');
+	    var chunk = symOrNum.exec(str.slice(i))[0];
+	    // if there's an unescaped backslash at the end, throw an error
+	    var trailingEscs = /\.*\\+$/.exec(chunk);
+	    if (trailingEscs && trailingEscs[0].length % 2 > 0) {
+	      i = str.length; // jump to the end of the string
+	      endOfError = i; // remember where we are, so readList can pick up reading
+	      throwError(new types.Message([source, ":", line.toString(), ":", startCol.toString(), ": read: EOF following `\\' in symbol"]), new Location(startCol, startRow, iStart, i - iStart), "Error-GenericReadError");
+	    }
+	    // move the read head and column tracker forward
+	    i += chunk.length;column += chunk.length;
+	
+	    // remove escapes
+	    var unescaped = "";
+	    for (var j = 0; j < chunk.length; j++) {
+	      if (chunk.charAt(j) == "\\") {
+	        j++;
+	      } // if it's an escape char, skip over it and add the next one
+	      unescaped += chunk.charAt(j);
+	    }
+	    // split the chunk at each |
+	    var chunks = unescaped.split("|");
+	    // check for unbalanced |'s, and generate an error that begins at the last one
+	    // and extends for the remainder of the string
+	    if (chunks.length % 2 === 0) {
+	      endOfError = str.length;
+	      var sizeOfLastChunk = chunks[chunks.length - 1].length + 1,
+	          // add 1 for the starting '|'
+	      strBeforeLastChunk = chunk.slice(0, chunk.length - sizeOfLastChunk),
+	          lastVerbatimMarkerIndex = iStart + strBeforeLastChunk.length;
+	      // We need to go back and get more precise location information
+	      column = startCol;
+	      for (var j = 0; j < strBeforeLastChunk.length; j++) {
+	        if (str.charAt(i) === "\n") {
+	          line++;column = 0;
+	        } else {
+	          column++;
+	        }
+	      }
+	      throwError(new types.Message([source, ":", line.toString(), ":", column.toString(), ": read: unbalanced `|'"]), new Location(column, line, lastVerbatimMarkerIndex, str.length - lastVerbatimMarkerIndex), "Error-GenericReadError");
+	    }
+	
+	    // enforce case-sensitivity for non-verbatim sections.
+	    var filtered = chunks.reduce(function (acc, str, i) {
+	      // if we're inside a verbatim portion (i is even) *or* we're case sensitive, preserve case
+	      return acc += i % 2 || caseSensitiveSymbols ? str : str.toLowerCase();
+	    }, "");
+	
+	    // if it's a newline, adjust line and column trackers
+	    if (filtered === "\n") {
+	      line++;column = 0;
+	    }
+	
+	    // add bars if it's a symbol that needs those escape characters, or if the original string used an escaped number
+	    var special_chars = new RegExp("^$|[\\(\\)\\{\\}\\[\\]\\,\\'\\`\\s\\\"\\\\]", 'g');
+	    var escaped_nums = new RegExp("^.*\\\\[\\d]*.*|\\|[\\d]*\\|");
+	    filtered = escaped_nums.test(chunk) || special_chars.test(filtered) ? "|" + filtered + "|" : filtered;
+	
+	    // PERF: start out assuming it's a symbol...
+	    var node = new symbolExpr(filtered);
+	    // PERF: if it's not trivially a symbol, we take the hit of jsnums.fromString()
+	    if (chunks.length === 1 && !/^[a-zA-Z\-\?]+$/.test(filtered)) {
+	      // attempt to parse using jsnums.fromString(), assign to sexp and add location
+	      // if it's a bad number, throw an error
+	      try {
+	        var numValue = jsnums.fromString(filtered, true);
+	        // If it's a number (don't interpret zero as 'false'), that's our node
+	        if (numValue || numValue === 0) {
+	          if (numValue instanceof Object) {
+	            numValue.stx = filtered;
+	            numValue.location = new Location(startCol, startRow, iStart, i - iStart);
+	          }
+	          node = new literal(numValue);
+	        }
+	        // if it's not a number OR a symbol
+	      } catch (e) {
+	        endOfError = i; // remember where we are, so readList can pick up reading
+	        var msg = new types.Message([source, ":", startRow.toString(), ":", startCol.toString(), ": read: " + e.message]);
+	        throwError(msg, new Location(startCol, startRow, iStart, i - iStart), "Error-GenericReadError");
+	      }
+	    }
+	    node.stx = filtered; // save the string that generated the symbol/number to begin with
+	    node.location = new Location(startCol, startRow, iStart, i - iStart);
+	    return node;
+	  }
+	  /////////////////////
+	  /* Export Bindings */
+	  /////////////////////
+	  plt.compiler.lex = function (str, strSource, debug) {
+	    var start = new Date().getTime();
+	    try {
+	      var sexp = readProg(str, strSource);
+	    } // do the actual work
+	    catch (e) {
+	      console.log("LEXING ERROR");throw e;
+	    }
+	    var end = new Date().getTime();
+	    if (debug) {
+	      console.log("Lexed in " + Math.floor(end - start) + "ms");
+	      console.log(sexp);
+	      console.log(sexpToString(sexp));
+	    }
+	    return sexp;
+	  };
+	  plt.compiler.sexpToString = sexpToString;
+	})();
+	
+	module.exports = plt.compiler;
+
+/***/ },
+/* 231 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	exports.throwError = throwError;
+	exports.couple = couple;
+	exports.defFunc = defFunc;
+	exports.defVar = defVar;
+	exports.defVars = defVars;
+	exports.defStruct = defStruct;
+	exports.beginExpr = beginExpr;
+	exports.lambdaExpr = lambdaExpr;
+	exports.localExpr = localExpr;
+	exports.letrecExpr = letrecExpr;
+	exports.letExpr = letExpr;
+	exports.letStarExpr = letStarExpr;
+	exports.condExpr = condExpr;
+	exports.caseExpr = caseExpr;
+	exports.andExpr = andExpr;
+	exports.orExpr = orExpr;
+	exports.callExpr = callExpr;
+	exports.ifExpr = ifExpr;
+	exports.whenUnlessExpr = whenUnlessExpr;
+	exports.symbolExpr = symbolExpr;
+	exports.literal = literal;
+	exports.quotedExpr = quotedExpr;
+	exports.unquotedExpr = unquotedExpr;
+	exports.quasiquotedExpr = quasiquotedExpr;
+	exports.unquoteSplice = unquoteSplice;
+	exports.requireExpr = requireExpr;
+	exports.provideStatement = provideStatement;
+	exports.unsupportedExpr = unsupportedExpr;
+	exports.isExpression = isExpression;
+	exports.isDefinition = isDefinition;
+	exports.moduleBinding = moduleBinding;
+	exports.constantBinding = constantBinding;
+	exports.functionBinding = functionBinding;
+	exports.structBinding = structBinding;
+	exports.env = env;
+	exports.emptyEnv = emptyEnv;
+	exports.unnamedEnv = unnamedEnv;
+	exports.localEnv = localEnv;
+	exports.globalEnv = globalEnv;
+	exports.pinfo = pinfo;
+	exports.getBasePinfo = getBasePinfo;
+	var types = __webpack_require__(232);
+	var Vector = types.Vector;
+	
+	//////////////////////////////////////////////////////////////////////////////
+	/////////////////// COMMON FUNCTIONS AND STRUCTURES //////////////////////////
+	//////////////// used by multiple phases of the compiler/////////////////////
+	
+	var unimplementedException = function unimplementedException(str) {
+	  this.str = str;
+	};
+	
+	/**************************************************************************
+	 *
+	 *    CONVERT LOCAL COMPILER ERRORS INTO WESCHEME ERRORS
+	 *
+	 **************************************************************************/
+	// encode the msg and location as a JSON error
+	function throwError(msg, loc, errorClass) {
+	  loc.source = loc.source || "<unknown>"; // FIXME -- we should have the source populated
+	  // rewrite a ColoredPart to match the format expected by the runtime
+	  function rewritePart(part) {
+	    if (typeof part === 'string') {
+	      return part;
+	    } else if (part instanceof symbolExpr) {
+	      return '["span", [["class", "SchemeValue-Symbol"]], ' + part.val + ']';
+	      return part.val;
+	    } else if (part.location !== undefined) {
+	      return { text: part.text, type: 'ColoredPart', loc: part.location.toString(),
+	        toString: function toString() {
+	          return part.text;
+	        } };
+	    } else if (part.locations !== undefined) {
+	      return { text: part.text, type: 'MultiPart', solid: part.solid,
+	        locs: part.locations.map(function (l) {
+	          return l.toString();
+	        }),
+	        toString: function toString() {
+	          return part.text;
+	        } };
+	    }
+	  }
+	
+	  msg.args = msg.args.map(rewritePart);
+	
+	  var json = { type: "moby-failure",
+	    "dom-message": ["span", [["class", "Error"]], ["span", [["class", errorClass || "Message"]]].concat(errorClass ? [["span", [["class", "Error.reason"]], msg.toString()], ["span", [["class", (errorClass || "message") + (errorClass === "Error-GenericReadError" ? ".locations" : ".otherLocations")]]]] : msg.args.map(function (x) {
+	      return x.toString();
+	    })), ["br", [], ""], ["span", [["class", "Error.location"]], ["span", [["class", "location-reference"], ["style", "display:none"]], ["span", [["class", "location-offset"]], (loc.startChar + 1).toString()], ["span", [["class", "location-line"]], loc.startRow.toString()], ["span", [["class", "location-column"]], loc.startCol.toString()], ["span", [["class", "location-span"]], loc.span.toString()], ["span", [["class", "location-id"]], loc.source.toString()]]]],
+	    "structured-error": JSON.stringify({ message: errorClass ? false : msg.args, location: loc.toString() })
+	  };
+	  throw JSON.stringify(json);
+	}
+	
+	// couple = pair
+	function couple(first, second) {
+	  this.first = first;
+	  this.second = second;
+	  this.toString = function () {
+	    return "(" + this.first.toString() + " " + this.second.toString() + ")";
+	  };
+	};
+	
+	/**************************************************************************
+	 *
+	 *    AST Nodes
+	 *
+	 **************************************************************************/
+	
+	// Inheritance from pg 168: Javascript, the Definitive Guide.
+	var heir = function heir(p) {
+	  var f = function f() {};
+	  f.prototype = p;
+	  return new f();
+	};
+	
+	// all Programs, by default, print out their values
+	// anything that behaves differently must provide their own toString() function
+	var Program = exports.Program = function Program() {
+	  // -> String
+	  this.toString = function () {
+	    return this.val.toString();
+	  };
+	  // every Program has a location, but it's initialized to null
+	  this.location = null;
+	};
+	
+	// Function definition
+	function defFunc(name, args, body, stx) {
+	  Program.call(this);
+	  this.name = name;
+	  this.args = args;
+	  this.body = body;
+	  this.stx = stx;
+	  this.toString = function () {
+	    return "(define (" + this.name.toString() + " " + this.args.join(" ") + ")\n    " + this.body.toString() + ")";
+	  };
+	};
+	defFunc.prototype = heir(Program.prototype);
+	
+	// Variable definition
+	function defVar(name, expr, stx) {
+	  Program.call(this);
+	  this.name = name;
+	  this.expr = expr;
+	  this.stx = stx;
+	  this.toString = function () {
+	    return "(define " + this.name.toString() + " " + this.expr.toString() + ")";
+	  };
+	};
+	defVar.prototype = heir(Program.prototype);
+	
+	// Multi-Variable definition
+	function defVars(names, expr, stx) {
+	  Program.call(this);
+	  this.names = names;
+	  this.expr = expr;
+	  this.stx = stx;
+	  this.toString = function () {
+	    return "(define-values (" + this.names.join(" ") + ") " + this.expr.toString() + ")";
+	  };
+	};
+	defVars.prototype = heir(Program.prototype);
+	
+	// Structure definition
+	function defStruct(name, fields, stx) {
+	  Program.call(this);
+	  this.name = name;
+	  this.fields = fields;
+	  this.stx = stx;
+	  this.toString = function () {
+	    return "(define-struct " + this.name.toString() + " (" + this.fields.toString() + "))";
+	  };
+	};
+	defStruct.prototype = heir(Program.prototype);
+	
+	// Begin expression
+	function beginExpr(exprs, stx) {
+	  Program.call(this);
+	  this.exprs = exprs;
+	  this.stx = stx;
+	  this.toString = function () {
+	    return "(begin " + this.exprs.join(" ") + ")";
+	  };
+	};
+	beginExpr.prototype = heir(Program.prototype);
+	
+	// Lambda expression
+	function lambdaExpr(args, body, stx) {
+	  Program.call(this);
+	  this.args = args;
+	  this.body = body;
+	  this.stx = stx;
+	  this.toString = function () {
+	    return "(lambda (" + this.args.join(" ") + ") " + this.body.toString() + ")";
+	  };
+	};
+	lambdaExpr.prototype = heir(Program.prototype);
+	
+	// Local expression
+	function localExpr(defs, body, stx) {
+	  Program.call(this);
+	  this.defs = defs;
+	  this.body = body;
+	  this.stx = stx;
+	  this.toString = function () {
+	    return "(local (" + this.defs.toString() + ") " + this.body.toString() + ")";
+	  };
+	};
+	localExpr.prototype = heir(Program.prototype);
+	
+	// Letrec expression
+	function letrecExpr(bindings, body, stx) {
+	  this.bindings = bindings;
+	  this.body = body;
+	  this.stx = stx;
+	  this.toString = function () {
+	    return "(letrec (" + this.bindings.toString() + ") (" + this.body.toString() + "))";
+	  };
+	};
+	
+	// Let expression
+	function letExpr(bindings, body, stx) {
+	  this.bindings = bindings;
+	  this.body = body;
+	  this.stx = stx;
+	  this.toString = function () {
+	    return "(let (" + this.bindings.toString() + ") (" + this.body.toString() + "))";
+	  };
+	};
+	
+	// Let* expressions
+	function letStarExpr(bindings, body, stx) {
+	  this.bindings = bindings;
+	  this.body = body;
+	  this.stx = stx;
+	  this.toString = function () {
+	    return "(let* (" + this.bindings.toString() + ") (" + this.body.toString() + "))";
+	  };
+	};
+	
+	// cond expression
+	function condExpr(clauses, stx) {
+	  this.clauses = clauses;
+	  this.stx = stx;
+	  this.toString = function () {
+	    return "(cond\n    " + this.clauses.join("\n    ") + ")";
+	  };
+	};
+	
+	// Case expression
+	function caseExpr(expr, clauses, stx) {
+	  Program.call(this);
+	  this.expr = expr;
+	  this.clauses = clauses;
+	  this.stx = stx;
+	  this.toString = function () {
+	    return "(case " + this.expr.toString() + "\n    " + this.clauses.join("\n    ") + ")";
+	  };
+	};
+	caseExpr.prototype = heir(Program.prototype);
+	
+	// and expression
+	function andExpr(exprs, stx) {
+	  this.exprs = exprs;
+	  this.stx = stx;
+	  this.toString = function () {
+	    return "(and " + this.exprs.join(" ") + ")";
+	  };
+	};
+	
+	// or expression
+	function orExpr(exprs, stx) {
+	  this.exprs = exprs;
+	  this.stx = stx;
+	  this.toString = function () {
+	    return "(or " + this.exprs.toString() + ")";
+	  };
+	};
+	
+	// application expression
+	function callExpr(func, args, stx) {
+	  Program.call(this);
+	  this.func = func;
+	  this.args = args;
+	  this.stx = stx;
+	  this.toString = function () {
+	    return "(" + [this.func].concat(this.args).join(" ") + ")";
+	  };
+	};
+	callExpr.prototype = heir(Program.prototype);
+	
+	// if expression
+	function ifExpr(predicate, consequence, alternative, stx) {
+	  Program.call(this);
+	  this.predicate = predicate;
+	  this.consequence = consequence;
+	  this.alternative = alternative;
+	  this.stx = stx;
+	  this.toString = function () {
+	    return "(if " + this.predicate.toString() + " " + this.consequence.toString() + " " + this.alternative.toString() + ")";
+	  };
+	};
+	ifExpr.prototype = heir(Program.prototype);
+	
+	// when/unless expression
+	function whenUnlessExpr(predicate, exprs, stx) {
+	  Program.call(this);
+	  this.predicate = predicate;
+	  this.exprs = exprs;
+	  this.stx = stx;
+	  this.toString = function () {
+	    return "(" + this.stx[0] + " " + this.predicate.toString() + " " + this.exprs.toString() + ")";
+	  };
+	};
+	whenUnlessExpr.prototype = heir(Program.prototype);
+	
+	// symbol expression (ID)
+	function symbolExpr(val, stx) {
+	  Program.call(this);
+	  this.val = val;
+	  this.stx = stx;
+	};
+	symbolExpr.prototype = heir(Program.prototype);
+	
+	// Literal values (String, Char, Number, Vector)
+	function literal(val) {
+	  Program.call(this);
+	  this.val = val;
+	  this.toString = function () {
+	    // racket prints booleans using #t and #f
+	    if (this.val === true) return "#t";
+	    if (this.val === false) return "#f";
+	    // racket prints special chars using their names
+	    if (this.val instanceof Char) {
+	      var c = this.val.val;
+	      return c === '\b' ? '#\\backspace' : c === '\t' ? '#\\tab' : c === '\n' ? '#\\newline' : c === ' ' ? '#\\space' : c === '\v' ? '#\\vtab' :
+	      /* else */this.val.toWrittenString();
+	    }
+	    return types.toWrittenString(this.val);
+	  };
+	};
+	literal.prototype = heir(Program.prototype);
+	
+	Vector.prototype.toString = Vector.prototype.toWrittenString = function () {
+	  var filtered = this.elts.filter(function (e) {
+	    return e !== undefined;
+	  }),
+	      last = filtered[filtered.length - 1];
+	  return "#(" + this.elts.map(function (elt) {
+	    return elt === undefined ? last : elt;
+	  }) + ")";
+	};
+	
+	// quoted expression
+	function quotedExpr(val) {
+	  Program.call(this);
+	  this.val = val;
+	  this.toString = function () {
+	    function quoteLikePairP(v) {
+	      return v instanceof Array && v.length === 2 && v[0] instanceof symbolExpr && (v[0].val === 'quasiquote' || v[0].val === 'quote' || v[0].val === 'unquote' || v[0].val === 'unquote-splicing');
+	    }
+	    function shortName(lexeme) {
+	      var s = lexeme.val;
+	      return s === 'quasiquote' ? "`" : s === 'quote' ? "'" : s === 'unquote' ? "," : s === 'unquote-splicing' ? ",@" : (function () {
+	        throw "impossible quote-like string";
+	      })();
+	    }
+	    function elementToString(v) {
+	      if (quoteLikePairP(v)) {
+	        return shortName(v[0]).concat(elementToString(v[1]));
+	      } else if (v instanceof Array) {
+	        return v.reduce(function (acc, x) {
+	          return acc.concat(elementToString(x));
+	        }, "(").concat(")");
+	      } else {
+	        return v.toString();
+	      }
+	    }
+	
+	    return "'" + elementToString(this.val);
+	  };
+	};
+	quotedExpr.prototype = heir(Program.prototype);
+	
+	// unquoted expression
+	function unquotedExpr(val) {
+	  Program.call(this);
+	  this.val = val;
+	  this.toString = function () {
+	    return "," + this.val.toString();
+	  };
+	};
+	unquotedExpr.prototype = heir(Program.prototype);
+	
+	// quasiquoted expression
+	function quasiquotedExpr(val) {
+	  Program.call(this);
+	  this.val = val;
+	  this.toString = function () {
+	    if (this.val instanceof Array) return "`(" + this.val.toString() + ")";else return "`" + this.val.toString();
+	  };
+	};
+	quasiquotedExpr.prototype = heir(Program.prototype);
+	
+	// unquote-splicing
+	function unquoteSplice(val) {
+	  Program.call(this);
+	  this.val = val;
+	  this.toString = function () {
+	    return ",@" + this.val.toString();
+	  };
+	};
+	unquoteSplice.prototype = heir(Program.prototype);
+	
+	// require expression
+	function requireExpr(spec, stx) {
+	  Program.call(this);
+	  this.spec = spec;
+	  this.stx = stx;
+	  this.toString = function () {
+	    return "(require " + this.spec.toString() + ")";
+	  };
+	};
+	requireExpr.prototype = heir(Program.prototype);
+	
+	// provide expression
+	function provideStatement(clauses, stx) {
+	  Program.call(this);
+	  this.clauses = clauses;
+	  this.stx = stx;
+	  this.toString = function () {
+	    return "(provide " + this.clauses.toString() + ")";
+	  };
+	};
+	provideStatement.prototype = heir(Program.prototype);
+	
+	// Unsupported structure (allows us to generate parser errors ahead of "unsupported" errors)
+	function unsupportedExpr(val, errorMsg, errorSpan) {
+	  Program.call(this);
+	  this.val = val;
+	  this.errorMsg = errorMsg;
+	  this.errorSpan = errorSpan; // when throwing an error, we use a different span from the actual sexp span
+	  this.toString = function () {
+	    return this.val.toString();
+	  };
+	};
+	unsupportedExpr.prototype = heir(Program.prototype);
+	
+	function isExpression(node) {
+	  return !(node instanceof defVar || node instanceof defVars || node instanceof defStruct || node instanceof defFunc || node instanceof provideStatement || node instanceof unsupportedExpr || node instanceof requireExpr);
+	}
+	
+	function isDefinition(node) {
+	  return node instanceof defVar || node instanceof defVars || node instanceof defStruct || node instanceof defFunc;
+	}
+	
+	/**************************************************************************
+	 *
+	 *    STRUCTURES NEEDED BY THE COMPILER
+	 *
+	 **************************************************************************/
+	
+	// moduleBinding: records an id and its associated JS implementation.
+	function moduleBinding(name, bindings) {
+	  this.name = name;
+	  this.bindings = bindings;
+	}
+	
+	// constantBinding: records an id and its associated JS implementation.
+	function constantBinding(name, moduleSource, permissions, loc) {
+	  this.name = name;
+	  this.moduleSource = moduleSource;
+	  this.permissions = permissions;
+	  this.loc = loc;
+	  this.toString = function () {
+	    return this.name;
+	  };
+	  return this;
+	}
+	
+	// functionBinding: try to record more information about the toplevel-bound function
+	function functionBinding(name, moduleSource, minArity, isVarArity, permissions, isCps, loc) {
+	  this.name = name;
+	  this.moduleSource = moduleSource;
+	  this.minArity = minArity;
+	  this.isVarArity = isVarArity;
+	  this.permissions = permissions;
+	  this.isCps = isCps;
+	  this.loc = loc;
+	  this.toString = function () {
+	    return this.name;
+	  };
+	  return this;
+	}
+	
+	// structBinding: A binding to a structure.
+	// structBinding : symbol, ?, (listof symbol), symbol, symbol, (listof symbol) (listof symbol) (listof permission), location -> Binding
+	function structBinding(name, moduleSource, fields, constructor, predicate, accessors, mutators, permissions, loc) {
+	  this.name = name;
+	  this.moduleSource = moduleSource;
+	  this.fields = fields;
+	  this.constructor = constructor;
+	  this.predicate = predicate;
+	  this.accessors = accessors;
+	  this.mutators = mutators;
+	  this.permissions = permissions;
+	  this.loc = loc;
+	  this.toString = function () {
+	    return this.name;
+	  };
+	  return this;
+	}
+	
+	var makeHash = types.makeLowLevelEqHash;
+	var keywords = exports.keywords = ["cond", "else", "let", "case", "let*", "letrec", "quote", "quasiquote", "unquote", "unquote-splicing", "local", "begin", "if", "or", "and", "when", "unless", "lambda", "λ", "define", "define-struct", "define-values"];
+	
+	// ENVIRONMENT STRUCTS ////////////////////////////////////////////////////////////////
+	// Representation of the stack environment of the mzscheme vm, so we know where
+	// things live.
+	function env(bindings) {
+	  var that = this;
+	  this.bindings = bindings || makeHash();
+	
+	  // lookup : Symbol -> (or/c binding false)
+	  this.lookup = function (id) {
+	    return this.bindings.containsKey(id) ? this.bindings.get(id) : false;
+	  };
+	
+	  // peek: Number -> env
+	  this.peek = function (depth) {
+	    return depth == 0 ? this : this instanceof emptyEnv ? "IMPOSSIBLE - peeked at an emptyEnv!"
+	    /* else */ : this.parent.peek(depth - 1);
+	  };
+	
+	  // contains?: symbol -> boolean
+	  this.contains = function (name) {
+	    return this.lookup(name) !== false;
+	  };
+	
+	  // keys : -> (listof symbol)
+	  this.keys = this.bindings.keys;
+	
+	  // extend: binding -> env
+	  this.extend = function (binding) {
+	    this.bindings.put(binding.name, binding);
+	    return new env(this.bindings);
+	  };
+	
+	  // extendFunction : symbol (or/c string false) number boolean? Loc -> env
+	  // Extends the environment with a new function binding
+	  this.extendFunction = function (id, moduleSource, minArity, isVarArity, loc) {
+	    return this.extend(new functionBinding(id, moduleSource, minArity, isVarArity, [], false, loc));
+	  };
+	
+	  // extendConstant : string (modulePath || false) Loc -> env
+	  this.extendConstant = function (id, moduleSource, loc) {
+	    return this.extend(new constantBinding(id, moduleSource, [], loc));
+	  };
+	
+	  // lookup_context: identifier -> (binding | false)
+	  // Lookup an identifier, taking into account the context of the identifier.  If it has no existing
+	  // context, look at the given env. In either case, either return a binding, or false.
+	  this.lookup_context = function (id) {
+	    if (id.context instanceof env) {
+	      return id.context.contains(id) ? id.context.lookup(id) : false;
+	    } else {
+	      return that.contains(id) ? that.lookup(id) : false;
+	    }
+	  };
+	
+	  // traverse rthe bindings of the module
+	  this.extendEnv_moduleBinding = function (module) {
+	    return module.bindings.reduceRight(function (env, binding) {
+	      return env.extend(binding);
+	    }, this);
+	  };
+	
+	  this.toString = function () {
+	    return this.bindings.values().reduce(function (s, b) {
+	      return s + "\n  |---" + b.name;
+	    }, "");
+	  };
+	}
+	
+	// sub-classes of env
+	function emptyEnv() {
+	  env.call(this);
+	  // TODO: fix this circular dependency
+	  var compiler = __webpack_require__(235);
+	  this.lookup = function (name, depth) {
+	    return new compiler.unboundStackReference(name);
+	  };
+	}
+	emptyEnv.prototype = heir(env.prototype);
+	
+	function unnamedEnv(parent) {
+	  env.call(this);
+	  this.parent = parent;
+	  this.lookup = function (name, depth) {
+	    return this.parent.lookup(name, depth + 1);
+	  };
+	}
+	unnamedEnv.prototype = heir(env.prototype);
+	
+	function localEnv(name, boxed, parent) {
+	  env.call(this);
+	  this.name = name;
+	  this.boxed = boxed;
+	  this.parent = parent;
+	  this.lookup = function (name, depth) {
+	
+	    // TODO: fix this circular dependency
+	    var compiler = __webpack_require__(235);
+	    return name === this.name ? new compiler.localStackReference(name, this.boxed, depth) : this.parent.lookup(name, depth + 1);
+	  };
+	}
+	localEnv.prototype = heir(env.prototype);
+	
+	function globalEnv(names, boxed, parent) {
+	  env.call(this);
+	  this.names = names;
+	  this.boxed = boxed;
+	  this.parent = parent;
+	  var that = this;
+	  this.lookup = function (name, depth) {
+	    var pos = this.names.indexOf(name);
+	    // TODO: fix this circular dependency
+	    var compiler = __webpack_require__(235);
+	    return pos > -1 ? new compiler.globalStackReference(name, depth, pos) : this.parent.lookup(name, depth + 1);
+	  };
+	}
+	globalEnv.prototype = heir(env.prototype);
+	
+	// PINFO STRUCTS ////////////////////////////////////////////////////////////////
+	var defaultCurrentModulePath = "";
+	
+	// default-module-resolver: symbol -> (module-binding | false)
+	// loop through known modules and see if we know this name
+	var defaultModuleResolver = exports.defaultModuleResolver = function defaultModuleResolver(name) {
+	  // TODO: fix this circular dependency
+	  var modules = __webpack_require__(236);
+	  for (var i = 0; i < modules.knownModules.length; i++) {
+	    if (modules.knownModules[i].name === name) return modules.knownModules[i];
+	  }
+	  return false;
+	};
+	
+	// Compute the edit distance between the two given strings
+	// from http://en.wikibooks.org/wiki/Algorithm_Implementation/Strings/Levenshtein_distance
+	function levenshteinDistance(a, b) {
+	  if (a.length === 0) return b.length;
+	  if (b.length === 0) return a.length;
+	
+	  var matrix = [];
+	
+	  // increment along the first column of each row
+	  for (var i = 0; i <= b.length; i++) {
+	    matrix[i] = [i];
+	  }
+	
+	  // increment each column in the first row
+	  for (var j = 0; j <= a.length; j++) {
+	    matrix[0][j] = j;
+	  }
+	
+	  // Fill in the rest of the matrix
+	  for (i = 1; i <= b.length; i++) {
+	    for (j = 1; j <= a.length; j++) {
+	      if (b.charAt(i - 1) == a.charAt(j - 1)) {
+	        matrix[i][j] = matrix[i - 1][j - 1];
+	      } else {
+	        matrix[i][j] = Math.min(matrix[i - 1][j - 1] + 1, // substitution
+	        Math.min(matrix[i][j - 1] + 1, // insertion
+	        matrix[i - 1][j] + 1)); // deletion
+	      }
+	    }
+	  }
+	  return matrix[b.length][a.length];
+	};
+	
+	// moduleGuess: symbol -> symbol
+	// loop through known modules and make best suggestion for a given name
+	var moduleGuess = exports.moduleGuess = function moduleGuess(wrongName) {
+	  // TODO: fix this circular dependency
+	  var modules = __webpack_require__(236);
+	  return modules.knownModules.reduce(function (best, module) {
+	    var dist = levenshteinDistance(module.name, wrongName);
+	    return dist < best.distance ? { name: module.name, distance: dist } : best;
+	  }, { name: wrongName, distance: 5 });
+	};
+	
+	// default-module-path-resolver: module-path module-path -> module-name
+	// Provides a default module resolver.
+	var defaultModulePathResolver = exports.defaultModulePathResolver = function defaultModulePathResolver(path, parentPath) {
+	  /*    var name = (path instanceof symbolExpr)? path : modulePathJoin(parentPath, path)),
+	    moduleName = knownModules.reduceRight(function(name, km){
+	    return (km.source === modulePathJoin(parentPath, path))? km.name : name;}
+	    , name);
+	  */
+	  // anything of the form wescheme/w+, or that has a known collection AND module
+	  var parts = path.toString().split("/"),
+	      collectionName = parts[0],
+	      moduleName = parts.slice(1).join();
+	  // TODO: fix this circular dependency
+	  var modules = __webpack_require__(236);
+	  return modules.knownCollections.indexOf(collectionName) > -1 && defaultModuleResolver(path.toString()) || /^wescheme\/\w+$/.exec(path);
+	};
+	
+	// pinfo (program-info) is the "world" structure for the compilers;
+	// it captures the information we get from analyzing and compiling
+	// the program, and also maintains some auxillary structures.
+	function pinfo(env, modules, usedBindingsHash, freeVariables, gensymCounter, providedNames, definedNames, sharedExpressions, withLocationEmits, allowRedefinition, moduleResolver, modulePathResolver, currentModulePath, declaredPermissions) {
+	  this.env = env || new emptyEnv(); // env
+	  this.modules = modules || []; // (listof module-binding)
+	  this.usedBindingsHash = usedBindingsHash || makeHash(); // (hashof symbol binding)
+	  this.freeVariables = freeVariables || []; // (listof symbol)
+	  this.gensymCounter = gensymCounter || 0; // number
+	  this.providedNames = providedNames || makeHash(); // (hashof symbol provide-binding)
+	  this.definedNames = definedNames || makeHash(); // (hashof symbol binding)
+	
+	  this.sharedExpressions = sharedExpressions || makeHash(); // (hashof expression labeled-translation)
+	  // Maintains a mapping between expressions and a labeled translation.  Acts
+	  // as a symbol table to avoid duplicate construction of common literal values.
+	
+	  this.withLocationEmits = withLocationEmits || true; // boolean
+	  // If true, the compiler emits calls to plt.Kernel.setLastLoc to maintain
+	  // source position during evaluation.
+	
+	  this.allowRedefinition = allowRedefinition || false; // boolean
+	  // If true, redefinition of a value that's already defined will not raise an error.
+	
+	  // For the module system.
+	  // (module-name -> (module-binding | false))
+	  this.moduleResolver = moduleResolver || defaultModuleResolver;
+	  // (string module-path -> module-name)
+	  this.modulePathResolver = modulePathResolver || defaultModulePathResolver;
+	  // module-path
+	  this.currentModulePath = currentModulePath || defaultCurrentModulePath;
+	
+	  this.declaredPermissions = declaredPermissions || []; // (listof (listof symbol any/c))
+	
+	  /////////////////////////////////////////////////
+	  // functions for manipulating pinfo objects
+	  this.isRedefinition = function (name) {
+	    return this.env.lookup(name);
+	  };
+	
+	  // usedBindings: -> (listof binding)
+	  // Returns the list of used bindings computed from the program analysis.
+	  this.usedBindings = this.usedBindingsHash.values;
+	
+	  this.accumulateDeclaredPermission = function (name, permission) {
+	    this.declaredPermissions = [[name, permission]].concat(this.declaredPermissions);
+	    return this;
+	  };
+	
+	  this.accumulateSharedExpression = function (expression, translation) {
+	    var labeledTranslation = makeLabeledTranslation(this.gensymCounter, translation);
+	    this.sharedExpressions.put(labeledTranslation, expression);
+	    return this;
+	  };
+	
+	  // accumulateDefinedBinding: binding loc -> pinfo
+	  // Adds a new defined binding to a pinfo's set.
+	  this.accumulateDefinedBinding = function (binding, loc) {
+	    if (keywords.indexOf(binding.name) > -1) {
+	      throwError(new types.Message([new types.ColoredPart(binding.name, binding.loc), ": this is a reserved keyword and cannot be used" + " as a variable or function name"]), binding.loc);
+	    } else if (!this.allowRedefinition && this.isRedefinition(binding.name)) {
+	      var prevBinding = this.env.lookup(binding.name);
+	      if (prevBinding.loc) {
+	        throwError(new types.Message([new types.ColoredPart(binding.name, binding.loc), ": this name has a ", new types.ColoredPart("previous definition", prevBinding.loc), " and cannot be re-defined"]), binding.loc);
+	      } else {
+	        throwError(new types.Message([new types.ColoredPart(binding.name, binding.loc), ": this name has a ", "previous definition", " and cannot be re-defined"]), binding.loc);
+	      }
+	    } else {
+	      this.env.extend(binding);
+	      this.definedNames.put(binding.name, binding);
+	      return this;
+	    }
+	  };
+	
+	  // accumulateBindings: (listof binding) Loc -> pinfo
+	  // Adds a list of defined bindings to the pinfo's set.
+	  this.accumulateDefinedBindings = function (bindings, loc) {
+	    var that = this;
+	    bindings.forEach(function (b) {
+	      that.accumulateDefinedBinding(b, loc);
+	    });
+	    return this;
+	  };
+	
+	  // accumuldateModuleBindings: (listof binding) -> pinfo
+	  // Adds a list of module-imported bindings to the pinfo's known set of bindings, without
+	  // including them within the set of defined names.
+	  this.accumulateModuleBindings = function (bindings) {
+	    var that = this;
+	    bindings.forEach(function (b) {
+	      that.env.extend(b);
+	    });
+	    return this;
+	  };
+	
+	  // accumulateModule: module-binding -> pinfo
+	  // Adds a module to the pinfo's set.
+	  this.accumulateModule = function (module) {
+	    this.modules = [module].concat(this.modules);
+	    return this;
+	  };
+	
+	  // accumulateBindingUse: binding -> pinfo
+	  // Adds a binding's use to a pinfo's set, if it has not already been used as a global
+	  // This qualifier allows a fn argument to shadow a global, without removing it from the environment
+	  this.accumulateBindingUse = function (binding) {
+	    var alreadyExists = this.usedBindingsHash.get(binding.name);
+	    // if it's a module binding, don't replace it with a different kind of binding
+	    if (!(alreadyExists && alreadyExists.moduleSource)) this.usedBindingsHash.put(binding.name, binding);
+	    return this;
+	  };
+	
+	  // accumulateFreeVariableUse: symbol -> pinfo
+	  // Mark a free variable usage.
+	  this.accumulateFreeVariableUse = function (sym) {
+	    this.freeVariables = this.freeVariables.indexOf(sym) > -1 ? this.freeVariables : [sym].concat(this.freeVariables);
+	    return this;
+	  };
+	
+	  // gensym: symbol -> [pinfo, symbol]
+	  // Generates a unique symbol
+	  this.gensym = function (label) {
+	    return [this, new symbolExpr(label + this.gensymCounter++)];
+	  };
+	
+	  // permissions: -> (listof permission)
+	  // Given a pinfo, collect the list of permissions.
+	  this.permissions = function () {
+	    // onlyUnique : v, idx, arr -> arr with unique elts
+	    // from http://stackoverflow.com/questions/1960473/unique-values-in-an-array
+	    function onlyUnique(value, index, self) {
+	      return self.indexOf(value) === index;
+	    }
+	    // if it's a function or constant binding, add its permissions to the list
+	    function reducePermissions(permissions, b) {
+	      return (b instanceof functionBinding || b instanceof constantBinding) && b.permissions.length > 0 ? permissions.concat(b.permissions) : permissions;
+	    }
+	    return this.usedBindings().reduce(reducePermissions, []).filter(onlyUnique);
+	  };
+	
+	  // getExposedBindings:  -> (listof binding)
+	  // Extract the list of the defined bindings that are exposed by provide.
+	  this.getExposedBindings = function () {
+	    var that = this;
+	    // lookupProvideBindingInDefinitionBindings: provide-binding compiled-program -> (listof binding)
+	    // Lookup the provided bindings.
+	    function lookupProvideBindingInDefinitionBindings(provideBinding) {
+	      // if it's not defined, throw an error
+	      if (!that.definedNames.containsKey(provideBinding.symbl)) {
+	        throwError(new types.Message(["provided-name-not-defined: ", provideBinding.symbl]));
+	      }
+	      // if it IS defined, let's examine it and make sure it is what it claims to be
+	      var binding = checkBindingCompatibility(binding, that.definedNames.get(provideBinding.symbl));
+	
+	      // ref: symbol -> binding
+	      // Lookup the binding, given the symbolic identifier.
+	      function ref(id) {
+	        return that.definedNames.get(id);
+	      }
+	
+	      // if it's a struct provide, return a list containing the constructor and predicate,
+	      // along with all the accessor and mutator functions
+	      // TODO: fix this circular dependency
+	      var analyzer = __webpack_require__(237);
+	      if (provideBinding instanceof analyzer.provideBindingStructId) {
+	        return [ref(binding.constructor), ref(binding.predicate)].concat(binding.accessors.map(ref), binding.mutators.map(ref));
+	      } else {
+	        return [binding];
+	      }
+	    }
+	
+	    // decorateWithPermissions: binding -> binding
+	    // THIS IS A HACK according to Danny's original sources...not sure why
+	    function decorateWithPermissions(binding) {
+	      var bindingEntry = function bindingEntry(entry) {
+	        return entry[0] === binding.name;
+	      },
+	          filteredPermissions = that.declaredPermissions.filter(bindingEntry);
+	      binding.permissions = filteredPermissions.map(function (p) {
+	        return p[1];
+	      });
+	      return binding;
+	    }
+	
+	    // Make sure that if the provide says "struct-out ...", that the exported binding
+	    // is really a structure.
+	    function checkBindingCompatibility(binding, exportedBinding) {
+	      // TODO: fix this circular dependency
+	      var analyzer = __webpack_require__(237);
+	      if (binding instanceof analyzer.provideBindingStructId && !(exportedBinding instanceof structBinding)) {
+	        throwError(new types.Message(["provided-structure-not-structure: ", exportedBinding.symbl]));
+	      } else {
+	        return exportedBinding;
+	      }
+	    }
+	
+	    // for each provide binding, ensure it's defined and then decorate with permissions
+	    // concat all the permissions and bindings together, and return
+	    bindings = bindings.reduce(function (acc, b) {
+	      return acc.concat(lookupProvideBindingInDefinitionBindings(b));
+	    }, []);
+	    return bindings.map(decorateWithPermissions);
+	  };
+	
+	  this.toString = function () {
+	    var s = "pinfo-------------";
+	    s += "\n**env****: " + this.env.toString();
+	    s += "\n**modules**: " + this.modules.join(",");
+	    s += "\n**used bindings**: " + this.usedBindings();
+	    s += "\n**free variables**: " + this.freeVariables.join(",");
+	    s += "\n**gensym counter**: " + this.gensymCounter;
+	    s += "\n**provided names**: " + this.providedNames.values();
+	    s += "\n**defined names**: " + this.definedNames.values();
+	    s += "\n**permissions**: " + this.permissions();
+	    return s;
+	  };
+	}
+	
+	// getBasePinfo: symbol -> pinfo
+	// Returns a pinfo that knows the base definitions. Language can be one of the following:
+	// 'base
+	// 'moby
+	function getBasePinfo(language) {
+	  // fixme: use the language to limit what symbols get in the toplevel.
+	  var baseConstantsEnv = ["null", "empty", "true" //effect:do-nothing
+	  , "false", "eof", "pi", "e", "js-undefined", "js-null"].reduce(function (env, id) {
+	    return env.extendConstant(id.toString(), '"moby/toplevel"', false);
+	  }, new emptyEnv());
+	
+	  var info = new pinfo();
+	  // TODO: fix this circular dependency
+	  var modules = __webpack_require__(236);
+	  var topLevelEnv = modules = modules.topLevelModules.reduceRight(function (env, mod) {
+	    return env.extendEnv_moduleBinding(mod);
+	  }, baseConstantsEnv);
+	  if (language === "moby") {
+	    info.env = topLevelEnv.extendEnv_moduleBinding(mobyModuleBinding);
+	  } else if (language === "base") {
+	    info.env = topLevelEnv;
+	  }
+	  return info;
+	}
+
+/***/ },
+/* 232 */
+/***/ function(module, exports, __webpack_require__) {
+
+	//////////////////////////////////////////////////////////////////////
+	// helper functions
+	
+	var jsnums = __webpack_require__(233);
+	var _Hashtable = __webpack_require__(234);
+	
+	var types = {};
+	
+	
+	(function () {
+	
+	//////////////////////////////////////////////////////////////////////
+	
+	
+	var appendChild = function(parent, child) {
+	    parent.appendChild(child);
+	};
+	
+	
+	
+	var hasOwnProperty = {}.hasOwnProperty;
+	
+	//////////////////////////////////////////////////////////////////////
+	
+	
+	
+	var _eqHashCodeCounter = 0;
+	var makeEqHashCode = function() {
+	    _eqHashCodeCounter++;
+	    return _eqHashCodeCounter;
+	};
+	
+	    
+	// getHashCode: any -> (or fixnum string)
+	// Produces a hashcode appropriate for eq.
+	var getEqHashCode = function(x) {
+	    if (x && !x._eqHashCode) {
+		x._eqHashCode = makeEqHashCode();
+	    }
+	    if (x && x._eqHashCode) {
+		return x._eqHashCode;
+	    }
+	    if (typeof(x) == 'string') {
+		return x;
+	    }
+	    return 0;
+	};
+	
+	
+	// Union/find for circular equality testing.
+	
+	var UnionFind = function() {
+		// this.parenMap holds the arrows from an arbitrary pointer
+		// to its parent.
+		this.parentMap = makeLowLevelEqHash();
+	}
+	
+	// find: ptr -> UnionFindNode
+	// Returns the representative for this ptr.
+	UnionFind.prototype.find = function(ptr) {
+		var parent = (this.parentMap.containsKey(ptr) ? 
+			      this.parentMap.get(ptr) : ptr);
+		if (parent === ptr) {
+		    return parent;
+		} else {
+		    var rep = this.find(parent);
+		    // Path compression:
+		    this.parentMap.put(ptr, rep);
+		    return rep;
+		}
+	};
+	
+	// merge: ptr ptr -> void
+	// Merge the representative nodes for ptr1 and ptr2.
+	UnionFind.prototype.merge = function(ptr1, ptr2) {
+		this.parentMap.put(this.find(ptr1), this.find(ptr2));
+	};
+	
+	
+	
+	//////////////////////////////////////////////////////////////////////
+	
+	// Class inheritance infrastructure
+	
+	// This code copied directly from http://ejohn.org/blog/simple-javascript-inheritance/
+	var Class = (function(){
+		var initializing = false, fnTest = /xyz/.test(function(){xyz;}) ? /\b_super\b/ : /.*/;
+		// The base Class implementation (does nothing)
+		var innerClass = function(){};
+		
+		// Create a new Class that inherits from this class
+		innerClass.extend = function(prop) {
+			var _super = this.prototype;
+			
+			// Instantiate a base class (but only create the instance,
+			// don't run the init constructor)
+			initializing = true;
+			var prototype = new this();
+			initializing = false;
+			
+			// Copy the properties over onto the new prototype
+			for (var name in prop) {
+				// Check if we're overwriting an existing function
+				prototype[name] = typeof prop[name] == "function" && 
+					typeof _super[name] == "function" && fnTest.test(prop[name]) ?
+					(function(name, fn){
+						return function() {
+							var tmp = this._super;
+							
+							// Add a new ._super() method that is the same method
+							// but on the super-class
+							this._super = _super[name];
+							
+							// The method only need to be bound temporarily, so we
+							// remove it when we're done executing
+							var ret = fn.apply(this, arguments);				
+							this._super = tmp;
+							
+							return ret;
+						};
+					})(name, prop[name]) :
+					prop[name];
+			}
+			
+			// The dummy class constructor
+			var Dummy = function() {
+				// All construction is actually done in the init method
+				if ( !initializing && this.init )
+					this.init.apply(this, arguments);
+			}
+			
+			// Populate our constructed prototype object
+			Dummy.prototype = prototype;
+			
+			// Enforce the constructor to be what we expect
+			Dummy.constructor = Dummy;
+	
+			// And make this class extendable
+			Dummy.extend = arguments.callee;
+			
+			return Dummy;
+		};
+		return innerClass;
+	})();
+	 
+	function makeLParen(){
+	   var node = document.createElement('span');
+	   node.appendChild(document.createTextNode("("));
+	   node.className = "lParen";
+	   return node;
+	}
+	
+	function makeRParen(){
+	   var node = document.createElement('span');
+	   node.appendChild(document.createTextNode(")"));
+	   node.className = "rParen";
+	   return node;
+	}
+	
+	//////////////////////////////////////////////////////////////////////
+	
+	
+	var StructType = function(name, type, numberOfArgs, numberOfFields, firstField,
+			      constructor, predicate, accessor, mutator) {
+		this.name = name;
+		this.type = type;
+		this.numberOfArgs = numberOfArgs;
+		this.numberOfFields = numberOfFields;
+		this.firstField = firstField;
+	
+		this.constructor = constructor;
+		this.predicate = predicate;
+		this.accessor = accessor;
+		this.mutator = mutator;
+	};
+	
+	StructType.prototype.toString = function() {
+		return '#<struct-type:' + this.name + '>';
+	};
+	
+	StructType.prototype.isEqual = function(other, aUnionFind) {
+		return this === other;
+	};
+	
+	
+	var makeStructureType = function(theName, parentType, initFieldCnt, autoFieldCnt, autoV, guard) {
+	    // If no parent type given, then the parent type is Struct
+	    if ( !parentType ) {
+		parentType = ({type: Struct,
+			       numberOfArgs: 0,
+			       numberOfFields: 0,
+			       firstField: 0});
+	    }
+	    var numParentArgs = parentType.numberOfArgs;
+	
+	    // Create a new struct type inheriting from the parent
+	    var aStruct = parentType.type.extend({
+		init: function(name, initArgs) {
+			// if there's no guard, construct a default one
+	
+			if (!guard) {
+				guard = function(k) {
+					if (arguments.length == 3) {
+						k(arguments[1]);
+					}
+					else {
+						var args = [];
+						var i;
+						for(i = 1; i < arguments.length-1; i++) {
+							args.push(arguments[i]);
+						}
+						k(new ValuesWrapper(args));
+					}
+				}
+			}
+	
+			var that = this;
+			var cont = function(guardRes) {
+				var guardedArgs;
+				if ( guardRes instanceof ValuesWrapper ) {
+					guardedArgs = guardRes.elts;
+				} else {
+					guardedArgs = [guardRes];
+				}
+				
+				var parentArgs = guardedArgs.slice(0, numParentArgs);
+				that._super(name, parentArgs);
+	
+				for (var i = 0; i < initFieldCnt; i++) {
+					that._fields.push(guardedArgs[i+numParentArgs]);
+				}
+				for (var i = 0; i < autoFieldCnt; i++) {
+					that._fields.push(autoV);
+				}
+			};
+			initArgs.unshift(cont);
+			initArgs.push(Symbol.makeInstance(name));
+			guard.apply(null, initArgs);
+		}
+	    });
+	    // Set type, necessary for equality checking
+	    aStruct.prototype.type = aStruct;
+	
+	    // construct and return the new type
+	    return new StructType(theName,
+				  aStruct,
+				  initFieldCnt + numParentArgs,
+				  initFieldCnt + autoFieldCnt,
+				  parentType.firstField + parentType.numberOfFields,
+				  function() {
+				  	var args = [];
+					for (var i = 0; i < arguments.length; i++) {
+						args.push(arguments[i]);
+					}
+					return new aStruct(theName, args);
+				  },
+				  function(x) { return x instanceof aStruct; },
+				  function(x, i) { return x._fields[i + this.firstField]; },
+				  function(x, i, v) { x._fields[i + this.firstField] = v; });
+	};
+	
+	// Structures.
+	var Struct = Class.extend({
+		init: function (constructorName, fields) {
+		    this._constructorName = constructorName; 
+		    this._fields = [];
+		},
+	
+		toWrittenString: function(cache) { 
+		    //    cache.put(this, true);
+		    var buffer = [];
+		    var i;
+		    buffer.push("(");
+		    buffer.push(this._constructorName);
+		    for(i = 0; i < this._fields.length; i++) {
+			buffer.push(" ");
+			buffer.push(toWrittenString(this._fields[i], cache));
+		    }
+		    buffer.push(")");
+		    return buffer.join("");
+		},
+	
+		toDisplayedString: function(cache) { return this.toWrittenString(cache); },
+	
+		toDomNode: function(cache) {
+		    //    cache.put(this, true);
+		    var node = document.createElement("div"),
+	            constructor= document.createElement("span");
+	            constructor.appendChild(document.createTextNode(this._constructorName));
+		    var i;
+		    node.appendChild(makeLParen());
+		    node.appendChild(constructor);
+		    for(i = 0; i < this._fields.length; i++) {
+	                appendChild(node, toDomNode(this._fields[i], cache));
+		    }
+		    node.appendChild(makeRParen());
+		    return node;
+		},
+	
+	
+		isEqual: function(other, aUnionFind) {
+		    if ( other.type == undefined ||
+			 this.type !== other.type ||
+			 !(other instanceof this.type) ) {
+			    return false;
+		    }
+	
+		    for (var i = 0; i < this._fields.length; i++) {
+			if (! isEqual(this._fields[i],
+				      other._fields[i],
+				      aUnionFind)) {
+				return false;
+			}
+		    }
+		    return true;
+		}
+	});
+	Struct.prototype.type = Struct;
+	
+	
+	
+	//////////////////////////////////////////////////////////////////////
+	
+	// Regular expressions.
+	
+	var RegularExpression = function(pattern) {
+	    this.pattern = pattern;
+	};
+	
+	
+	var ByteRegularExpression = function(pattern) {
+	    this.pattern = pattern;
+	};
+	
+	
+	
+	
+	//////////////////////////////////////////////////////////////////////
+	
+	// Paths
+	
+	var Path = function(p) {
+	    this.path = p;
+	};
+	
+	
+	//////////////////////////////////////////////////////////////////////
+	
+	// Bytes
+	
+	var Bytes = function(bts, mutable) {
+	    this.bytes = bts;
+	    this.mutable = (mutable === undefined) ? false : mutable;
+	};
+	
+	Bytes.prototype.get = function(i) {
+		return this.bytes[i];
+	};
+	
+	Bytes.prototype.set = function(i, b) {
+		if (this.mutable) {
+			this.bytes[i] = b;
+		}
+	};
+	
+	Bytes.prototype.length = function() {
+		return this.bytes.length;
+	};
+	
+	Bytes.prototype.copy = function(mutable) {
+		return new Bytes(this.bytes.slice(0), mutable);
+	};
+	
+	Bytes.prototype.subbytes = function(start, end) {
+		if (end == null || end == undefined) {
+			end = this.bytes.length;
+		}
+		
+		return new Bytes( this.bytes.slice(start, end), true );
+	};
+	
+	
+	Bytes.prototype.toString = function() {
+		var ret = '';
+		for (var i = 0; i < this.bytes.length; i++) {
+			ret += String.fromCharCode(this.bytes[i]);
+		}
+	
+		return ret;
+	};
+	
+	Bytes.prototype.toDisplayedString = Bytes.prototype.toString;
+	
+	Bytes.prototype.toWrittenString = function() {
+		var ret = ['#"'];
+		for (var i = 0; i < this.bytes.length; i++) {
+			ret.push( escapeByte(this.bytes[i]) );
+		}
+		ret.push('"');
+		return ret.join('');
+	};
+	
+	var escapeByte = function(aByte) {
+		var ret = [];
+		var returnVal;
+		switch(aByte) {
+			case 7: returnVal = '\\a'; break;
+			case 8: returnVal = '\\b'; break;
+			case 9: returnVal = '\\t'; break;
+			case 10: returnVal = '\\n'; break;
+			case 11: returnVal = '\\v'; break;
+			case 12: returnVal = '\\f'; break;
+			case 13: returnVal = '\\r'; break;
+			case 34: returnVal = '\\"'; break;
+			case 92: returnVal = '\\\\'; break;
+			default: if (val >= 32 && val <= 126) {
+					 returnVal = String.fromCharCode(val);
+				 }
+				 else {
+					 ret.push( '\\' + val.toString(8) );
+				 }
+				 break;
+		}
+		return returnVal;
+	};
+	
+	
+	
+	
+	//////////////////////////////////////////////////////////////////////
+	// Boxes
+	    
+	var Box = function(x, mutable) {
+		this.val = x;
+		this.mutable = mutable;
+	};
+	
+	Box.prototype.unbox = function() {
+	    return this.val;
+	};
+	
+	Box.prototype.set = function(newVal) {
+	    if (this.mutable) {
+		    this.val = newVal;
+	    }
+	};
+	
+	Box.prototype.toString = function() {
+	    return "#&" + this.val.toString();
+	};
+	
+	Box.prototype.toWrittenString = function(cache) {
+	    return "#&" + toWrittenString(this.val, cache);
+	};
+	
+	Box.prototype.toDisplayedString = function(cache) {
+	    return "#&" + toDisplayedString(this.val, cache);
+	};
+	
+	Box.prototype.toDomNode = function(cache) {
+	    var parent = document.createElement("span"),
+	    boxSymbol = document.createElement("span");
+	    boxSymbol.appendChild(document.createTextNode("#&"));
+	    parent.className = "wescheme-box";
+	    parent.appendChild(boxSymbol);
+	    parent.appendChild(toDomNode(this.val, cache));
+	    return parent;
+	};
+	
+	//////////////////////////////////////////////////////////////////////
+	
+	
+	
+	
+	
+	
+	
+	
+	// We are reusing the built-in Javascript boolean class here.
+	Logic = {
+	    TRUE : true,
+	    FALSE : false
+	};
+	
+	// WARNING
+	// WARNING: we are extending the built-in Javascript boolean class here!
+	// WARNING
+	Boolean.prototype.toWrittenString = function(cache) {
+	    if (this.valueOf()) { return "true"; }
+	    return "false";
+	};
+	Boolean.prototype.toDisplayedString = Boolean.prototype.toWrittenString;
+	
+	Boolean.prototype.toString = function() { return this.valueOf() ? "true" : "false"; };
+	
+	Boolean.prototype.isEqual = function(other, aUnionFind){
+	    return this == other;
+	};
+	
+	
+	
+	
+	// Chars
+	// Char: string -> Char
+	Char = function(val){
+	    this.val = val;
+	};
+	    
+	Char.makeInstance = function(val){
+	    return new Char(val);
+	};
+	
+	Char.prototype.toString = function() {
+		var code = this.val.charCodeAt(0);
+		var returnVal;
+		switch (code) {
+			case 0: returnVal = '#\\nul'; break;
+			case 8: returnVal = '#\\backspace'; break;
+			case 9: returnVal = '#\\tab'; break;
+			case 10: returnVal = '#\\newline'; break;
+			case 11: returnVal = '#\\vtab'; break;
+			case 12: returnVal = '#\\page'; break;
+			case 13: returnVal = '#\\return'; break;
+			case 20: returnVal = '#\\space'; break;
+			case 127: returnVal = '#\\rubout'; break;
+			default: if (code >= 32 && code <= 126) {
+					 returnVal = ("#\\" + this.val);
+				 }
+				 else {
+					 var numStr = code.toString(16).toUpperCase();
+					 while (numStr.length < 4) {
+						 numStr = '0' + numStr;
+					 }
+					 returnVal = ('#\\u' + numStr);
+				 }
+				 break;
+		}
+		return returnVal;
+	};
+	
+	Char.prototype.toWrittenString = Char.prototype.toString;
+	
+	Char.prototype.toDisplayedString = function (cache) {
+	    return this.val;
+	};
+	
+	Char.prototype.getValue = function() {
+	    return this.val;
+	};
+	
+	Char.prototype.isEqual = function(other, aUnionFind){
+	    return other instanceof Char && this.val == other.val;
+	};
+	
+	//////////////////////////////////////////////////////////////////////
+	    
+	// Symbols
+	
+	//////////////////////////////////////////////////////////////////////
+	var Symbol = function(val) {
+	    this.val = val;
+	};
+	
+	var symbolCache = {};
+	    
+	// makeInstance: string -> Symbol.
+	Symbol.makeInstance = function(val) {
+	    // To ensure that we can eq? symbols with equal values.
+	    if (!(hasOwnProperty.call(symbolCache, val))) {
+		symbolCache[val] = new Symbol(val);
+	    }
+	    return symbolCache[val];
+	};
+	    
+	Symbol.prototype.isEqual = function(other, aUnionFind) {
+	    return other instanceof Symbol &&
+	    this.val == other.val;
+	};
+	    
+	
+	Symbol.prototype.toString = function() {
+	    return this.val;
+	};
+	
+	Symbol.prototype.toWrittenString = function(cache) {
+	    return this.val;
+	};
+	
+	Symbol.prototype.toDisplayedString = function(cache) {
+	    return this.val;
+	};
+	
+	Symbol.prototype.toDomNode = function(cache) {
+	    var wrapper = document.createElement("span");
+	    wrapper.className = "wescheme-symbol";
+	    wrapper.style.fontFamily = 'monospace';
+	    wrapper.style.whiteSpace = "pre";
+	    wrapper.appendChild(document.createTextNode("'" + this.val));
+	    return wrapper;
+	};
+	
+	
+	
+	//////////////////////////////////////////////////////////////////////
+	
+	
+	
+	
+	
+	
+	// Keywords
+	
+	var Keyword = function(val) {
+	    this.val = val;
+	};
+	
+	var keywordCache = {};
+	    
+	
+	// makeInstance: string -> Keyword.
+	Keyword.makeInstance = function(val) {
+	    // To ensure that we can eq? symbols with equal values.
+	    if (!(hasOwnProperty.call(keywordCache, val))) {
+		keywordCache[val] = new Keyword(val);
+	    }
+	    return keywordCache[val];
+	};
+	    
+	Keyword.prototype.isEqual = function(other, aUnionFind) {
+	    return other instanceof Keyword &&
+	    this.val == other.val;
+	};
+	    
+	
+	Keyword.prototype.toString = function() {
+	    return this.val;
+	};
+	
+	Keyword.prototype.toWrittenString = function(cache) {
+	    return this.val;
+	};
+	
+	Keyword.prototype.toDisplayedString = function(cache) {
+	    return this.val;
+	};
+	
+	
+	//////////////////////////////////////////////////////////////////////
+	
+	
+	    
+	    
+	    
+	Empty = function() {
+	};
+	Empty.EMPTY = new Empty();
+	
+	
+	Empty.prototype.isEqual = function(other, aUnionFind) {
+	    return other instanceof Empty;
+	};
+	
+	Empty.prototype.reverse = function() {
+	    return this;
+	};
+	
+	Empty.prototype.first = function() {
+	    throw new Error("first can't be applied on empty.");
+	};
+	Empty.prototype.rest = function() {
+	    throw new Error("rest can't be applied on empty.");
+	};
+	Empty.prototype.isEmpty = function() {
+	    return true;
+	};
+	Empty.prototype.toWrittenString = function(cache) { return "empty"; };
+	Empty.prototype.toDisplayedString = function(cache) { return "empty"; };
+	Empty.prototype.toString = function(cache) { return "()"; };
+	
+	
+	    
+	// Empty.append: (listof X) -> (listof X)
+	Empty.prototype.append = function(b){
+	    return b;
+	};
+	    
+	Cons = function(f, r) {
+	    this.f = f;
+	    this.r = r;
+	};
+	
+	Cons.prototype.reverse = function() {
+	    var lst = this;
+	    var ret = Empty.EMPTY;
+	    while (!lst.isEmpty()){
+		ret = Cons.makeInstance(lst.first(), ret);
+		lst = lst.rest();
+	    }
+	    return ret;
+	};
+	    
+	Cons.makeInstance = function(f, r) {
+	    return new Cons(f, r);
+	};
+	
+	
+	// FIXME: can we reduce the recursion on this?
+	Cons.prototype.isEqual = function(other, aUnionFind) {
+	    if (! (other instanceof Cons)) {
+		return Logic.FALSE;
+	    }
+	    return (isEqual(this.first(), other.first(), aUnionFind) &&
+		    isEqual(this.rest(), other.rest(), aUnionFind));
+	};
+	    
+	Cons.prototype.first = function() {
+	    return this.f;
+	};
+	    
+	Cons.prototype.rest = function() {
+	    return this.r;
+	};
+	    
+	Cons.prototype.isEmpty = function() {
+	    return false;
+	};
+	    
+	// Cons.append: (listof X) -> (listof X)
+	Cons.prototype.append = function(b){
+	    if (b === Empty.EMPTY)
+		return this;
+	    var ret = b;
+	    var lst = this.reverse();
+	    while ( !lst.isEmpty() ) {
+		ret = Cons.makeInstance(lst.first(), ret);
+		lst = lst.rest();
+	    }
+		
+	    return ret;
+	};
+	    
+	
+	Cons.prototype.toWrittenString = function(cache) {
+	    //    cache.put(this, true);
+	    var texts = ["list"];
+	    var p = this;
+	    while ( p instanceof Cons ) {
+		texts.push(toWrittenString(p.first(), cache));
+		p = p.rest();
+	    }
+	    if ( p !== Empty.EMPTY ) {
+		// If not a list, we've got to switch over to cons pair
+		// representation.
+		return explicitConsString(this, cache, toWrittenString);
+	    }
+	    return "(" + texts.join(" ") + ")";
+	};
+	
+	var explicitConsString = function(p, cache, f) {
+	    var texts = [];
+	    var tails = []
+	    while ( p instanceof Cons ) {
+		texts.push("(cons ");
+		texts.push(f(p.first(), cache));
+		texts.push(" ");
+	
+		tails.push(")");
+		p = p.rest();
+	    }
+	    texts.push(f(p, cache));
+	    return (texts.join("") + tails.join(""));
+	};
+	
+	
+	Cons.prototype.toString = Cons.prototype.toWrittenString;
+	
+	Cons.prototype.toDisplayedString = function(cache) {
+	    //    cache.put(this, true);
+	    var texts = ["list"];
+	    var p = this;
+	    while ( p instanceof Cons ) {
+		texts.push(toDisplayedString(p.first(), cache));
+		p = p.rest();
+	    }
+	    if ( p !== Empty.EMPTY ) {
+		return explicitConsString(this, cache, toDisplayedString);
+	    }
+	//    while (true) {
+	//	if ((!(p instanceof Cons)) && (!(p instanceof Empty))) {
+	//	    texts.push(".");
+	//	    texts.push(toDisplayedString(p, cache));
+	//	    break;
+	//	}
+	//	if (p.isEmpty()) 
+	//	    break;
+	//	texts.push(toDisplayedString(p.first(), cache));
+	//	p = p.rest();
+	//    }
+	    return "(" + texts.join(" ") + ")";
+	};
+	
+	
+	
+	Cons.prototype.toDomNode = function(cache) {
+	    //    cache.put(this, true);
+	    var node = document.createElement("span"),
+	        abbr = document.createElement("span");
+	    node.className = "wescheme-cons";
+	    abbr.appendChild(document.createTextNode("list"));
+	 
+	     node.appendChild(makeLParen());
+	     node.appendChild(abbr);
+	    var p = this;
+	    while ( p instanceof Cons ) {
+	      appendChild(node, toDomNode(p.first(), cache));
+	      p = p.rest();
+	    }
+	    if ( p !== Empty.EMPTY ) {
+		return explicitConsDomNode(this, cache);
+	    }
+	 node.appendChild(makeRParen());
+	    return node;
+	};
+	
+	var explicitConsDomNode = function(p, cache) {
+	    var topNode = document.createElement("span");
+	    var node = topNode, constructor = document.createElement("span");
+	       constructor.appendChild(document.createTextNode("cons"));
+	
+	    node.className = "wescheme-cons";
+	    while ( p instanceof Cons ) {
+	      node.appendChild(makeLParen());
+	      node.appendChild(constructor);
+	      appendChild(node, toDomNode(p.first(), cache));
+	
+	      var restSpan = document.createElement("span");
+	      node.appendChild(restSpan);
+	      node.appendChild(makeRParen());
+	      node = restSpan;
+	      p = p.rest();
+	    }
+	    appendChild(node, toDomNode(p, cache));
+	    return topNode;
+	};
+	
+	
+	
+	//////////////////////////////////////////////////////////////////////
+	
+	Vector = function(n, initialElements) {
+	    this.elts = new Array(n);
+	    if (initialElements) {
+		for (var i = 0; i < n; i++) {
+		    this.elts[i] = initialElements[i];
+		}
+	    } else {
+		for (var i = 0; i < n; i++) {
+		    this.elts[i] = undefined;
+		}
+	    }
+	    this.mutable = true;
+	};
+	Vector.makeInstance = function(n, elts) {
+	    return new Vector(n, elts);
+	}
+	    Vector.prototype.length = function() {
+		return this.elts.length;
+	    };
+	Vector.prototype.ref = function(k) {
+	    return this.elts[k];
+	};
+	Vector.prototype.set = function(k, v) {
+	    this.elts[k] = v;
+	};
+	
+	Vector.prototype.isEqual = function(other, aUnionFind) {
+	    if (other != null && other != undefined && other instanceof Vector) {
+		if (other.length() != this.length()) {
+		    return false
+		}
+		for (var i = 0; i <  this.length(); i++) {
+		    if (! isEqual(this.elts[i], other.elts[i], aUnionFind)) {
+			return false;
+		    }
+		}
+		return true;
+	    } else {
+		return false;
+	    }
+	};
+	
+	Vector.prototype.toList = function() {
+	    var ret = Empty.EMPTY;
+	    for (var i = this.length() - 1; i >= 0; i--) {
+		ret = Cons.makeInstance(this.elts[i], ret);	    
+	    }	
+	    return ret;
+	};
+	
+	Vector.prototype.toWrittenString = function(cache) {
+	    //    cache.put(this, true);
+	    var texts = [];
+	    for (var i = 0; i < this.length(); i++) {
+		texts.push(toWrittenString(this.ref(i), cache));
+	    }
+	    return "#(" + texts.join(" ") + ")";
+	};
+	
+	Vector.prototype.toDisplayedString = function(cache) {
+	    //    cache.put(this, true);
+	    var texts = [];
+	    for (var i = 0; i < this.length(); i++) {
+		texts.push(toDisplayedString(this.ref(i), cache));
+	    }
+	    return "#(" + texts.join(" ") + ")";
+	};
+	
+	Vector.prototype.toDomNode = function(cache) {
+	    //    cache.put(this, true);
+	    var node = document.createElement("span"),
+	        lVect = document.createElement("span"),
+	        rVect = document.createElement("span");
+	    lVect.appendChild(document.createTextNode("#("));
+	    lVect.className = "lParen";
+	    rVect.appendChild(document.createTextNode(")"));
+	    rVect.className = "rParen";
+	    node.className = "wescheme-vector";
+	    node.appendChild(lVect);
+	    for (var i = 0; i < this.length(); i++) {
+	      appendChild(node, toDomNode(this.ref(i), cache));
+	    }
+	    node.appendChild(rVect);
+	    return node;
+	};
+	
+	
+	//////////////////////////////////////////////////////////////////////
+	
+	
+	
+	
+	
+	
+	// Now using mutable strings
+	var Str = function(chars) {
+		this.chars = chars;
+		this.length = chars.length;
+		this.mutable = true;
+	}
+	
+	Str.makeInstance = function(chars) {
+		return new Str(chars);
+	}
+	
+	Str.fromString = function(s) {
+		return Str.makeInstance(s.split(""));
+	}
+	
+	Str.prototype.toString = function() {
+		return this.chars.join("");
+	}
+	
+	Str.prototype.toWrittenString = function(cache) {
+	    return escapeString(this.toString());
+	}
+	
+	Str.prototype.toDisplayedString = Str.prototype.toString;
+	
+	Str.prototype.copy = function() {
+		return Str.makeInstance(this.chars.slice(0));
+	}
+	
+	Str.prototype.substring = function(start, end) {
+		if (end == null || end == undefined) {
+			end = this.length;
+		}
+		
+		return Str.makeInstance( this.chars.slice(start, end) );
+	}
+	
+	Str.prototype.charAt = function(index) {
+		return this.chars[index];
+	}
+	
+	Str.prototype.charCodeAt = function(index) {
+		return this.chars[index].charCodeAt(0);
+	}
+	
+	Str.prototype.replace = function(expr, newStr) {
+		return Str.fromString( this.toString().replace(expr, newStr) );
+	}
+	
+	
+	Str.prototype.isEqual = function(other, aUnionFind) {
+		if ( !(other instanceof Str || typeof(other) == 'string') ) {
+			return false;
+		}
+		return this.toString() === other.toString();
+	}
+	
+	
+	Str.prototype.set = function(i, c) {
+		this.chars[i] = c;
+	}
+	
+	Str.prototype.toUpperCase = function() {
+		return Str.fromString( this.chars.join("").toUpperCase() );
+	}
+	
+	Str.prototype.toLowerCase = function() {
+		return Str.fromString( this.chars.join("").toLowerCase() );
+	}
+	
+	Str.prototype.match = function(regexpr) {
+		return this.toString().match(regexpr);
+	}
+	
+	
+	//var _quoteReplacingRegexp = new RegExp("[\"\\\\]", "g");
+	var escapeString = function(s) {
+	    return '"' + replaceUnprintableStringChars(s) + '"';
+	//    return '"' + s.replace(_quoteReplacingRegexp,
+	//			      function(match, submatch, index) {
+	//				  return "\\" + match;
+	//			      }) + '"';
+	};
+	
+	var replaceUnprintableStringChars = function(s) {
+		var ret = [];
+		for (var i = 0; i < s.length; i++) {
+			var val = s.charCodeAt(i);
+			switch(val) {
+				case 7: ret.push('\\a'); break;
+				case 8: ret.push('\\b'); break;
+				case 9: ret.push('\\t'); break;
+				case 10: ret.push('\\n'); break;
+				case 11: ret.push('\\v'); break;
+				case 12: ret.push('\\f'); break;
+				case 13: ret.push('\\r'); break;
+				case 34: ret.push('\\"'); break;
+				case 92: ret.push('\\\\'); break;
+				default: if (val >= 32 && val <= 126) {
+						 ret.push( s.charAt(i) );
+					 }
+					 else {
+						 var numStr = val.toString(16).toUpperCase();
+						 while (numStr.length < 4) {
+							 numStr = '0' + numStr;
+						 }
+						 ret.push('\\u' + numStr);
+					 }
+					 break;
+			}
+		}
+		return ret.join('');
+	};
+	
+	
+	/*
+	// Strings
+	// For the moment, we just reuse Javascript strings.
+	String = String;
+	String.makeInstance = function(s) {
+	    return s.valueOf();
+	};
+	    
+	    
+	// WARNING
+	// WARNING: we are extending the built-in Javascript string class here!
+	// WARNING
+	String.prototype.isEqual = function(other, aUnionFind){
+	    return this == other;
+	};
+	    
+	var _quoteReplacingRegexp = new RegExp("[\"\\\\]", "g");
+	String.prototype.toWrittenString = function(cache) {
+	    return '"' + this.replace(_quoteReplacingRegexp,
+				      function(match, submatch, index) {
+					  return "\\" + match;
+				      }) + '"';
+	};
+	
+	String.prototype.toDisplayedString = function(cache) {
+	    return this;
+	};
+	*/
+	
+	
+	//////////////////////////////////////////////////////////////////////
+	
+	// makeLowLevelEqHash: -> hashtable
+	// Constructs an eq hashtable that uses Moby's getEqHashCode function.
+	var makeLowLevelEqHash = function() {
+	    return new _Hashtable(function(x) { return getEqHashCode(x); },
+				  function(x, y) { return x === y; });
+	};
+	
+	
+	
+	
+	
+	
+	
+	
+	//////////////////////////////////////////////////////////////////////
+	// Hashtables
+	var EqHashTable = function(inputHash) {
+	    this.hash = makeLowLevelEqHash();
+	    this.mutable = true;
+	
+	};
+	EqHashTable = EqHashTable;
+	
+	EqHashTable.prototype.toWrittenString = function(cache) {
+	    var keys = this.hash.keys();
+	    var ret = [];
+	    for (var i = 0; i < keys.length; i++) {
+		    var keyStr = types.toWrittenString(keys[i], cache);
+		    var valStr = types.toWrittenString(this.hash.get(keys[i]), cache);
+		    ret.push('(' + keyStr + ' . ' + valStr + ')');
+	    }
+	    return ('#hasheq(' + ret.join(' ') + ')');
+	};
+	
+	EqHashTable.prototype.toDisplayedString = function(cache) {
+	    var keys = this.hash.keys();
+	    var ret = [];
+	    for (var i = 0; i < keys.length; i++) {
+		    var keyStr = types.toDisplayedString(keys[i], cache);
+		    var valStr = types.toDisplayedString(this.hash.get(keys[i]), cache);
+		    ret.push('(' + keyStr + ' . ' + valStr + ')');
+	    }
+	    return ('#hasheq(' + ret.join(' ') + ')');
+	};
+	
+	EqHashTable.prototype.isEqual = function(other, aUnionFind) {
+	    if ( !(other instanceof EqHashTable) ) {
+		return false; 
+	    }
+	
+	    if (this.hash.keys().length != other.hash.keys().length) { 
+		return false;
+	    }
+	
+	    var keys = this.hash.keys();
+	    for (var i = 0; i < keys.length; i++){
+		if ( !(other.hash.containsKey(keys[i]) &&
+		       isEqual(this.hash.get(keys[i]),
+			       other.hash.get(keys[i]),
+			       aUnionFind)) ) {
+			return false;
+		}
+	    }
+	    return true;
+	};
+	
+	
+	
+	var EqualHashTable = function(inputHash) {
+		this.hash = new _Hashtable(function(x) {
+				return toWrittenString(x); 
+			},
+			function(x, y) {
+				return isEqual(x, y, new UnionFind()); 
+			});
+		this.mutable = true;
+	};
+	
+	EqualHashTable = EqualHashTable;
+	
+	EqualHashTable.prototype.toWrittenString = function(cache) {
+	    var keys = this.hash.keys();
+	    var ret = [];
+	    for (var i = 0; i < keys.length; i++) {
+		    var keyStr = types.toWrittenString(keys[i], cache);
+		    var valStr = types.toWrittenString(this.hash.get(keys[i]), cache);
+		    ret.push('(' + keyStr + ' . ' + valStr + ')');
+	    }
+	    return ('#hash(' + ret.join(' ') + ')');
+	};
+	EqualHashTable.prototype.toDisplayedString = function(cache) {
+	    var keys = this.hash.keys();
+	    var ret = [];
+	    for (var i = 0; i < keys.length; i++) {
+		    var keyStr = types.toDisplayedString(keys[i], cache);
+		    var valStr = types.toDisplayedString(this.hash.get(keys[i]), cache);
+		    ret.push('(' + keyStr + ' . ' + valStr + ')');
+	    }
+	    return ('#hash(' + ret.join(' ') + ')');
+	};
+	
+	EqualHashTable.prototype.isEqual = function(other, aUnionFind) {
+	    if ( !(other instanceof EqualHashTable) ) {
+		return false; 
+	    }
+	
+	    if (this.hash.keys().length != other.hash.keys().length) { 
+		return false;
+	    }
+	
+	    var keys = this.hash.keys();
+	    for (var i = 0; i < keys.length; i++){
+		if (! (other.hash.containsKey(keys[i]) &&
+		       isEqual(this.hash.get(keys[i]),
+			       other.hash.get(keys[i]),
+			       aUnionFind))) {
+		    return false;
+		}
+	    }
+	    return true;
+	};
+	
+	
+	//////////////////////////////////////////////////////////////////////
+	
+	var JsObject = function(name, obj) {
+		this.name = name;
+		this.obj = obj;
+	};
+	
+	JsObject.prototype.toString = function() {
+		return '#<js-object:' + typeof(this.obj) + ':' + this.name + '>';
+	};
+	
+	JsObject.prototype.isEqual = function(other, aUnionFind) {
+		return (this.obj === other.obj);
+	};
+	
+	//////////////////////////////////////////////////////////////////////
+	
+	var WorldConfig = function(startup, shutdown, args) {
+		this.startup = startup;
+		this.shutdown = shutdown;
+		this.startupArgs = args;
+		this.shutdownArg = undefined;
+	};
+	
+	WorldConfig.prototype.toString = function() {
+		return '#<world-config>';
+	};
+	
+	WorldConfig.prototype.isEqual = function(other, aUnionFind) {
+		if ( ! isEqual(this.startup, other.startup, aUnionFind) ||
+		     ! isEqual(this.shutdown, other.shutdown, aUnionFind) ||
+		     this.startupArgs.length != other.startupArgs.length || 
+		     ! isEqual(this.shutdownArg, other.shutdownArg, aUnionFind) ) {
+			return false;
+		}
+	
+		for (var i = 0; i < args.length; i++) {
+			if ( !isEqual(this.startupArgs[i], other.startupArgs[i], aUnionFind) )
+				return false;
+		}
+		return true;
+	};
+	
+	
+	var Effect = makeStructureType('effect', false, 0, 0, false, false);
+	Effect.type.prototype.invokeEffect = function(k) {
+		helpers.raise(types.incompleteExn(
+				types.exnFail,
+				'effect type created without using make-effect-type',
+				[]));
+	};
+	//Effect.handlerIndices = [];
+	
+	
+	//var wrapHandler = function(handler, caller, changeWorld) {
+	//	return types.jsObject('function', function() {
+	//		var externalArgs = arguments;
+	//		changeWorld(function(w, k) {
+	//			var args = helpers.map(helpers.wrapJsObject, externalArgs);
+	//			args.unshift(w);
+	//			caller(handler, args, k);
+	//		});
+	//	});
+	//};
+	
+	
+	var makeEffectType = function(name, superType, initFieldCnt, impl, guard, caller) {
+		if ( !superType ) {
+			superType = Effect;
+		}
+		
+		var newType = makeStructureType(name, superType, initFieldCnt, 0, false, guard);
+		var lastFieldIndex = newType.firstField + newType.numberOfFields;
+	
+		newType.type.prototype.invokeEffect = function(changeWorld, k) {
+			var schemeChangeWorld = new PrimProc('update-world', 1, false, true,
+				function(aState, worldUpdater) {
+					helpers.check(aState, worldUpdater, helpers.procArityContains(1),
+						      'update-world', 'procedure (arity 1)', 1);
+					
+					changeWorld(function(w, k2) { interpret.call(aState,
+										     worldUpdater, [w],
+										     k2,
+										     function(e) { throw e; }); },
+						    function() { aState.v = VOID_VALUE; });
+				});
+	
+			var args = this._fields.slice(0, lastFieldIndex);
+			args.unshift(schemeChangeWorld);
+			caller(impl, args, k);
+		}
+	
+		return newType;
+	};
+	
+	
+	var RenderEffect = makeStructureType('render-effect', false, 0, 0, false, false);
+	RenderEffect.type.prototype.callImplementation = function(caller, k) {
+		helpers.raise(types.incompleteExn(
+				types.exnFail,
+				'render effect created without using make-render-effect-type',
+				[]));
+	};
+	
+	var makeRenderEffectType = function(name, superType, initFieldCnt, impl, guard) {
+		if ( !superType ) {
+			superType = RenderEffect;
+		}
+		
+		var newType = makeStructureType(name, superType, initFieldCnt, 0, false, guard);
+		var lastFieldIndex = newType.firstField + newType.numberOfFields;
+	
+		newType.type.prototype.callImplementation = function(caller, k) {
+			var args = this._fields.slice(0, lastFieldIndex);
+			caller(impl, args, k);
+		}
+	
+		return newType;
+	};
+	
+	//////////////////////////////////////////////////////////////////////
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	//////////////////////////////////////////////////////////////////////
+	
+	
+	
+	
+	
+	
+	
+	var toWrittenString = function(x, cache) {
+	    if (! cache) { 
+	     	cache = makeLowLevelEqHash();
+	    }
+	
+	    if (typeof(x) == 'object') {
+		    if (cache.containsKey(x)) {
+			    return "...";
+		    } else {
+		        cache.put(x, true);
+	            }
+	    }
+	
+	    if (x == undefined || x == null) {
+		return "#<undefined>";
+	    }
+	    if (typeof(x) == 'string') {
+		return escapeString(x.toString());
+	    }
+	    if (typeof(x) != 'object' && typeof(x) != 'function') {
+		return x.toString();
+	    }
+	
+	    var returnVal;
+	    if (typeof(x.toWrittenString) !== 'undefined') {
+		returnVal = x.toWrittenString(cache);
+	    } else if (typeof(x.toDisplayedString) !== 'undefined') {
+		returnVal = x.toDisplayedString(cache);
+	    } else {
+		returnVal = x.toString();
+	    }
+	    cache.remove(x);
+	    return returnVal;
+	};
+	
+	
+	
+	var toDisplayedString = function(x, cache) {
+	    if (! cache) {
+	    	cache = makeLowLevelEqHash();
+	    }
+	    if (typeof(x) == 'object') {
+		    if (cache.containsKey(x)) {
+			    return "...";
+		    }
+		    cache.put(x, true);
+	    }
+	
+	    if (x == undefined || x == null) {
+		return "#<undefined>";
+	    }
+	    if (typeof(x) == 'string') {
+		return x;
+	    }
+	    if (typeof(x) != 'object' && typeof(x) != 'function') {
+		return x.toString();
+	    }
+	
+	    var returnVal;
+	    if (typeof(x.toDisplayedString) !== 'undefined') {
+		returnVal = x.toDisplayedString(cache);
+	    } else if (typeof(x.toWrittenString) !== 'undefined') {
+		returnVal = x.toWrittenString(cache);
+	    } else {
+		returnVal = x.toString();
+	    }
+	    cache.remove(x);
+	    return returnVal;
+	};
+	
+	
+	
+	// toDomNode: scheme-value -> dom-node
+	var toDomNode = function(x, cache) {
+	    if (! cache) {
+	    	cache = makeLowLevelEqHash();
+	    }
+	    
+	    if (isNumber(x)) {
+		return numberToDomNode(x);
+	    }
+	
+	    if (typeof(x) == 'object') {
+		    if (cache.containsKey(x)) {
+	        var node = document.createElement("span");
+	        node.style['font-family'] = 'monospace';
+	        node.appendChild(document.createTextNode("..."));
+	        return node;
+		    }
+		    cache.put(x, true);
+	    }
+	
+	    if (x == undefined || x == null) {
+	      var node = document.createElement("span");
+	      node.style['font-family'] = 'monospace';
+	      node.appendChild(document.createTextNode("#<undefined>"));
+	      return node;
+	    }
+	    if (typeof(x) == 'string') {
+	        return textToDomNode(toWrittenString(x));
+	    }
+	    if (typeof(x) != 'object' && typeof(x) != 'function') {
+	        return textToDomNode(x.toString());
+	    }
+	
+	    var returnVal;
+	    if (x.nodeType) {
+		returnVal =  x;
+	    } else if (typeof(x.toDomNode) !== 'undefined') {
+		returnVal =  x.toDomNode(cache);
+	    } else if (typeof(x.toWrittenString) !== 'undefined') {	
+	        returnVal = textToDomNode(x.toWrittenString(cache))
+	    } else if (typeof(x.toDisplayedString) !== 'undefined') {
+	        returnVal = textToDomNode(x.toDisplayedString(cache));
+	    } else {
+	        returnVal = textToDomNode(x.toString());
+	    }
+	    cache.remove(x);
+	    return returnVal;
+	};
+	
+	
+	var textToDomNode = function(text) {
+	    var chunks = text.split("\n");
+	    var i;
+	    var wrapper = document.createElement("span");
+	    var newlineDiv;
+	    wrapper.className = (text==="true" || text==="false")? "wescheme-boolean" : "wescheme-string";
+	    wrapper.style.fontFamily = 'monospace';
+	    wrapper.style.whiteSpace = "pre";
+	    if (chunks.length > 0) {
+	        wrapper.appendChild(document.createTextNode(chunks[0]));
+	    }
+	    for (i = 1; i < chunks.length; i++) {
+	        newlineDiv = document.createElement("br");
+	        newlineDiv.style.clear = 'left';
+	        wrapper.appendChild(newlineDiv);
+	        wrapper.appendChild(document.createTextNode(chunks[i]));
+	    }
+	    return wrapper;
+	};
+	
+	
+	
+	// numberToDomNode: jsnum -> dom
+	// Given a jsnum, produces a dom-node representation.
+	var numberToDomNode = function(n) {
+	    var node;
+	    if (jsnums.isExact(n)) {
+	      if (jsnums.isInteger(n)) {
+	          node = document.createElement("span");
+	          node.className = "wescheme-number Integer";
+	          node.appendChild(document.createTextNode(n.toString()));
+	          return node;
+	      } else if (jsnums.isRational(n)) {
+	          return rationalToDomNode(n);
+	      } else if (isComplex(n)) {
+	          node = document.createElement("span");
+	          node.className = "wescheme-number Complex";
+	          node.appendChild(document.createTextNode(n.toString()));
+	          return node;
+	      } else {
+	          node = document.createElement("span");
+	          node.className = "wescheme-number";
+	          node.appendChild(document.createTextNode(n.toString()));
+	          return node;
+	      }
+	    } else {
+	      node = document.createElement("span");
+	      node.className = "wescheme-number";
+	      node.appendChild(document.createTextNode(n.toString()));
+	      return node;
+	    }
+	};
+	
+	// rationalToDomNode: rational -> dom-node
+	var rationalToDomNode = function(n) {
+	    var repeatingDecimalNode = document.createElement("span");
+	    var chunks = jsnums.toRepeatingDecimal(jsnums.numerator(n),
+						   jsnums.denominator(n),
+						   {limit: 25});
+	    var firstPart = document.createElement("span");
+	    firstPart.appendChild(document.createTextNode(chunks[0] + '.' + chunks[1]));
+	    repeatingDecimalNode.appendChild(firstPart);
+	    if (chunks[2] === '...') {
+	      firstPart.appendChild(document.createTextNode(chunks[2]));
+	    } else if (chunks[2] !== '0') {
+	      var overlineSpan = document.createElement("span");
+	      overlineSpan.style.textDecoration = 'overline';
+	      overlineSpan.appendChild(document.createTextNode(chunks[2]));
+	      repeatingDecimalNode.appendChild(overlineSpan);
+	    }
+	
+	
+	    var fractionalNode = document.createElement("span");
+	    var numeratorNode = document.createElement("sup");
+	    numeratorNode.appendChild(document.createTextNode(String(jsnums.numerator(n))));
+	    var denominatorNode = document.createElement("sub");
+	    denominatorNode.appendChild(document.createTextNode(String(jsnums.denominator(n))));
+	    var barNode = document.createElement("span");
+	    barNode.appendChild(document.createTextNode("/"));
+	
+	    fractionalNode.appendChild(numeratorNode);
+	    fractionalNode.appendChild(barNode);
+	    fractionalNode.appendChild(denominatorNode);
+	
+	    
+	    var numberNode = document.createElement("span");
+	    numberNode.appendChild(repeatingDecimalNode);
+	    numberNode.appendChild(fractionalNode);
+	    fractionalNode.style['display'] = 'none';
+	
+	    var showingRepeating = true;
+	
+	    numberNode.onclick = function(e) {
+		showingRepeating = !showingRepeating;
+		repeatingDecimalNode.style['display'] = 
+		    (showingRepeating ? 'inline' : 'none')
+		fractionalNode.style['display'] = 
+		    (!showingRepeating ? 'inline' : 'none')
+	    };
+	    numberNode.style['cursor'] = 'pointer';
+	    numberNode.className = "wescheme-number Rational";
+	    return numberNode;
+	
+	};
+	
+	    // Alternative: use <sup> and <sub> tags
+	
+	
+	
+	
+	
+	var isNumber = jsnums.isSchemeNumber;
+	var isComplex = isNumber;
+	var isString = function(s) {
+		return (typeof s === 'string' || s instanceof Str);
+	}
+	
+	
+	// isEqual: X Y -> boolean
+	// Returns true if the objects are equivalent; otherwise, returns false.
+	var isEqual = function(x, y, aUnionFind) {
+	    if (x === y) { return true; }
+	
+	    if (isNumber(x) && isNumber(y)) {
+		return jsnums.equals(x, y);
+	    }
+	
+	    if (isString(x) && isString(y)) {
+		return x.toString() === y.toString();
+	    }
+	
+	    if (x == undefined || x == null) {
+		return (y == undefined || y == null);
+	    }
+	
+	    if ( typeof(x) == 'object' &&
+		 typeof(y) == 'object' &&
+		 x.isEqual &&
+		 y.isEqual) {
+		if (aUnionFind.find(x) === aUnionFind.find(y)) {
+		    return true;
+		}
+		else {
+		    aUnionFind.merge(x, y); 
+		    return x.isEqual(y, aUnionFind);
+		}
+	    }
+	    return false;
+	};
+	
+	
+	
+	
+	
+	// liftToplevelToFunctionValue: primitive-function string fixnum scheme-value -> scheme-value
+	// Lifts a primitive toplevel or module-bound value to a scheme value.
+	var liftToplevelToFunctionValue = function(primitiveF,
+					       name,
+					       minArity, 
+					       procedureArityDescription) {
+	    if (! primitiveF._mobyLiftedFunction) {
+		var lifted = function(args) {
+		    return primitiveF.apply(null, args.slice(0, minArity).concat([args.slice(minArity)]));
+		};
+		lifted.isEqual = function(other, cache) { 
+		    return this === other; 
+		}
+		lifted.toWrittenString = function(cache) { 
+		    return "#<function:" + name + ">";
+		};
+		lifted.toDisplayedString = lifted.toWrittenString;
+		lifted.procedureArity = procedureArityDescription;
+		primitiveF._mobyLiftedFunction = lifted;
+		    
+	    } 
+	    return primitiveF._mobyLiftedFunction;
+	};
+	
+	
+	
+	//////////////////////////////////////////////////////////////////////
+	var ThreadCell = function(v, isPreserved) {
+	    this.v = v;
+	    this.isPreserved = isPreserved || false;
+	};
+	
+	
+	
+	//////////////////////////////////////////////////////////////////////
+	
+	
+	// Wrapper around functions that return multiple values.
+	var ValuesWrapper = function(elts) {
+	    this.elts = elts;
+	};
+	
+	ValuesWrapper.prototype.toDomNode = function(cache) {
+	    var parent = document.createElement("span");
+	    parent.style.whiteSpace = "pre";
+	    if ( this.elts.length > 0 ) {
+		    parent.appendChild( toDomNode(this.elts[0], cache) );
+		    for (var i = 1; i < this.elts.length; i++) {
+			    parent.appendChild( document.createTextNode('\n') );
+			    parent.appendChild( toDomNode(this.elts[i], cache) );
+		    }
+	    }
+	    return parent;
+	};
+	
+	
+	var UndefinedValue = function() {
+	};
+	UndefinedValue.prototype.toString = function() {
+	    return "#<undefined>";
+	};
+	var UNDEFINED_VALUE = new UndefinedValue();
+	
+	var VoidValue = function() {};
+	VoidValue.prototype.toString = function() {
+		return "#<void>";
+	};
+	
+	var VOID_VALUE = new VoidValue();
+	
+	
+	var EofValue = function() {};
+	EofValue.prototype.toString = function() {
+		return "#<eof>";
+	}
+	
+	var EOF_VALUE = new EofValue();
+	
+	
+	var ClosureValue = function(name, locs, numParams, paramTypes, isRest, closureVals, body) {
+	    this.name = name;
+	    this.locs = locs;
+	    this.numParams = numParams;
+	    this.paramTypes = paramTypes;
+	    this.isRest = isRest;
+	    this.closureVals = closureVals;
+	    this.body = body;
+	};
+	
+	
+	
+	
+	ClosureValue.prototype.toString = function() {
+	    if (this.name !== Empty.EMPTY) {
+		return helpers.format("#<function:~a>", [this.name]);
+	    } else {
+		return "#<function>";
+	    }
+	};
+	
+	
+	var CaseLambdaValue = function(name, closures) {
+	    this.name = name;
+	    this.closures = closures;
+	};
+	
+	CaseLambdaValue.prototype.toString = function() {
+	    if (this.name !== Empty.EMPTY) {
+		return helpers.format("#<case-lambda-procedure:~a>", [this.name]);
+	    } else {
+		return "#<case-lambda-procedure>";
+	    }
+	};
+	
+	
+	
+	var ContinuationClosureValue = function(vstack, cstack) {
+	    this.name = false;
+	    this.vstack = vstack.slice(0);
+	    this.cstack = cstack.slice(0);
+	};
+	
+	ContinuationClosureValue.prototype.toString = function() {
+	    if (this.name !== Empty.EMPTY) {
+		return helpers.format("#<function:~a>", [this.name]);
+	    } else {
+		return "#<function>";
+	    }
+	};
+	
+	
+	
+	//////////////////////////////////////////////////////////////////////
+	
+	
+	
+	var PrefixValue = function() {
+	    this.slots = [];
+	    this.definedMask = [];
+	};
+	
+	PrefixValue.prototype.addSlot = function(v) {
+	    if (v === undefined) { 
+		this.slots.push(types.UNDEFINED);
+		this.definedMask.push(false);
+	    } else {
+	        this.slots.push(v);
+		if (v instanceof GlobalBucket) {
+		    if (v.value === types.UNDEFINED) {
+			this.definedMask.push(false);
+		    } else {
+			this.definedMask.push(true);
+		    }
+		} else {
+		    this.definedMask.push(true);
+		}
+	    }
+	};
+	
+	PrefixValue.prototype.ref = function(n, srcloc) {
+	    if (this.slots[n] instanceof GlobalBucket) {
+	    	if (this.definedMask[n]) {
+	    	    return this.slots[n].value;
+	    	} else {
+	    	    helpers.raise(types.incompleteExn(
+	    			types.exnFailContractVariable,
+	    			new Message([new ColoredPart(this.slots[n].name, srcloc),
+	                            ": this variable is not defined"]),
+	    			[this.slots[n].name]));
+	    	}
+	        } else {
+	    	if (this.definedMask[n]) {
+	    	    return this.slots[n];
+	    	} else {
+	    	    helpers.raise(types.incompleteExn(
+	    			types.exnFailContractVariable,
+	    			"variable has not been defined",
+	    			[false]));
+	    	}
+	    }
+	};
+	
+	PrefixValue.prototype.set = function(n, v) {
+	    if (this.slots[n] instanceof GlobalBucket) {
+		this.slots[n].value = v;
+		this.definedMask[n] = true;
+	    } else {
+		this.slots[n] = v;
+		this.definedMask[n] = true;
+	    }
+	};
+	
+	
+	PrefixValue.prototype.length = function() { 
+	    return this.slots.length;
+	};
+	
+	
+	var GlobalBucket = function(name, value) {
+	    this.name = name;
+	    this.value = value;
+	};
+	
+	
+	
+	var ModuleVariableRecord = function(resolvedModuleName,
+					    variableName) {
+	    this.resolvedModuleName = resolvedModuleName;
+	    this.variableName = variableName;
+	};
+	
+	
+	
+	
+	
+	//////////////////////////////////////////////////////////////////////
+	
+	
+	var VariableReference = function(prefix, pos) {
+	    this.prefix = prefix;
+	    this.pos = pos;
+	};
+	
+	VariableReference.prototype.ref = function() {
+	    return this.prefix.ref(this.pos);
+	};
+	
+	VariableReference.prototype.set = function(v) {
+	    this.prefix.set(this.pos, v);
+	}
+	
+	//////////////////////////////////////////////////////////////////////
+	
+	// Continuation Marks
+	
+	var ContMarkRecordControl = function(dict) {
+	    this.dict = dict || {};
+	};
+	
+	ContMarkRecordControl.prototype.invoke = function(state) {
+	    // No-op: the record will simply pop off the control stack.
+	};
+	
+	ContMarkRecordControl.prototype.update = function(key, val) {
+	 /*
+	    var newDict = makeLowLevelEqHash();
+	    // FIXME: what's the javascript idiom for hash key copy?
+	    // Maybe we should use a rbtree instead?
+	    var oldKeys = this.dict.keys();
+	    for (var i = 0; i < oldKeys.length; i++) {
+		    newDict.put( oldKeys[i], this.dict.get(oldKeys[i]) );
+	    }
+	    newDict.put(key, val);
+	    return new ContMarkRecordControl(newDict);
+	  */
+	  this.dict[key.val] = val;
+	  return this;
+	};
+	
+	
+	
+	var ContinuationMarkSet = function(dict) {
+	    this.dict = dict;
+	}
+	
+	ContinuationMarkSet.prototype.toDomNode = function(cache) {
+	    var dom = document.createElement("span");
+	    dom.appendChild(document.createTextNode('#<continuation-mark-set>'));
+	    return dom;
+	};
+	
+	ContinuationMarkSet.prototype.toWrittenString = function(cache) {
+	    return '#<continuation-mark-set>';
+	};
+	
+	ContinuationMarkSet.prototype.toDisplayedString = function(cache) {
+	    return '#<continuation-mark-set>';
+	};
+	
+	ContinuationMarkSet.prototype.ref = function(key) {
+	    if ( this.dict.containsKey(key) ) {
+		    return this.dict.get(key);
+	    }
+	    return [];
+	};
+	
+	
+	//////////////////////////////////////////////////////////////////////
+	
+	var ContinuationPrompt = function() {
+	};
+	
+	var defaultContinuationPrompt = new ContinuationPrompt();
+	
+	
+	
+	//////////////////////////////////////////////////////////////////////
+	
+	//////////////////////////////////////////////////////////////////////
+	
+	var PrimProc = function(name, numParams, isRest, assignsToValueRegister, impl) {
+	    this.name = name;
+	    this.numParams = numParams;
+	    this.isRest = isRest;
+	    this.assignsToValueRegister = assignsToValueRegister;
+	    this.impl = impl;
+	};
+	
+	PrimProc.prototype.toString = function() {
+	    return ("#<function:" + this.name + ">");
+	};
+	
+	PrimProc.prototype.toWrittenString = function(cache) {
+	    return ("#<function:" + this.name + ">");
+	};
+	
+	PrimProc.prototype.toDisplayedString = function(cache) {
+	    return ("#<function:" + this.name + ">");
+	};
+	
+	
+	PrimProc.prototype.toDomNode = function(cache) {
+	    var node = document.createElement("span");
+	    node.className = "wescheme-primproc";
+	    node.appendChild(document.createTextNode("#<function:"+ this.name +">"));
+	    return node;
+	};
+	
+	
+	var CasePrimitive = function(name, cases) {
+	    this.name = name;
+	    this.cases = cases;
+	};
+	
+	
+	CasePrimitive.prototype.toDomNode = function(cache) {
+	    var node = document.createElement("span");
+	    node.className = "wescheme-caseprimitive";
+	    node.appendChild(document.createTextNode("#<function:"+ this.name +">"));
+	    return node;
+	};
+	
+	CasePrimitive.prototype.toWrittenString = function(cache) {
+	    return ("#<function:" + this.name + ">");
+	};
+	
+	CasePrimitive.prototype.toDisplayedString = function(cache) {
+	    return ("#<function:" + this.name + ">");
+	};
+	
+	
+	
+	
+	/////////////////////////////////////////////////////////////////////
+	// Colored Error Message Support
+	
+	var Message = function(args) {
+	  this.args = args;
+	};
+	
+	Message.prototype.toString = function() {
+	  var toReturn = [];
+	  var i;
+	  for(i = 0; i < this.args.length; i++) {
+	      toReturn.push(''+this.args[i]);
+	  }
+	  
+	  return toReturn.join("");
+	};
+	
+	var isMessage = function(o) {
+	  return o instanceof Message;
+	};
+	
+	var ColoredPart = function(text, location) {
+	  this.text = text;
+	  this.location = location;
+	};
+	
+	var isColoredPart = function(o) {
+	  return o instanceof ColoredPart;
+	};
+	
+	ColoredPart.prototype.toString = function() {
+	    return this.text+'';
+	};
+	
+	var GradientPart = function(coloredParts) {
+	    this.coloredParts = coloredParts;
+	};
+	
+	var isGradientPart = function(o) {
+	  return o instanceof GradientPart;
+	};
+	
+	GradientPart.prototype.toString = function() {
+		var i;
+		var resultArray = [];
+		for(i = 0; i < this.coloredParts.length; i++){
+			resultArray.push(this.coloredParts[i].text+'');
+		}
+		return resultArray.join("");
+	
+	};
+	
+	var MultiPart = function(text, locations, solid) {
+	    this.text = text;
+	    this.locations = locations;
+	    this.solid = solid;
+	};
+	
+	var isMultiPart = function(o) {
+	  return o instanceof MultiPart;
+	};
+	
+	MultiPart.prototype.toString = function() {
+		return this.text;
+	};
+	
+	
+	//////////////////////////////////////////////////////////////////////
+	
+	
+	
+	
+	
+	var makeList = function(args) {
+	    var result = Empty.EMPTY;
+	    var i;
+	    for(i = args.length-1; i >= 0; i--) {
+		result = Cons.makeInstance(args[i], result);
+	    }
+	    return result;
+	};
+	
+	
+	var makeVector = function(args) {
+	    return Vector.makeInstance(args.length, args);
+	};
+	
+	var makeString = function(s) {
+		if (s instanceof Str) {
+			return s;
+		}
+		else if (s instanceof Array) {
+	//		for (var i = 0; i < s.length; i++) {
+	//			if ( typeof s[i] !== 'string' || s[i].length != 1 ) {
+	//				return undefined;
+	//			}
+	//		}
+			return Str.makeInstance(s);
+		}
+		else if (typeof s === 'string') {
+			return Str.fromString(s);
+		}
+		else {
+			throw types.internalError('makeString expects and array of 1-character strings or a string;' +
+						  ' given ' + s.toString(),
+						  false);
+		}
+	};
+	
+	
+	var makeHashEq = function(lst) {
+		var newHash = new EqHashTable();
+		while ( !lst.isEmpty() ) {
+			newHash.hash.put(lst.first().first(), lst.first().rest());
+			lst = lst.rest();
+		}
+		return newHash;
+	};
+	
+	
+	var makeHashEqual = function(lst) {
+		var newHash = new EqualHashTable();
+		while ( !lst.isEmpty() ) {
+			newHash.hash.put(lst.first().first(), lst.first().rest());
+			lst = lst.rest();
+		}
+		return newHash;
+	};
+	
+	
+	//if there is not enough location information available,
+	//this allows for highlighting to be turned off
+	var NoLocation = makeVector(['<no-location>', 0,0,0,0]);
+	
+	var isNoLocation = function(o) {
+	  return o === NoLocation;
+	};
+	
+	
+	
+	var Posn = makeStructureType('posn', false, 2, 0, false, false);
+	var Color = makeStructureType('color', false, 4, 0, false, false);
+	var ArityAtLeast = makeStructureType('arity-at-least', false, 1, 0, false,
+			function(k, n, name) {
+				helpers.check(undefined, n, function(x) { return ( jsnums.isExact(x) &&
+									jsnums.isInteger(x) &&
+									jsnums.greaterThanOrEqual(x, 0) ); },
+					      name, 'exact non-negative integer', 1);
+				k(n);
+			});
+	
+	
+	types.symbol = Symbol.makeInstance;
+	types.rational = jsnums.makeRational;
+	types['float'] = jsnums.makeFloat;
+	types.complex = jsnums.makeComplex;
+	types.bignum = jsnums.makeBignum;
+	types.list = makeList;
+	types.vector = makeVector;
+	types.regexp = function(p) { return new RegularExpression(p) ; }
+	types.byteRegexp = function(p) { return new ByteRegularExpression(p) ; }
+	types['char'] = Char.makeInstance;
+	types['string'] = makeString;
+	types.box = function(x) { return new Box(x, true); };
+	types.boxImmutable = function(x) { return new Box(x, false); };
+	types.path = function(x) { return new Path(x); };
+	types.bytes = function(x, mutable) { return new Bytes(x, mutable); };
+	types.keyword = function(k) { return new Keyword(k); };
+	types.pair = function(x, y) { return Cons.makeInstance(x, y); };
+	types.hash = makeHashEqual;
+	types.hashEq = makeHashEq;
+	types.jsObject = function(name, obj) { return new JsObject(name, obj); };
+	
+	types.toWrittenString = toWrittenString;
+	types.toDisplayedString = toDisplayedString;
+	types.toDomNode = toDomNode;
+	
+	types.posn = Posn.constructor;
+	types.posnX = function(psn) { return Posn.accessor(psn, 0); };
+	types.posnY = function(psn) { return Posn.accessor(psn, 1); };
+	
+	types.color = function(r, g, b, a) { 
+	    if (a === undefined) {
+	        a = 255;
+	    }
+	    return Color.constructor(r, g, b, a);
+	};
+	types.colorRed = function(x) { return Color.accessor(x, 0); };
+	types.colorGreen = function(x) { return Color.accessor(x, 1); };
+	types.colorBlue = function(x) { return Color.accessor(x, 2); };
+	types.colorAlpha = function(x) { return Color.accessor(x, 3); };
+	
+	types.arityAtLeast = ArityAtLeast.constructor;
+	types.arityValue = function(arity) { return ArityAtLeast.accessor(arity, 0); };
+	
+	
+	types.FALSE = Logic.FALSE;
+	types.TRUE = Logic.TRUE;
+	types.EMPTY = Empty.EMPTY;
+	
+	types.isEqual = isEqual;
+	types.isNumber = isNumber;
+	types.isSymbol = function(x) { return x instanceof Symbol; };
+	types.isChar = function(x) { return x instanceof Char; };
+	types.isString = isString;
+	types.isPair = function(x) { return x instanceof Cons; };
+	types.isVector = function(x) { return x instanceof Vector; };
+	types.isBox = function(x) { return x instanceof Box; };
+	types.isHash = function(x) { return (x instanceof EqHashTable ||
+					     x instanceof EqualHashTable); };
+	types.isByteString = function(x) { return x instanceof Bytes; };
+	types.isStruct = function(x) { return x instanceof Struct; };
+	types.isPosn = Posn.predicate;
+	types.isArityAtLeast = ArityAtLeast.predicate;
+	types.isColor = Color.predicate;
+	types.isFunction = function(x) {
+		return (x instanceof PrimProc ||
+			x instanceof CasePrimitive ||
+			x instanceof ClosureValue ||
+			x instanceof CaseLambdaValue ||
+			x instanceof ContinuationClosureValue);
+	};
+	types.getProcedureType = function(x){
+	 return (x instanceof PrimProc)? "PrimProc" :
+	       (x instanceof CasePrimitive)? "CasePrimitive" :
+	       (x instanceof ClosureValue)? "ClosureValue" :
+	       (x instanceof CaseLambdaValue)? "CaseLambdaValue" :
+	       (x instanceof ContinuationClosureValue)? "ContinuationClosureValue" :
+	       /* else */ false;
+	};
+	 
+	types.isJsObject = function(x) { return x instanceof JsObject; };
+	
+	types.UnionFind = UnionFind;
+	types.cons = Cons.makeInstance;
+	
+	types.UNDEFINED = UNDEFINED_VALUE;
+	types.VOID = VOID_VALUE;
+	types.EOF = EOF_VALUE;
+	
+	types.ValuesWrapper = ValuesWrapper;
+	types.ClosureValue = ClosureValue;
+	types.ContinuationPrompt = ContinuationPrompt;
+	types.defaultContinuationPrompt = defaultContinuationPrompt;
+	types.ContinuationClosureValue = ContinuationClosureValue;
+	types.CaseLambdaValue = CaseLambdaValue;
+	types.PrimProc = PrimProc;
+	types.CasePrimitive = CasePrimitive;
+	
+	types.contMarkRecordControl = function(dict) { return new ContMarkRecordControl(dict); };
+	types.isContMarkRecordControl = function(x) { return x instanceof ContMarkRecordControl; };
+	types.continuationMarkSet = function(dict) { return new ContinuationMarkSet(dict); };
+	types.isContinuationMarkSet = function(x) { return x instanceof ContinuationMarkSet; };
+	
+	
+	types.PrefixValue = PrefixValue;
+	types.GlobalBucket = GlobalBucket;
+	types.ModuleVariableRecord = ModuleVariableRecord;
+	types.VariableReference = VariableReference;
+	
+	types.Box = Box;
+	types.ThreadCell = ThreadCell;
+	
+	
+	
+	types.Class = Class;
+	
+	
+	types.makeStructureType = makeStructureType;
+	types.isStructType = function(x) { return x instanceof StructType; };
+	
+	
+	types.makeLowLevelEqHash = makeLowLevelEqHash;
+	
+	
+	// Error type exports
+	var InternalError = function(val, contMarks) {
+		this.val = val;
+		this.contMarks = (contMarks ? contMarks : false);
+	}
+	types.internalError = function(v, contMarks) { return new InternalError(v, contMarks); };
+	types.isInternalError = function(x) { return x instanceof InternalError; };
+	
+	var SchemeError = function(val) {
+		this.val = val;
+	}
+	types.schemeError = function(v) { return new SchemeError(v); };
+	types.isSchemeError = function(v) { return v instanceof SchemeError; };
+	
+	
+	var IncompleteExn = function(constructor, msg, otherArgs) {
+		this.constructor = constructor;
+		this.msg = msg;
+		this.otherArgs = otherArgs;
+	};
+	types.incompleteExn = function(constructor, msg, args) { return new IncompleteExn(constructor, msg, args); };
+	types.isIncompleteExn = function(x) { return x instanceof IncompleteExn; };
+	
+	var Exn = makeStructureType('exn', false, 2, 0, false,
+			function(k, msg, contMarks, name) {
+				// helpers.check(msg, isString, name, 'string', 1, [msg, contMarks]);
+				helpers.check(undefined, contMarks, types.isContinuationMarkSet, name, 'continuation mark set', 2);
+				k( new ValuesWrapper([msg, contMarks]) );
+			});
+	types.exn = Exn.constructor;
+	types.isExn = Exn.predicate;
+	types.exnMessage = function(exn) { return Exn.accessor(exn, 0); };
+	types.exnContMarks = function(exn) { return Exn.accessor(exn, 1); };
+	types.exnSetContMarks = function(exn, v) { Exn.mutator(exn, 1, v); };
+	
+	// (define-struct (exn:break exn) (continuation))
+	var ExnBreak = makeStructureType('exn:break', Exn, 1, 0, false,
+			function(k, msg, contMarks, cont, name) {
+			// FIXME: what type is a continuation here?
+	//			helpers.check(cont, isContinuation, name, 'continuation', 3);
+				k( new ValuesWrapper([msg, contMarks, cont]) );
+			});
+	types.exnBreak = ExnBreak.constructor;
+	types.isExnBreak = ExnBreak.predicate;
+	types.exnBreakContinuation = function(exn) {
+	    return ExnBreak.accessor(exn, 0); };
+	
+	var ExnFail = makeStructureType('exn:fail', Exn, 0, 0, false, false);
+	types.exnFail = ExnFail.constructor;
+	types.isExnFail = ExnFail.predicate;
+	
+	var ExnFailContract = makeStructureType('exn:fail:contract', ExnFail, 0, 0, false, false);
+	types.exnFailContract = ExnFailContract.constructor;
+	types.isExnFailContract = ExnFailContract.predicate;
+	
+	var ExnFailContractArity = makeStructureType('exn:fail:contract:arity', ExnFailContract, 0, 0, false, false);
+	types.exnFailContractArity = ExnFailContract.constructor;
+	types.isExnFailContractArity = ExnFailContract.predicate;
+	
+	var ExnFailContractVariable = makeStructureType('exn:fail:contract:variable', ExnFailContract, 1, 0, false, false);
+	types.exnFailContractVariable = ExnFailContract.constructor;
+	types.isExnFailContractVariable = ExnFailContract.predicate;
+	types.exnFailContractVariableId = function(exn) { return ExnFailContractVariable.accessor(exn, 0); };
+	
+	var ExnFailContractDivisionByZero = makeStructureType('exn:fail:contract:division-by-zero', ExnFailContract, 0, 0, false, false);
+	types.exnFailContractDivisionByZero = ExnFailContractDivisionByZero.constructor;
+	types.isExnFailContractDivisionByZero = ExnFailContractDivisionByZero.predicate;
+	
+	var ExnFailContractArityWithPosition = makeStructureType('exn:fail:contract:arity:position', ExnFailContractArity, 1, 0, false, false);
+	types.exnFailContractArityWithPosition = ExnFailContractArityWithPosition.constructor;
+	types.isExnFailContractArityWithPosition = ExnFailContractArityWithPosition.predicate;
+	
+	types.exnFailContractArityWithPositionLocations = function(exn) { return ExnFailContractArityWithPosition.accessor(exn, 0); };
+	
+	
+	///////////////////////////////////////
+	// World-specific exports
+	
+	types.worldConfig = function(startup, shutdown, args) { return new WorldConfig(startup, shutdown, args); };
+	types.isWorldConfig = function(x) { return x instanceof WorldConfig; };
+	
+	types.makeEffectType = makeEffectType;
+	types.isEffectType = function(x) {
+		return (x instanceof StructType && x.type.prototype.invokeEffect) ? true : false;
+	};
+	
+	
+	types.isEffect = Effect.predicate;
+	
+	//types.EffectDoNothing = makeEffectType('effect:do-nothing',
+	//				       false,
+	//				       0,
+	//				       function(k) { k(); },
+	//				       [],
+	//				       function(k) { k(new ValuesWrapper([])); },
+	//				       function(f, args, k) { f(k); });
+	//types.effectDoNothing = EffectDoNothing.constructor;
+	//types.isEffectDoNothing = EffectDoNothing.predicate;
+	
+	
+	//RenderEffect = makeStructureType('render-effect', false, 2, 0, false,
+	//		function(k, domNode, effects, name) {
+	//			helpers.checkListOf(effects, helpers.procArityContains(0), name, 'procedure (arity 0)', 2);
+	//			k( new ValuesWrapper([domNode, effects]) );
+	//		});
+	
+	types.makeRenderEffectType = makeRenderEffectType;
+	types.isRenderEffectType = function(x) {
+		return (x instanceof StructType && x.type.prototype.callImplementation) ? true : false;
+	};
+	
+	//types.RenderEffect = RenderEffect;
+	//types.makeRenderEffect = RenderEffect.constructor;
+	types.isRenderEffect = RenderEffect.predicate;
+	//types.renderEffectDomNode = function(x) { return RenderEffect.accessor(x, 0); };
+	//types.renderEffectEffects = function(x) { return RenderEffect.accessor(x, 1); };
+	//types.setRenderEffectEffects = function(x, v) { RenderEffect.mutator(x, 1, v); };
+	
+	
+	types.NoLocation = NoLocation;
+	types.isNoLocation = isNoLocation;
+	
+	
+	
+	types.ColoredPart = ColoredPart;
+	types.Message = Message;
+	types.isColoredPart = isColoredPart;
+	types.isMessage = isMessage;
+	types.GradientPart = GradientPart;
+	types.isGradientPart = isGradientPart;
+	types.MultiPart = MultiPart;
+	types.isMultiPart = isMultiPart;
+	types.Vector = Vector;
+	
+	
+	})();
+	
+	module.exports = types;
+
+/***/ },
+/* 233 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict'; // Scheme numbers.
+	var __PLTNUMBERS_TOP__;if(true){__PLTNUMBERS_TOP__ = exports;}else {if(!undefined['jsnums']){undefined['jsnums'] = {};}__PLTNUMBERS_TOP__ = undefined['jsnums'];} //var jsnums = {};
+	// The numeric tower has the following levels:
+	//     integers
+	//     rationals
+	//     floats
+	//     complex numbers
+	//
+	// with the representations:
+	//     integers: fixnum or BigInteger [level=0]
+	//     rationals: Rational [level=1]
+	//     floats: FloatPoint [level=2]
+	//     complex numbers: Complex [level=3]
+	// We try to stick with the unboxed fixnum representation for
+	// integers, since that's what scheme programs commonly deal with, and
+	// we want that common type to be lightweight.
+	// A boxed-scheme-number is either BigInteger, Rational, FloatPoint, or Complex.
+	// An integer-scheme-number is either fixnum or BigInteger.
+	(function(){'use strict' // Abbreviation
+	;var Numbers=__PLTNUMBERS_TOP__; //var Numbers = jsnums;
+	// makeNumericBinop: (fixnum fixnum -> any) (scheme-number scheme-number -> any) -> (scheme-number scheme-number) X
+	// Creates a binary function that works either on fixnums or boxnums.
+	// Applies the appropriate binary function, ensuring that both scheme numbers are
+	// lifted to the same level.
+	var makeNumericBinop=function makeNumericBinop(onFixnums,onBoxednums,options){options = options || {};return function(x,y){if(options.isXSpecialCase && options.isXSpecialCase(x))return options.onXSpecialCase(x,y);if(options.isYSpecialCase && options.isYSpecialCase(y))return options.onYSpecialCase(x,y);if(typeof x === 'number' && typeof y === 'number'){return onFixnums(x,y);}if(typeof x === 'number'){x = liftFixnumInteger(x,y);}if(typeof y === 'number'){y = liftFixnumInteger(y,x);}if(x.level < y.level)x = x.liftTo(y);if(y.level < x.level)y = y.liftTo(x);return onBoxednums(x,y);};}; // fromFixnum: fixnum -> scheme-number
+	var fromFixnum=function fromFixnum(x){if(isNaN(x) || !isFinite(x)){return FloatPoint.makeInstance(x);}var nf=Math.floor(x);if(nf === x){if(isOverflow(nf)){return makeBignum(expandExponent(x + ''));}else {return nf;}}else {return FloatPoint.makeInstance(x);}};var expandExponent=function expandExponent(s){var match=s.match(scientificPattern(digitsForRadix(10),expMarkForRadix(10))),mantissaChunks,exponent;if(match){mantissaChunks = match[1].match(/^([^.]*)(.*)$/);exponent = Number(match[2]);if(mantissaChunks[2].length === 0){return mantissaChunks[1] + zfill(exponent);}if(exponent >= mantissaChunks[2].length - 1){return mantissaChunks[1] + mantissaChunks[2].substring(1) + zfill(exponent - (mantissaChunks[2].length - 1));}else {return mantissaChunks[1] + mantissaChunks[2].substring(1,1 + exponent);}}else {return s;}}; // zfill: integer -> string
+	// builds a string of "0"'s of length n.
+	var zfill=function zfill(n){var buffer=[];buffer.length = n;for(var i=0;i < n;i++) {buffer[i] = '0';}return buffer.join('');}; // liftFixnumInteger: fixnum-integer boxed-scheme-number -> boxed-scheme-number
+	// Lifts up fixnum integers to a boxed type.
+	var liftFixnumInteger=function liftFixnumInteger(x,other){switch(other.level){case 0: // BigInteger
+	return makeBignum(x);case 1: // Rational
+	return new Rational(x,1);case 2: // FloatPoint
+	return new FloatPoint(x);case 3: // Complex
+	return new Complex(x,0);default:throwRuntimeError("IMPOSSIBLE: cannot lift fixnum integer to " + other.toString(),x,other);}}; // throwRuntimeError: string (scheme-number | undefined) (scheme-number | undefined) -> void
+	// Throws a runtime error with the given message string.
+	var throwRuntimeError=function throwRuntimeError(msg,x,y){Numbers['onThrowRuntimeError'](msg,x,y);}; // onThrowRuntimeError: string (scheme-number | undefined) (scheme-number | undefined) -> void
+	// By default, will throw a new Error with the given message.
+	// Override Numbers['onThrowRuntimeError'] if you need to do something special.
+	var onThrowRuntimeError=function onThrowRuntimeError(msg,x,y){throw new Error(msg);}; // isSchemeNumber: any -> boolean
+	// Returns true if the thing is a scheme number.
+	var isSchemeNumber=function isSchemeNumber(thing){return typeof thing === 'number' || thing instanceof Rational || thing instanceof FloatPoint || thing instanceof Complex || thing instanceof BigInteger;}; // isRational: scheme-number -> boolean
+	var isRational=function isRational(n){return typeof n === 'number' || isSchemeNumber(n) && n.isRational();}; // isReal: scheme-number -> boolean
+	var isReal=function isReal(n){return typeof n === 'number' || isSchemeNumber(n) && n.isReal();}; // isExact: scheme-number -> boolean
+	var isExact=function isExact(n){return typeof n === 'number' || isSchemeNumber(n) && n.isExact();}; // isExact: scheme-number -> boolean
+	var isInexact=function isInexact(n){if(typeof n === 'number'){return false;}else {return isSchemeNumber(n) && n.isInexact();}}; // isInteger: scheme-number -> boolean
+	var isInteger=function isInteger(n){return typeof n === 'number' || isSchemeNumber(n) && n.isInteger();}; // isExactInteger: scheme-number -> boolean
+	var isExactInteger=function isExactInteger(n){return typeof n === 'number' || isSchemeNumber(n) && n.isInteger() && n.isExact();}; // toFixnum: scheme-number -> javascript-number
+	var toFixnum=function toFixnum(n){if(typeof n === 'number')return n;return n.toFixnum();}; // toExact: scheme-number -> scheme-number
+	var toExact=function toExact(n){if(typeof n === 'number')return n;return n.toExact();}; // toExact: scheme-number -> scheme-number
+	var toInexact=function toInexact(n){if(typeof n === 'number')return FloatPoint.makeInstance(n);return n.toInexact();}; //////////////////////////////////////////////////////////////////////
+	// add: scheme-number scheme-number -> scheme-number
+	var add=function add(x,y){var sum;if(typeof x === 'number' && typeof y === 'number'){sum = x + y;if(isOverflow(sum)){return makeBignum(x).add(makeBignum(y));}}if(x instanceof FloatPoint && y instanceof FloatPoint){return x.add(y);}return addSlow(x,y);};var addSlow=makeNumericBinop(function(x,y){var sum=x + y;if(isOverflow(sum)){return makeBignum(x).add(makeBignum(y));}else {return sum;}},function(x,y){return x.add(y);},{isXSpecialCase:function isXSpecialCase(x){return isExactInteger(x) && _integerIsZero(x);},onXSpecialCase:function onXSpecialCase(x,y){return y;},isYSpecialCase:function isYSpecialCase(y){return isExactInteger(y) && _integerIsZero(y);},onYSpecialCase:function onYSpecialCase(x,y){return x;}}); // subtract: scheme-number scheme-number -> scheme-number
+	var subtract=makeNumericBinop(function(x,y){var diff=x - y;if(isOverflow(diff)){return makeBignum(x).subtract(makeBignum(y));}else {return diff;}},function(x,y){return x.subtract(y);},{isXSpecialCase:function isXSpecialCase(x){return isExactInteger(x) && _integerIsZero(x);},onXSpecialCase:function onXSpecialCase(x,y){return negate(y);},isYSpecialCase:function isYSpecialCase(y){return isExactInteger(y) && _integerIsZero(y);},onYSpecialCase:function onYSpecialCase(x,y){return x;}}); // mulitply: scheme-number scheme-number -> scheme-number
+	var multiply=function multiply(x,y){var prod;if(typeof x === 'number' && typeof y === 'number'){prod = x * y;if(isOverflow(prod)){return makeBignum(x).multiply(makeBignum(y));}else {return prod;}}if(x instanceof FloatPoint && y instanceof FloatPoint){return x.multiply(y);}return multiplySlow(x,y);};var multiplySlow=makeNumericBinop(function(x,y){var prod=x * y;if(isOverflow(prod)){return makeBignum(x).multiply(makeBignum(y));}else {return prod;}},function(x,y){return x.multiply(y);},{isXSpecialCase:function isXSpecialCase(x){return isExactInteger(x) && (_integerIsZero(x) || _integerIsOne(x) || _integerIsNegativeOne(x));},onXSpecialCase:function onXSpecialCase(x,y){if(_integerIsZero(x))return 0;if(_integerIsOne(x))return y;if(_integerIsNegativeOne(x))return negate(y);},isYSpecialCase:function isYSpecialCase(y){return isExactInteger(y) && (_integerIsZero(y) || _integerIsOne(y) || _integerIsNegativeOne(y));},onYSpecialCase:function onYSpecialCase(x,y){if(_integerIsZero(y))return 0;if(_integerIsOne(y))return x;if(_integerIsNegativeOne(y))return negate(x);}}); // divide: scheme-number scheme-number -> scheme-number
+	var divide=makeNumericBinop(function(x,y){if(_integerIsZero(y))throwRuntimeError("/: division by zero",x,y);var div=x / y;if(isOverflow(div)){return makeBignum(x).divide(makeBignum(y));}else if(Math.floor(div) !== div){return Rational.makeInstance(x,y);}else {return div;}},function(x,y){return x.divide(y);},{isXSpecialCase:function isXSpecialCase(x){return eqv(x,0);},onXSpecialCase:function onXSpecialCase(x,y){if(eqv(y,0)){throwRuntimeError("/: division by zero",x,y);}return 0;},isYSpecialCase:function isYSpecialCase(y){return eqv(y,0);},onYSpecialCase:function onYSpecialCase(x,y){throwRuntimeError("/: division by zero",x,y);}}); // equals: scheme-number scheme-number -> boolean
+	var equals=makeNumericBinop(function(x,y){return x === y;},function(x,y){return x.equals(y);}); // eqv: scheme-number scheme-number -> boolean
+	var eqv=function eqv(x,y){if(x === y)return true;if(typeof x === 'number' && typeof y === 'number')return x === y;if(x === NEGATIVE_ZERO || y === NEGATIVE_ZERO)return x === y;if(x instanceof Complex || y instanceof Complex){return eqv(realPart(x),realPart(y)) && eqv(imaginaryPart(x),imaginaryPart(y));}var ex=isExact(x),ey=isExact(y);return (ex && ey || !ex && !ey) && equals(x,y);}; // approxEqual: scheme-number scheme-number scheme-number -> boolean
+	var approxEquals=function approxEquals(x,y,delta){return lessThan(abs(subtract(x,y)),delta);}; // greaterThanOrEqual: scheme-number scheme-number -> boolean
+	var greaterThanOrEqual=makeNumericBinop(function(x,y){return x >= y;},function(x,y){if(!(isReal(x) && isReal(y)))throwRuntimeError(">=: couldn't be applied to complex number",x,y);return x.greaterThanOrEqual(y);}); // lessThanOrEqual: scheme-number scheme-number -> boolean
+	var lessThanOrEqual=makeNumericBinop(function(x,y){return x <= y;},function(x,y){if(!(isReal(x) && isReal(y)))throwRuntimeError("<=: couldn't be applied to complex number",x,y);return x.lessThanOrEqual(y);}); // greaterThan: scheme-number scheme-number -> boolean
+	var greaterThan=makeNumericBinop(function(x,y){return x > y;},function(x,y){if(!(isReal(x) && isReal(y)))throwRuntimeError(">: couldn't be applied to complex number",x,y);return x.greaterThan(y);}); // lessThan: scheme-number scheme-number -> boolean
+	var lessThan=makeNumericBinop(function(x,y){return x < y;},function(x,y){if(!(isReal(x) && isReal(y)))throwRuntimeError("<: couldn't be applied to complex number",x,y);return x.lessThan(y);}); // expt: scheme-number scheme-number -> scheme-number
+	var expt=(function(){var _expt=makeNumericBinop(function(x,y){var pow=Math.pow(x,y);if(isOverflow(pow)){return makeBignum(x).expt(makeBignum(y));}else {return pow;}},function(x,y){if(equals(y,0)){return add(y,1);}else {return x.expt(y);}});return function(x,y){if(equals(y,0))return add(y,1);if(isReal(y) && lessThan(y,0)){return _expt(divide(1,x),negate(y));}return _expt(x,y);};})(); // exp: scheme-number -> scheme-number
+	var exp=function exp(n){if(eqv(n,0)){return 1;}if(typeof n === 'number'){return FloatPoint.makeInstance(Math.exp(n));}return n.exp();}; // modulo: scheme-number scheme-number -> scheme-number
+	var modulo=function modulo(m,n){if(!isInteger(m)){throwRuntimeError('modulo: the first argument ' + m + " is not an integer.",m,n);}if(!isInteger(n)){throwRuntimeError('modulo: the second argument ' + n + " is not an integer.",m,n);}var result;if(typeof m === 'number'){result = m % n;if(n < 0){if(result <= 0)return result;else return result + n;}else {if(result < 0)return result + n;else return result;}}result = _integerModulo(floor(m),floor(n)); // The sign of the result should match the sign of n.
+	if(lessThan(n,0)){if(lessThanOrEqual(result,0)){return result;}return add(result,n);}else {if(lessThan(result,0)){return add(result,n);}return result;}}; // numerator: scheme-number -> scheme-number
+	var numerator=function numerator(n){if(typeof n === 'number')return n;return n.numerator();}; // denominator: scheme-number -> scheme-number
+	var denominator=function denominator(n){if(typeof n === 'number')return 1;return n.denominator();}; // sqrt: scheme-number -> scheme-number
+	var sqrt=function sqrt(n){if(typeof n === 'number'){if(n >= 0){var result=Math.sqrt(n);if(Math.floor(result) === result){return result;}else {return FloatPoint.makeInstance(result);}}else {return Complex.makeInstance(0,sqrt(-n));}}return n.sqrt();}; // abs: scheme-number -> scheme-number
+	var abs=function abs(n){if(typeof n === 'number'){return Math.abs(n);}return n.abs();}; // floor: scheme-number -> scheme-number
+	var floor=function floor(n){if(typeof n === 'number')return n;return n.floor();}; // ceiling: scheme-number -> scheme-number
+	var ceiling=function ceiling(n){if(typeof n === 'number')return n;return n.ceiling();}; // conjugate: scheme-number -> scheme-number
+	var conjugate=function conjugate(n){if(typeof n === 'number')return n;return n.conjugate();}; // magnitude: scheme-number -> scheme-number
+	var magnitude=function magnitude(n){if(typeof n === 'number')return Math.abs(n);return n.magnitude();}; // log: scheme-number -> scheme-number
+	var log=function log(n){if(eqv(n,1)){return 0;}if(typeof n === 'number'){return FloatPoint.makeInstance(Math.log(n));}return n.log();}; // angle: scheme-number -> scheme-number
+	var angle=function angle(n){if(typeof n === 'number'){if(n > 0)return 0;else return FloatPoint.pi;}return n.angle();}; // tan: scheme-number -> scheme-number
+	var tan=function tan(n){if(eqv(n,0)){return 0;}if(typeof n === 'number'){return FloatPoint.makeInstance(Math.tan(n));}return n.tan();}; // atan: scheme-number -> scheme-number
+	var atan=function atan(n){if(eqv(n,0)){return 0;}if(typeof n === 'number'){return FloatPoint.makeInstance(Math.atan(n));}return n.atan();}; // cos: scheme-number -> scheme-number
+	var cos=function cos(n){if(eqv(n,0)){return 1;}if(typeof n === 'number'){return FloatPoint.makeInstance(Math.cos(n));}return n.cos();}; // sin: scheme-number -> scheme-number
+	var sin=function sin(n){if(eqv(n,0)){return 0;}if(typeof n === 'number'){return FloatPoint.makeInstance(Math.sin(n));}return n.sin();}; // acos: scheme-number -> scheme-number
+	var acos=function acos(n){if(eqv(n,1)){return 0;}if(typeof n === 'number'){return FloatPoint.makeInstance(Math.acos(n));}return n.acos();}; // asin: scheme-number -> scheme-number
+	var asin=function asin(n){if(eqv(n,0)){return 0;}if(typeof n === 'number'){return FloatPoint.makeInstance(Math.asin(n));}return n.asin();}; // imaginaryPart: scheme-number -> scheme-number
+	var imaginaryPart=function imaginaryPart(n){if(typeof n === 'number'){return 0;}return n.imaginaryPart();}; // realPart: scheme-number -> scheme-number
+	var realPart=function realPart(n){if(typeof n === 'number'){return n;}return n.realPart();}; // round: scheme-number -> scheme-number
+	var round=function round(n){if(typeof n === 'number'){return n;}return n.round();}; // sqr: scheme-number -> scheme-number
+	var sqr=function sqr(x){return multiply(x,x);}; // integerSqrt: scheme-number -> scheme-number
+	var integerSqrt=function integerSqrt(x){if(!isInteger(x)){throwRuntimeError('integer-sqrt: the argument ' + x.toString() + " is not an integer.",x);}if(typeof x === 'number'){if(x < 0){return Complex.makeInstance(0,Math.floor(Math.sqrt(-x)));}else {return Math.floor(Math.sqrt(x));}}return x.integerSqrt();}; // gcd: scheme-number [scheme-number ...] -> scheme-number
+	var gcd=function gcd(first,rest){if(!isInteger(first)){throwRuntimeError('gcd: the argument ' + first.toString() + " is not an integer.",first);}var a=abs(first),t,b;for(var i=0;i < rest.length;i++) {b = abs(rest[i]);if(!isInteger(b)){throwRuntimeError('gcd: the argument ' + b.toString() + " is not an integer.",b);}while(!_integerIsZero(b)) {t = a;a = b;b = _integerModulo(t,b);}}return a;}; // lcm: scheme-number [scheme-number ...] -> scheme-number
+	var lcm=function lcm(first,rest){if(!isInteger(first)){throwRuntimeError('lcm: the argument ' + first.toString() + " is not an integer.",first);}var result=abs(first);if(_integerIsZero(result)){return 0;}for(var i=0;i < rest.length;i++) {if(!isInteger(rest[i])){throwRuntimeError('lcm: the argument ' + rest[i].toString() + " is not an integer.",rest[i]);}var divisor=_integerGcd(result,rest[i]);if(_integerIsZero(divisor)){return 0;}result = divide(multiply(result,rest[i]),divisor);}return result;};var quotient=function quotient(x,y){if(!isInteger(x)){throwRuntimeError('quotient: the first argument ' + x.toString() + " is not an integer.",x);}if(!isInteger(y)){throwRuntimeError('quotient: the second argument ' + y.toString() + " is not an integer.",y);}return _integerQuotient(x,y);};var remainder=function remainder(x,y){if(!isInteger(x)){throwRuntimeError('remainder: the first argument ' + x.toString() + " is not an integer.",x);}if(!isInteger(y)){throwRuntimeError('remainder: the second argument ' + y.toString() + " is not an integer.",y);}return _integerRemainder(x,y);}; // Implementation of the hyperbolic functions
+	// http://en.wikipedia.org/wiki/Hyperbolic_cosine
+	var cosh=function cosh(x){if(eqv(x,0)){return FloatPoint.makeInstance(1.0);}return divide(add(exp(x),exp(negate(x))),2);};var sinh=function sinh(x){return divide(subtract(exp(x),exp(negate(x))),2);};var makeComplexPolar=function makeComplexPolar(r,theta){ // special case: if theta is zero, just return
+	// the scalar.
+	if(eqv(theta,0)){return r;}return Complex.makeInstance(multiply(r,cos(theta)),multiply(r,sin(theta)));}; //////////////////////////////////////////////////////////////////////
+	// Helpers
+	// IsFinite: scheme-number -> boolean
+	// Returns true if the scheme number is finite or not.
+	var isSchemeNumberFinite=function isSchemeNumberFinite(n){if(typeof n === 'number'){return isFinite(n);}else {return n.isFinite();}}; // isOverflow: javascript-number -> boolean
+	// Returns true if we consider the number an overflow.
+	var MIN_FIXNUM=-9e15;var MAX_FIXNUM=9e15;var isOverflow=function isOverflow(n){return n < MIN_FIXNUM || MAX_FIXNUM < n;}; // negate: scheme-number -> scheme-number
+	// multiplies a number times -1.
+	var negate=function negate(n){if(typeof n === 'number'){return -n;}return n.negate();}; // halve: scheme-number -> scheme-number
+	// Divide a number by 2.
+	var halve=function halve(n){return divide(n,2);}; // timesI: scheme-number scheme-number
+	// multiplies a number times i.
+	var timesI=function timesI(x){return multiply(x,plusI);}; // fastExpt: computes n^k by squaring.
+	// n^k = (n^2)^(k/2)
+	// Assumes k is non-negative integer.
+	var fastExpt=function fastExpt(n,k){var acc=1;while(true) {if(_integerIsZero(k)){return acc;}if(equals(modulo(k,2),0)){n = multiply(n,n);k = divide(k,2);}else {acc = multiply(acc,n);k = subtract(k,1);}}}; //////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////
+	// Integer operations
+	// Integers are either represented as fixnums or as BigIntegers.
+	// makeIntegerBinop: (fixnum fixnum -> X) (BigInteger BigInteger -> X) -> X
+	// Helper to collect the common logic for coersing integer fixnums or bignums to a
+	// common type before doing an operation.
+	var makeIntegerBinop=function makeIntegerBinop(onFixnums,onBignums,options){options = options || {};return function(m,n){if(m instanceof Rational){m = numerator(m);}else if(m instanceof Complex){m = realPart(m);}if(n instanceof Rational){n = numerator(n);}else if(n instanceof Complex){n = realPart(n);}if(typeof m === 'number' && typeof n === 'number'){var result=onFixnums(m,n);if(!isOverflow(result) || options.ignoreOverflow){return result;}}if(m instanceof FloatPoint || n instanceof FloatPoint){if(options.doNotCoerseToFloating){return onFixnums(toFixnum(m),toFixnum(n));}else {return FloatPoint.makeInstance(onFixnums(toFixnum(m),toFixnum(n)));}}if(typeof m === 'number'){m = makeBignum(m);}if(typeof n === 'number'){n = makeBignum(n);}return onBignums(m,n);};};var makeIntegerUnOp=function makeIntegerUnOp(onFixnums,onBignums,options){options = options || {};return function(m){if(m instanceof Rational){m = numerator(m);}else if(m instanceof Complex){m = realPart(m);}if(typeof m === 'number'){var result=onFixnums(m);if(!isOverflow(result) || options.ignoreOverflow){return result;}}if(m instanceof FloatPoint){return onFixnums(toFixnum(m));}if(typeof m === 'number'){m = makeBignum(m);}return onBignums(m);};}; // _integerModulo: integer-scheme-number integer-scheme-number -> integer-scheme-number
+	var _integerModulo=makeIntegerBinop(function(m,n){return m % n;},function(m,n){return bnMod.call(m,n);}); // _integerGcd: integer-scheme-number integer-scheme-number -> integer-scheme-number
+	var _integerGcd=makeIntegerBinop(function(a,b){var t;while(b !== 0) {t = a;a = b;b = t % b;}return a;},function(m,n){return bnGCD.call(m,n);}); // _integerIsZero: integer-scheme-number -> boolean
+	// Returns true if the number is zero.
+	var _integerIsZero=makeIntegerUnOp(function(n){return n === 0;},function(n){return bnEquals.call(n,BigInteger.ZERO);}); // _integerIsOne: integer-scheme-number -> boolean
+	var _integerIsOne=makeIntegerUnOp(function(n){return n === 1;},function(n){return bnEquals.call(n,BigInteger.ONE);}); // _integerIsNegativeOne: integer-scheme-number -> boolean
+	var _integerIsNegativeOne=makeIntegerUnOp(function(n){return n === -1;},function(n){return bnEquals.call(n,BigInteger.NEGATIVE_ONE);}); // _integerAdd: integer-scheme-number integer-scheme-number -> integer-scheme-number
+	var _integerAdd=makeIntegerBinop(function(m,n){return m + n;},function(m,n){return bnAdd.call(m,n);}); // _integerSubtract: integer-scheme-number integer-scheme-number -> integer-scheme-number
+	var _integerSubtract=makeIntegerBinop(function(m,n){return m - n;},function(m,n){return bnSubtract.call(m,n);}); // _integerMultiply: integer-scheme-number integer-scheme-number -> integer-scheme-number
+	var _integerMultiply=makeIntegerBinop(function(m,n){return m * n;},function(m,n){return bnMultiply.call(m,n);}); //_integerQuotient: integer-scheme-number integer-scheme-number -> integer-scheme-number
+	var _integerQuotient=makeIntegerBinop(function(m,n){return (m - m % n) / n;},function(m,n){return bnDivide.call(m,n);});var _integerRemainder=makeIntegerBinop(function(m,n){return m % n;},function(m,n){return bnRemainder.call(m,n);}); // _integerDivideToFixnum: integer-scheme-number integer-scheme-number -> fixnum
+	var _integerDivideToFixnum=makeIntegerBinop(function(m,n){return m / n;},function(m,n){return toFixnum(m) / toFixnum(n);},{ignoreOverflow:true,doNotCoerseToFloating:true}); // _integerEquals: integer-scheme-number integer-scheme-number -> boolean
+	var _integerEquals=makeIntegerBinop(function(m,n){return m === n;},function(m,n){return bnEquals.call(m,n);},{doNotCoerseToFloating:true}); // _integerGreaterThan: integer-scheme-number integer-scheme-number -> boolean
+	var _integerGreaterThan=makeIntegerBinop(function(m,n){return m > n;},function(m,n){return bnCompareTo.call(m,n) > 0;},{doNotCoerseToFloating:true}); // _integerLessThan: integer-scheme-number integer-scheme-number -> boolean
+	var _integerLessThan=makeIntegerBinop(function(m,n){return m < n;},function(m,n){return bnCompareTo.call(m,n) < 0;},{doNotCoerseToFloating:true}); // _integerGreaterThanOrEqual: integer-scheme-number integer-scheme-number -> boolean
+	var _integerGreaterThanOrEqual=makeIntegerBinop(function(m,n){return m >= n;},function(m,n){return bnCompareTo.call(m,n) >= 0;},{doNotCoerseToFloating:true}); // _integerLessThanOrEqual: integer-scheme-number integer-scheme-number -> boolean
+	var _integerLessThanOrEqual=makeIntegerBinop(function(m,n){return m <= n;},function(m,n){return bnCompareTo.call(m,n) <= 0;},{doNotCoerseToFloating:true}); //////////////////////////////////////////////////////////////////////
+	// The boxed number types are expected to implement the following
+	// interface.
+	//
+	// toString: -> string
+	// level: number
+	// liftTo: scheme-number -> scheme-number
+	// isFinite: -> boolean
+	// isInteger: -> boolean
+	// Produce true if this number can be coersed into an integer.
+	// isRational: -> boolean
+	// Produce true if the number is rational.
+	// isReal: -> boolean
+	// Produce true if the number is real.
+	// isExact: -> boolean
+	// Produce true if the number is exact
+	// toExact: -> scheme-number
+	// Produce an exact number.
+	// toFixnum: -> javascript-number
+	// Produce a javascript number.
+	// greaterThan: scheme-number -> boolean
+	// Compare against instance of the same type.
+	// greaterThanOrEqual: scheme-number -> boolean
+	// Compare against instance of the same type.
+	// lessThan: scheme-number -> boolean
+	// Compare against instance of the same type.
+	// lessThanOrEqual: scheme-number -> boolean
+	// Compare against instance of the same type.
+	// add: scheme-number -> scheme-number
+	// Add with an instance of the same type.
+	// subtract: scheme-number -> scheme-number
+	// Subtract with an instance of the same type.
+	// multiply: scheme-number -> scheme-number
+	// Multiply with an instance of the same type.
+	// divide: scheme-number -> scheme-number
+	// Divide with an instance of the same type.
+	// numerator: -> scheme-number
+	// Return the numerator.
+	// denominator: -> scheme-number
+	// Return the denominator.
+	// integerSqrt: -> scheme-number
+	// Produce the integer square root.
+	// sqrt: -> scheme-number
+	// Produce the square root.
+	// abs: -> scheme-number
+	// Produce the absolute value.
+	// floor: -> scheme-number
+	// Produce the floor.
+	// ceiling: -> scheme-number
+	// Produce the ceiling.
+	// conjugate: -> scheme-number
+	// Produce the conjugate.
+	// magnitude: -> scheme-number
+	// Produce the magnitude.
+	// log: -> scheme-number
+	// Produce the log.
+	// angle: -> scheme-number
+	// Produce the angle.
+	// atan: -> scheme-number
+	// Produce the arc tangent.
+	// cos: -> scheme-number
+	// Produce the cosine.
+	// sin: -> scheme-number
+	// Produce the sine.
+	// expt: scheme-number -> scheme-number
+	// Produce the power to the input.
+	// exp: -> scheme-number
+	// Produce e raised to the given power.
+	// acos: -> scheme-number
+	// Produce the arc cosine.
+	// asin: -> scheme-number
+	// Produce the arc sine.
+	// imaginaryPart: -> scheme-number
+	// Produce the imaginary part
+	// realPart: -> scheme-number
+	// Produce the real part.
+	// round: -> scheme-number
+	// Round to the nearest integer.
+	// equals: scheme-number -> boolean
+	// Produce true if the given number of the same type is equal.
+	//////////////////////////////////////////////////////////////////////
+	// Rationals
+	var Rational=function Rational(n,d){this.n = n;this.d = d;};Rational.prototype.toString = function(){if(_integerIsOne(this.d)){return this.n.toString() + "";}else {return this.n.toString() + "/" + this.d.toString();}};Rational.prototype.level = 1;Rational.prototype.liftTo = function(target){if(target.level === 2)return new FloatPoint(_integerDivideToFixnum(this.n,this.d));if(target.level === 3)return new Complex(this,0);return throwRuntimeError("invalid level of Number",this,target);};Rational.prototype.isFinite = function(){return true;};Rational.prototype.equals = function(other){return other instanceof Rational && _integerEquals(this.n,other.n) && _integerEquals(this.d,other.d);};Rational.prototype.isInteger = function(){return _integerIsOne(this.d);};Rational.prototype.isRational = function(){return true;};Rational.prototype.isReal = function(){return true;};Rational.prototype.add = function(other){return Rational.makeInstance(_integerAdd(_integerMultiply(this.n,other.d),_integerMultiply(this.d,other.n)),_integerMultiply(this.d,other.d));};Rational.prototype.subtract = function(other){return Rational.makeInstance(_integerSubtract(_integerMultiply(this.n,other.d),_integerMultiply(this.d,other.n)),_integerMultiply(this.d,other.d));};Rational.prototype.negate = function(){return Rational.makeInstance(-this.n,this.d);};Rational.prototype.multiply = function(other){return Rational.makeInstance(_integerMultiply(this.n,other.n),_integerMultiply(this.d,other.d));};Rational.prototype.divide = function(other){if(_integerIsZero(this.d) || _integerIsZero(other.n)){throwRuntimeError("/: division by zero",this,other);}return Rational.makeInstance(_integerMultiply(this.n,other.d),_integerMultiply(this.d,other.n));};Rational.prototype.toExact = function(){return this;};Rational.prototype.toInexact = function(){return FloatPoint.makeInstance(this.toFixnum());};Rational.prototype.isExact = function(){return true;};Rational.prototype.isInexact = function(){return false;};Rational.prototype.toFixnum = function(){return _integerDivideToFixnum(this.n,this.d);};Rational.prototype.numerator = function(){return this.n;};Rational.prototype.denominator = function(){return this.d;};Rational.prototype.greaterThan = function(other){return _integerGreaterThan(_integerMultiply(this.n,other.d),_integerMultiply(this.d,other.n));};Rational.prototype.greaterThanOrEqual = function(other){return _integerGreaterThanOrEqual(_integerMultiply(this.n,other.d),_integerMultiply(this.d,other.n));};Rational.prototype.lessThan = function(other){return _integerLessThan(_integerMultiply(this.n,other.d),_integerMultiply(this.d,other.n));};Rational.prototype.lessThanOrEqual = function(other){return _integerLessThanOrEqual(_integerMultiply(this.n,other.d),_integerMultiply(this.d,other.n));};Rational.prototype.integerSqrt = function(){var result=sqrt(this);if(isRational(result)){return toExact(floor(result));}else if(isReal(result)){return toExact(floor(result));}else {return Complex.makeInstance(toExact(floor(realPart(result))),toExact(floor(imaginaryPart(result))));}};Rational.prototype.sqrt = function(){if(_integerGreaterThanOrEqual(this.n,0)){var newN=sqrt(this.n);var newD=sqrt(this.d);if(equals(floor(newN),newN) && equals(floor(newD),newD)){return Rational.makeInstance(newN,newD);}else {return FloatPoint.makeInstance(_integerDivideToFixnum(newN,newD));}}else {var newN=sqrt(negate(this.n));var newD=sqrt(this.d);if(equals(floor(newN),newN) && equals(floor(newD),newD)){return Complex.makeInstance(0,Rational.makeInstance(newN,newD));}else {return Complex.makeInstance(0,FloatPoint.makeInstance(_integerDivideToFixnum(newN,newD)));}}};Rational.prototype.abs = function(){return Rational.makeInstance(abs(this.n),this.d);};Rational.prototype.floor = function(){var quotient=_integerQuotient(this.n,this.d);if(_integerLessThan(this.n,0)){return subtract(quotient,1);}else {return quotient;}};Rational.prototype.ceiling = function(){var quotient=_integerQuotient(this.n,this.d);if(_integerLessThan(this.n,0)){return quotient;}else {return add(quotient,1);}};Rational.prototype.conjugate = function(){return this;};Rational.prototype.magnitude = Rational.prototype.abs;Rational.prototype.log = function(){return FloatPoint.makeInstance(Math.log(this.n / this.d));};Rational.prototype.angle = function(){if(_integerIsZero(this.n))return 0;if(_integerGreaterThan(this.n,0))return 0;else return FloatPoint.pi;};Rational.prototype.tan = function(){return FloatPoint.makeInstance(Math.tan(_integerDivideToFixnum(this.n,this.d)));};Rational.prototype.atan = function(){return FloatPoint.makeInstance(Math.atan(_integerDivideToFixnum(this.n,this.d)));};Rational.prototype.cos = function(){return FloatPoint.makeInstance(Math.cos(_integerDivideToFixnum(this.n,this.d)));};Rational.prototype.sin = function(){return FloatPoint.makeInstance(Math.sin(_integerDivideToFixnum(this.n,this.d)));};Rational.prototype.expt = function(a){if(isExactInteger(a) && greaterThanOrEqual(a,0)){return fastExpt(this,a);}return FloatPoint.makeInstance(Math.pow(_integerDivideToFixnum(this.n,this.d),_integerDivideToFixnum(a.n,a.d)));};Rational.prototype.exp = function(){return FloatPoint.makeInstance(Math.exp(_integerDivideToFixnum(this.n,this.d)));};Rational.prototype.acos = function(){return FloatPoint.makeInstance(Math.acos(_integerDivideToFixnum(this.n,this.d)));};Rational.prototype.asin = function(){return FloatPoint.makeInstance(Math.asin(_integerDivideToFixnum(this.n,this.d)));};Rational.prototype.imaginaryPart = function(){return 0;};Rational.prototype.realPart = function(){return this;};Rational.prototype.round = function(){var halfintp=equals(this.d,2);var negativep=_integerLessThan(this.n,0);var n=this.n;if(negativep){n = negate(n);}var quo=_integerQuotient(n,this.d);if(halfintp){ // rounding half to away from 0
+	// uncomment following if rounding half to even
+	// if (_integerIsOne(_integerModulo(quo, 2)))
+	quo = add(quo,1);}else {var rem=_integerRemainder(n,this.d);if(greaterThan(multiply(rem,2),this.d)){quo = add(quo,1);}}if(negativep){quo = negate(quo);}return quo;};Rational.makeInstance = function(n,d){if(n === undefined)throwRuntimeError("n undefined",n,d);if(d === undefined){d = 1;}if(_integerIsZero(d)){throwRuntimeError("division by zero: " + n + "/" + d);}if(_integerLessThan(d,0)){n = negate(n);d = negate(d);}var divisor=_integerGcd(abs(n),abs(d));n = _integerQuotient(n,divisor);d = _integerQuotient(d,divisor); // Optimization: if we can get around construction the rational
+	// in favor of just returning n, do it:
+	if(_integerIsOne(d) || _integerIsZero(n)){return n;}return new Rational(n,d);}; // Floating Point numbers
+	var FloatPoint=function FloatPoint(n){this.n = n;};FloatPoint = FloatPoint;var NaN=new FloatPoint(Number.NaN);var inf=new FloatPoint(Number.POSITIVE_INFINITY);var neginf=new FloatPoint(Number.NEGATIVE_INFINITY); // We use these two constants to represent the floating-point coersion
+	// of bignums that can't be represented with fidelity.
+	var TOO_POSITIVE_TO_REPRESENT=new FloatPoint(Number.POSITIVE_INFINITY);var TOO_NEGATIVE_TO_REPRESENT=new FloatPoint(Number.NEGATIVE_INFINITY); // Negative zero is a distinguished value representing -0.0.
+	// There should only be one instance for -0.0.
+	var NEGATIVE_ZERO=new FloatPoint(-0.0);var INEXACT_ZERO=new FloatPoint(0.0);FloatPoint.pi = new FloatPoint(Math.PI);FloatPoint.e = new FloatPoint(Math.E);FloatPoint.nan = NaN;FloatPoint.inf = inf;FloatPoint.neginf = neginf;FloatPoint.makeInstance = function(n){if(isNaN(n)){return FloatPoint.nan;}else if(n === Number.POSITIVE_INFINITY){return FloatPoint.inf;}else if(n === Number.NEGATIVE_INFINITY){return FloatPoint.neginf;}else if(n === 0){if(1 / n === -Infinity){return NEGATIVE_ZERO;}else {return INEXACT_ZERO;}}return new FloatPoint(n);};FloatPoint.prototype.isExact = function(){return false;};FloatPoint.prototype.isInexact = function(){return true;};FloatPoint.prototype.isFinite = function(){return isFinite(this.n) || this === TOO_POSITIVE_TO_REPRESENT || this === TOO_NEGATIVE_TO_REPRESENT;};FloatPoint.prototype.toExact = function(){ // The precision of ieee is about 16 decimal digits, which we use here.
+	if(!isFinite(this.n) || isNaN(this.n)){throwRuntimeError("toExact: no exact representation for " + this,this);}var stringRep=this.n.toString();var match=stringRep.match(/^(.*)\.(.*)$/);if(match){var intPart=parseInt(match[1]);var fracPart=parseInt(match[2]);var tenToDecimalPlaces=Math.pow(10,match[2].length);return Rational.makeInstance(Math.round(this.n * tenToDecimalPlaces),tenToDecimalPlaces);}else {return this.n;}};FloatPoint.prototype.toInexact = function(){return this;};FloatPoint.prototype.isInexact = function(){return true;};FloatPoint.prototype.level = 2;FloatPoint.prototype.liftTo = function(target){if(target.level === 3)return new Complex(this,0);return throwRuntimeError("invalid level of Number",this,target);};FloatPoint.prototype.toString = function(){if(isNaN(this.n))return "+nan.0";if(this.n === Number.POSITIVE_INFINITY)return "+inf.0";if(this.n === Number.NEGATIVE_INFINITY)return "-inf.0";if(this === NEGATIVE_ZERO)return "-0.0";var partialResult=this.n.toString();if(!partialResult.match('\\.')){return partialResult + ".0";}else {return partialResult;}};FloatPoint.prototype.equals = function(other,aUnionFind){return other instanceof FloatPoint && this.n === other.n;};FloatPoint.prototype.isRational = function(){return this.isFinite();};FloatPoint.prototype.isInteger = function(){return this.isFinite() && this.n === Math.floor(this.n);};FloatPoint.prototype.isReal = function(){return true;}; // sign: Number -> {-1, 0, 1}
+	var sign=function sign(n){if(lessThan(n,0)){return -1;}else if(greaterThan(n,0)){return 1;}else if(n === NEGATIVE_ZERO){return -1;}else {return 0;}};FloatPoint.prototype.add = function(other){if(this.isFinite() && other.isFinite()){return FloatPoint.makeInstance(this.n + other.n);}else {if(isNaN(this.n) || isNaN(other.n)){return NaN;}else if(this.isFinite() && !other.isFinite()){return other;}else if(!this.isFinite() && other.isFinite()){return this;}else {return sign(this) * sign(other) === 1?this:NaN;};}};FloatPoint.prototype.subtract = function(other){if(this.isFinite() && other.isFinite()){return FloatPoint.makeInstance(this.n - other.n);}else if(isNaN(this.n) || isNaN(other.n)){return NaN;}else if(!this.isFinite() && !other.isFinite()){if(sign(this) === sign(other)){return NaN;}else {return this;}}else if(this.isFinite()){return multiply(other,-1);}else { // other.isFinite()
+	return this;}};FloatPoint.prototype.negate = function(){return FloatPoint.makeInstance(-this.n);};FloatPoint.prototype.multiply = function(other){return FloatPoint.makeInstance(this.n * other.n);};FloatPoint.prototype.divide = function(other){return FloatPoint.makeInstance(this.n / other.n);};FloatPoint.prototype.toFixnum = function(){return this.n;};FloatPoint.prototype.numerator = function(){var stringRep=this.n.toString();var match=stringRep.match(/^(.*)\.(.*)$/);if(match){var afterDecimal=parseInt(match[2]);var factorToInt=Math.pow(10,match[2].length);var extraFactor=_integerGcd(factorToInt,afterDecimal);var multFactor=factorToInt / extraFactor;return FloatPoint.makeInstance(Math.round(this.n * multFactor));}else {return this;}};FloatPoint.prototype.denominator = function(){var stringRep=this.n.toString();var match=stringRep.match(/^(.*)\.(.*)$/);if(match){var afterDecimal=parseInt(match[2]);var factorToInt=Math.pow(10,match[2].length);var extraFactor=_integerGcd(factorToInt,afterDecimal);return FloatPoint.makeInstance(Math.round(factorToInt / extraFactor));}else {return FloatPoint.makeInstance(1);}};FloatPoint.prototype.floor = function(){return FloatPoint.makeInstance(Math.floor(this.n));};FloatPoint.prototype.ceiling = function(){return FloatPoint.makeInstance(Math.ceil(this.n));};FloatPoint.prototype.greaterThan = function(other){return this.n > other.n;};FloatPoint.prototype.greaterThanOrEqual = function(other){return this.n >= other.n;};FloatPoint.prototype.lessThan = function(other){return this.n < other.n;};FloatPoint.prototype.lessThanOrEqual = function(other){return this.n <= other.n;};FloatPoint.prototype.integerSqrt = function(){if(this === NEGATIVE_ZERO){return this;}if(isInteger(this)){if(this.n >= 0){return FloatPoint.makeInstance(Math.floor(Math.sqrt(this.n)));}else {return Complex.makeInstance(INEXACT_ZERO,FloatPoint.makeInstance(Math.floor(Math.sqrt(-this.n))));}}else {throwRuntimeError("integerSqrt: can only be applied to an integer",this);}};FloatPoint.prototype.sqrt = function(){if(this.n < 0){var result=Complex.makeInstance(0,FloatPoint.makeInstance(Math.sqrt(-this.n)));return result;}else {return FloatPoint.makeInstance(Math.sqrt(this.n));}};FloatPoint.prototype.abs = function(){return FloatPoint.makeInstance(Math.abs(this.n));};FloatPoint.prototype.log = function(){if(this.n < 0)return new Complex(this,0).log();else return FloatPoint.makeInstance(Math.log(this.n));};FloatPoint.prototype.angle = function(){if(0 === this.n)return 0;if(this.n > 0)return 0;else return FloatPoint.pi;};FloatPoint.prototype.tan = function(){return FloatPoint.makeInstance(Math.tan(this.n));};FloatPoint.prototype.atan = function(){return FloatPoint.makeInstance(Math.atan(this.n));};FloatPoint.prototype.cos = function(){return FloatPoint.makeInstance(Math.cos(this.n));};FloatPoint.prototype.sin = function(){return FloatPoint.makeInstance(Math.sin(this.n));};FloatPoint.prototype.expt = function(a){if(this.n === 1){if(a.isFinite()){return this;}else if(isNaN(a.n)){return this;}else {return this;}}else {return FloatPoint.makeInstance(Math.pow(this.n,a.n));}};FloatPoint.prototype.exp = function(){return FloatPoint.makeInstance(Math.exp(this.n));};FloatPoint.prototype.acos = function(){return FloatPoint.makeInstance(Math.acos(this.n));};FloatPoint.prototype.asin = function(){return FloatPoint.makeInstance(Math.asin(this.n));};FloatPoint.prototype.imaginaryPart = function(){return 0;};FloatPoint.prototype.realPart = function(){return this;};FloatPoint.prototype.round = function(){if(isFinite(this.n)){if(this === NEGATIVE_ZERO){return this;}if(Math.abs(Math.floor(this.n) - this.n) === 0.5){if(Math.floor(this.n) % 2 === 0)return FloatPoint.makeInstance(Math.floor(this.n));return FloatPoint.makeInstance(Math.ceil(this.n));}else {return FloatPoint.makeInstance(Math.round(this.n));}}else {return this;}};FloatPoint.prototype.conjugate = function(){return this;};FloatPoint.prototype.magnitude = FloatPoint.prototype.abs; //////////////////////////////////////////////////////////////////////
+	// Complex numbers
+	//////////////////////////////////////////////////////////////////////
+	var Complex=function Complex(r,i){this.r = r;this.i = i;}; // Constructs a complex number from two basic number r and i.  r and i can
+	// either be plt.type.Rational or plt.type.FloatPoint.
+	Complex.makeInstance = function(r,i){if(i === undefined){i = 0;}if(isExact(i) && isInteger(i) && _integerIsZero(i)){return r;}if(isInexact(r) || isInexact(i)){r = toInexact(r);i = toInexact(i);}return new Complex(r,i);};Complex.prototype.toString = function(){var realPart=this.r.toString(),imagPart=this.i.toString();if(imagPart[0] === '-' || imagPart[0] === '+'){return realPart + imagPart + 'i';}else {return realPart + "+" + imagPart + 'i';}};Complex.prototype.isFinite = function(){return isSchemeNumberFinite(this.r) && isSchemeNumberFinite(this.i);};Complex.prototype.isRational = function(){return isRational(this.r) && eqv(this.i,0);};Complex.prototype.isInteger = function(){return isInteger(this.r) && eqv(this.i,0);};Complex.prototype.toExact = function(){return Complex.makeInstance(toExact(this.r),toExact(this.i));};Complex.prototype.toInexact = function(){return Complex.makeInstance(toInexact(this.r),toInexact(this.i));};Complex.prototype.isExact = function(){return isExact(this.r) && isExact(this.i);};Complex.prototype.isInexact = function(){return isInexact(this.r) || isInexact(this.i);};Complex.prototype.level = 3;Complex.prototype.liftTo = function(target){throwRuntimeError("Don't know how to lift Complex number",this,target);};Complex.prototype.equals = function(other){var result=other instanceof Complex && equals(this.r,other.r) && equals(this.i,other.i);return result;};Complex.prototype.greaterThan = function(other){if(!this.isReal() || !other.isReal()){throwRuntimeError(">: expects argument of type real number",this,other);}return greaterThan(this.r,other.r);};Complex.prototype.greaterThanOrEqual = function(other){if(!this.isReal() || !other.isReal()){throwRuntimeError(">=: expects argument of type real number",this,other);}return greaterThanOrEqual(this.r,other.r);};Complex.prototype.lessThan = function(other){if(!this.isReal() || !other.isReal()){throwRuntimeError("<: expects argument of type real number",this,other);}return lessThan(this.r,other.r);};Complex.prototype.lessThanOrEqual = function(other){if(!this.isReal() || !other.isReal()){throwRuntimeError("<=: expects argument of type real number",this,other);}return lessThanOrEqual(this.r,other.r);};Complex.prototype.abs = function(){if(!equals(this.i,0).valueOf())throwRuntimeError("abs: expects argument of type real number",this);return abs(this.r);};Complex.prototype.toFixnum = function(){if(!equals(this.i,0).valueOf())throwRuntimeError("toFixnum: expects argument of type real number",this);return toFixnum(this.r);};Complex.prototype.numerator = function(){if(!this.isReal())throwRuntimeError("numerator: can only be applied to real number",this);return numerator(this.n);};Complex.prototype.denominator = function(){if(!this.isReal())throwRuntimeError("floor: can only be applied to real number",this);return denominator(this.n);};Complex.prototype.add = function(other){return Complex.makeInstance(add(this.r,other.r),add(this.i,other.i));};Complex.prototype.subtract = function(other){return Complex.makeInstance(subtract(this.r,other.r),subtract(this.i,other.i));};Complex.prototype.negate = function(){return Complex.makeInstance(negate(this.r),negate(this.i));};Complex.prototype.multiply = function(other){ // If the other value is real, just do primitive division
+	if(other.isReal()){return Complex.makeInstance(multiply(this.r,other.r),multiply(this.i,other.r));}var r=subtract(multiply(this.r,other.r),multiply(this.i,other.i));var i=add(multiply(this.r,other.i),multiply(this.i,other.r));return Complex.makeInstance(r,i);};Complex.prototype.divide = function(other){var a,b,c,d,r,x,y; // If the other value is real, just do primitive division
+	if(other.isReal()){return Complex.makeInstance(divide(this.r,other.r),divide(this.i,other.r));}if(this.isInexact() || other.isInexact()){ // http://portal.acm.org/citation.cfm?id=1039814
+	// We currently use Smith's method, though we should
+	// probably switch over to Priest's method.
+	a = this.r;b = this.i;c = other.r;d = other.i;if(lessThanOrEqual(abs(d),abs(c))){r = divide(d,c);x = divide(add(a,multiply(b,r)),add(c,multiply(d,r)));y = divide(subtract(b,multiply(a,r)),add(c,multiply(d,r)));}else {r = divide(c,d);x = divide(add(multiply(a,r),b),add(multiply(c,r),d));y = divide(subtract(multiply(b,r),a),add(multiply(c,r),d));}return Complex.makeInstance(x,y);}else {var con=conjugate(other);var up=multiply(this,con); // Down is guaranteed to be real by this point.
+	var down=realPart(multiply(other,con));var result=Complex.makeInstance(divide(realPart(up),down),divide(imaginaryPart(up),down));return result;}};Complex.prototype.conjugate = function(){var result=Complex.makeInstance(this.r,subtract(0,this.i));return result;};Complex.prototype.magnitude = function(){var sum=add(multiply(this.r,this.r),multiply(this.i,this.i));return sqrt(sum);};Complex.prototype.isReal = function(){return eqv(this.i,0);};Complex.prototype.integerSqrt = function(){if(isInteger(this)){return integerSqrt(this.r);}else {throwRuntimeError("integerSqrt: can only be applied to an integer",this);}};Complex.prototype.sqrt = function(){if(this.isReal())return sqrt(this.r); // http://en.wikipedia.org/wiki/Square_root#Square_roots_of_negative_and_complex_numbers
+	var r_plus_x=add(this.magnitude(),this.r);var r=sqrt(halve(r_plus_x));var i=divide(this.i,sqrt(multiply(r_plus_x,2)));return Complex.makeInstance(r,i);};Complex.prototype.log = function(){var m=this.magnitude();var theta=this.angle();var result=add(log(m),timesI(theta));return result;};Complex.prototype.angle = function(){if(this.isReal()){return angle(this.r);}if(equals(0,this.r)){var tmp=halve(FloatPoint.pi);return greaterThan(this.i,0)?tmp:negate(tmp);}else {var tmp=atan(divide(abs(this.i),abs(this.r)));if(greaterThan(this.r,0)){return greaterThan(this.i,0)?tmp:negate(tmp);}else {return greaterThan(this.i,0)?subtract(FloatPoint.pi,tmp):subtract(tmp,FloatPoint.pi);}}};var plusI=Complex.makeInstance(0,1);var minusI=Complex.makeInstance(0,-1);Complex.prototype.tan = function(){return divide(this.sin(),this.cos());};Complex.prototype.atan = function(){if(equals(this,plusI) || equals(this,minusI)){return neginf;}return multiply(plusI,multiply(FloatPoint.makeInstance(0.5),log(divide(add(plusI,this),add(plusI,subtract(0,this))))));};Complex.prototype.cos = function(){if(this.isReal())return cos(this.r);var iz=timesI(this);var iz_negate=negate(iz);return halve(add(exp(iz),exp(iz_negate)));};Complex.prototype.sin = function(){if(this.isReal())return sin(this.r);var iz=timesI(this);var iz_negate=negate(iz);var z2=Complex.makeInstance(0,2);var exp_negate=subtract(exp(iz),exp(iz_negate));var result=divide(exp_negate,z2);return result;};Complex.prototype.expt = function(y){if(isExactInteger(y) && greaterThanOrEqual(y,0)){return fastExpt(this,y);}var expo=multiply(y,this.log());return exp(expo);};Complex.prototype.exp = function(){var r=exp(this.r);var cos_a=cos(this.i);var sin_a=sin(this.i);return multiply(r,add(cos_a,timesI(sin_a)));};Complex.prototype.acos = function(){if(this.isReal())return acos(this.r);var pi_half=halve(FloatPoint.pi);var iz=timesI(this);var root=sqrt(subtract(1,sqr(this)));var l=timesI(log(add(iz,root)));return add(pi_half,l);};Complex.prototype.asin = function(){if(this.isReal())return asin(this.r);var oneNegateThisSq=subtract(1,sqr(this));var sqrtOneNegateThisSq=sqrt(oneNegateThisSq);return multiply(2,atan(divide(this,add(1,sqrtOneNegateThisSq))));};Complex.prototype.ceiling = function(){if(!this.isReal())throwRuntimeError("ceiling: can only be applied to real number",this);return ceiling(this.r);};Complex.prototype.floor = function(){if(!this.isReal())throwRuntimeError("floor: can only be applied to real number",this);return floor(this.r);};Complex.prototype.imaginaryPart = function(){return this.i;};Complex.prototype.realPart = function(){return this.r;};Complex.prototype.round = function(){if(!this.isReal())throwRuntimeError("round: can only be applied to real number",this);return round(this.r);};var hashModifiersRegexp=new RegExp("^(#[ei]#[bodx]|#[bodx]#[ei]|#[bodxei])(.*)$");function rationalRegexp(digits){return new RegExp("^([+-]?[" + digits + "]+)/([" + digits + "]+)$");}function matchComplexRegexp(radix,x){var sign="[+-]";var maybeSign="[+-]?";var digits=digitsForRadix(radix);var expmark="[" + expMarkForRadix(radix) + "]";var digitSequence="[" + digits + "]+";var unsignedRational=digitSequence + "/" + digitSequence;var rational=maybeSign + unsignedRational;var noDecimal=digitSequence;var decimalNumOnRight="[" + digits + "]*\\.[" + digits + "]+";var decimalNumOnLeft="[" + digits + "]+\\.[" + digits + "]*";var unsignedDecimal="(?:" + noDecimal + "|" + decimalNumOnRight + "|" + decimalNumOnLeft + ")";var special="(?:inf\.0|nan\.0|inf\.f|nan\.f)";var unsignedRealNoExp="(?:" + unsignedDecimal + "|" + unsignedRational + ")";var unsignedReal=unsignedRealNoExp + "(?:" + expmark + maybeSign + digitSequence + ")?";var unsignedRealOrSpecial="(?:" + unsignedReal + "|" + special + ")";var real="(?:" + maybeSign + unsignedReal + "|" + sign + special + ")";var alt1=new RegExp("^(" + rational + ")" + "(" + sign + unsignedRational + "?)" + "i$");var alt2=new RegExp("^(" + real + ")?" + "(" + sign + unsignedRealOrSpecial + "?)" + "i$");var alt3=new RegExp("^(" + real + ")@(" + real + ")$");var match1=x.match(alt1);var match2=x.match(alt2);var match3=x.match(alt3);return match1?match1:match2?match2:match3?match3: /* else */false;}function digitRegexp(digits){return new RegExp("^[+-]?[" + digits + "]+$");} /**
+	    /* NB: !!!! flonum regexp only matches "X.", ".X", or "X.X", NOT "X", this
+	    /* must be separately checked with digitRegexp.
+	    /* I know this seems dumb, but the alternative would be that this regexp
+	    /* returns six matches, which also seems dumb.
+	    /***/function flonumRegexp(digits){var decimalNumOnRight="([" + digits + "]*)\\.([" + digits + "]+)";var decimalNumOnLeft="([" + digits + "]+)\\.([" + digits + "]*)";return new RegExp("^(?:([+-]?)(" + decimalNumOnRight + "|" + decimalNumOnLeft + "))$");}function scientificPattern(digits,exp_mark){var noDecimal="[" + digits + "]+";var decimalNumOnRight="[" + digits + "]*\\.[" + digits + "]+";var decimalNumOnLeft="[" + digits + "]+\\.[" + digits + "]*";return new RegExp("^(?:([+-]?" + "(?:" + noDecimal + "|" + decimalNumOnRight + "|" + decimalNumOnLeft + ")" + ")[" + exp_mark + "]([+-]?[" + digits + "]+))$");}function digitsForRadix(radix){return radix === 2?"01":radix === 8?"0-7":radix === 10?"0-9":radix === 16?"0-9a-fA-F":throwRuntimeError("digitsForRadix: invalid radix",this,radix);}function expMarkForRadix(radix){return radix === 2 || radix === 8 || radix === 10?"defsl":radix === 16?"sl":throwRuntimeError("expMarkForRadix: invalid radix",this,radix);}function Exactness(i){this.defaultp = function(){return i == 0;};this.exactp = function(){return i == 1;};this.inexactp = function(){return i == 2;};}Exactness.def = new Exactness(0);Exactness.on = new Exactness(1);Exactness.off = new Exactness(2);Exactness.prototype.intAsExactp = function(){return this.defaultp() || this.exactp();};Exactness.prototype.floatAsInexactp = function(){return this.defaultp() || this.inexactp();}; // fromString: string boolean -> (scheme-number | false)
+	var fromString=function fromString(x,exactness){var radix=10;var exactness=typeof exactness === 'undefined'?Exactness.def:exactness === true?Exactness.on:exactness === false?Exactness.off: /* else */throwRuntimeError("exactness must be true or false",this,r);var hMatch=x.toLowerCase().match(hashModifiersRegexp);if(hMatch){var modifierString=hMatch[1].toLowerCase();var exactFlag=modifierString.match(new RegExp("(#[ei])"));var radixFlag=modifierString.match(new RegExp("(#[bodx])"));if(exactFlag){var f=exactFlag[1].charAt(1);exactness = f === 'e'?Exactness.on:f === 'i'?Exactness.off: // this case is unreachable
+	throwRuntimeError("invalid exactness flag",this,r);}if(radixFlag){var f=radixFlag[1].charAt(1);radix = f === 'b'?2:f === 'o'?8:f === 'd'?10:f === 'x'?16: // this case is unreachable
+	throwRuntimeError("invalid radix flag",this,r);}}var numberString=hMatch?hMatch[2]:x; // if the string begins with a hash modifier, then it must parse as a
+	// number, an invalid parse is an error, not false. False is returned
+	// when the item could potentially have been read as a symbol.
+	var mustBeANumberp=hMatch?true:false;return fromStringRaw(numberString,radix,exactness,mustBeANumberp);};function fromStringRaw(x,radix,exactness,mustBeANumberp){var cMatch=matchComplexRegexp(radix,x);if(cMatch){return Complex.makeInstance(fromStringRawNoComplex(cMatch[1] || "0",radix,exactness),fromStringRawNoComplex(cMatch[2] === "+"?"1":cMatch[2] === "-"?"-1":cMatch[2],radix,exactness));}return fromStringRawNoComplex(x,radix,exactness,mustBeANumberp);}function fromStringRawNoComplex(x,radix,exactness,mustBeANumberp){var aMatch=x.match(rationalRegexp(digitsForRadix(radix)));if(aMatch){return Rational.makeInstance(fromStringRawNoComplex(aMatch[1],radix,exactness),fromStringRawNoComplex(aMatch[2],radix,exactness));} // Floating point tests
+	if(x === '+nan.0' || x === '-nan.0')return FloatPoint.nan;if(x === '+inf.0')return FloatPoint.inf;if(x === '-inf.0')return FloatPoint.neginf;if(x === "-0.0"){return NEGATIVE_ZERO;}var fMatch=x.match(flonumRegexp(digitsForRadix(radix)));if(fMatch){var integralPart=fMatch[3] !== undefined?fMatch[3]:fMatch[5];var fractionalPart=fMatch[4] !== undefined?fMatch[4]:fMatch[6];return parseFloat(fMatch[1],integralPart,fractionalPart,radix,exactness);}var sMatch=x.match(scientificPattern(digitsForRadix(radix),expMarkForRadix(radix)));if(sMatch){var coefficient=fromStringRawNoComplex(sMatch[1],radix,exactness);var exponent=fromStringRawNoComplex(sMatch[2],radix,exactness);return multiply(coefficient,expt(radix,exponent));} // Finally, integer tests.
+	if(x.match(digitRegexp(digitsForRadix(radix)))){var n=parseInt(x,radix);if(isOverflow(n)){return makeBignum(x);}else if(exactness.intAsExactp()){return n;}else {return FloatPoint.makeInstance(n);}}else if(mustBeANumberp){if(x.length === 0)throwRuntimeError("no digits");throwRuntimeError("bad number: " + x,this);}else {return false;}};function parseFloat(sign,integralPart,fractionalPart,radix,exactness){var sign=sign == "-"?-1:1;var integralPartValue=integralPart === ""?0:exactness.intAsExactp()?parseExactInt(integralPart,radix):parseInt(integralPart,radix);var fractionalNumerator=fractionalPart === ""?0:exactness.intAsExactp()?parseExactInt(fractionalPart,radix):parseInt(fractionalPart,radix); /* unfortunately, for these next two calculations, `expt` and `divide` */ /* will promote to Bignum and Rational, respectively, but we only want */ /* these if we're parsing in exact mode */var fractionalDenominator=exactness.intAsExactp()?expt(radix,fractionalPart.length):Math.pow(radix,fractionalPart.length);var fractionalPartValue=fractionalPart === ""?0:exactness.intAsExactp()?divide(fractionalNumerator,fractionalDenominator):fractionalNumerator / fractionalDenominator;var forceInexact=function forceInexact(o){return typeof o === "number"?FloatPoint.makeInstance(o):o.toInexact();};return exactness.floatAsInexactp()?forceInexact(multiply(sign,add(integralPartValue,fractionalPartValue))):multiply(sign,add(integralPartValue,fractionalPartValue));}function parseExactInt(str,radix){return fromStringRawNoComplex(str,radix,Exactness.on,true);} //////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////
+	// The code below comes from Tom Wu's BigInteger implementation:
+	// Copyright (c) 2005  Tom Wu
+	// All Rights Reserved.
+	// See "LICENSE" for details.
+	// Basic JavaScript BN library - subset useful for RSA encryption.
+	// Bits per digit
+	var dbits; // JavaScript engine analysis
+	var canary=0xdeadbeefcafe;var j_lm=(canary & 0xffffff) == 0xefcafe; // (public) Constructor
+	function BigInteger(a,b,c){if(a != null)if("number" == typeof a)this.fromNumber(a,b,c);else if(b == null && "string" != typeof a)this.fromString(a,256);else this.fromString(a,b);} // return new, unset BigInteger
+	function nbi(){return new BigInteger(null);} // am: Compute w_j += (x*this_i), propagate carries,
+	// c is initial carry, returns final carry.
+	// c < 3*dvalue, x < 2*dvalue, this_i < dvalue
+	// We need to select the fastest one that works in this environment.
+	// am1: use a single mult and divide to get the high bits,
+	// max digit bits should be 26 because
+	// max internal value = 2*dvalue^2-2*dvalue (< 2^53)
+	function am1(i,x,w,j,c,n){while(--n >= 0) {var v=x * this[i++] + w[j] + c;c = Math.floor(v / 0x4000000);w[j++] = v & 0x3ffffff;}return c;} // am2 avoids a big mult-and-extract completely.
+	// Max digit bits should be <= 30 because we do bitwise ops
+	// on values up to 2*hdvalue^2-hdvalue-1 (< 2^31)
+	function am2(i,x,w,j,c,n){var xl=x & 0x7fff,xh=x >> 15;while(--n >= 0) {var l=this[i] & 0x7fff;var h=this[i++] >> 15;var m=xh * l + h * xl;l = xl * l + ((m & 0x7fff) << 15) + w[j] + (c & 0x3fffffff);c = (l >>> 30) + (m >>> 15) + xh * h + (c >>> 30);w[j++] = l & 0x3fffffff;}return c;} // Alternately, set max digit bits to 28 since some
+	// browsers slow down when dealing with 32-bit numbers.
+	function am3(i,x,w,j,c,n){var xl=x & 0x3fff,xh=x >> 14;while(--n >= 0) {var l=this[i] & 0x3fff;var h=this[i++] >> 14;var m=xh * l + h * xl;l = xl * l + ((m & 0x3fff) << 14) + w[j] + c;c = (l >> 28) + (m >> 14) + xh * h;w[j++] = l & 0xfffffff;}return c;}if(j_lm && typeof navigator !== 'undefined' && navigator.appName == "Microsoft Internet Explorer"){BigInteger.prototype.am = am2;dbits = 30;}else if(j_lm && typeof navigator !== 'undefined' && navigator.appName != "Netscape"){BigInteger.prototype.am = am1;dbits = 26;}else { // Mozilla/Netscape seems to prefer am3
+	BigInteger.prototype.am = am3;dbits = 28;}BigInteger.prototype.DB = dbits;BigInteger.prototype.DM = (1 << dbits) - 1;BigInteger.prototype.DV = 1 << dbits;var BI_FP=52;BigInteger.prototype.FV = Math.pow(2,BI_FP);BigInteger.prototype.F1 = BI_FP - dbits;BigInteger.prototype.F2 = 2 * dbits - BI_FP; // Digit conversions
+	var BI_RM="0123456789abcdefghijklmnopqrstuvwxyz";var BI_RC=[];var rr,vv;rr = "0".charCodeAt(0);for(vv = 0;vv <= 9;++vv) {BI_RC[rr++] = vv;}rr = "a".charCodeAt(0);for(vv = 10;vv < 36;++vv) {BI_RC[rr++] = vv;}rr = "A".charCodeAt(0);for(vv = 10;vv < 36;++vv) {BI_RC[rr++] = vv;}function int2char(n){return BI_RM.charAt(n);}function intAt(s,i){var c=BI_RC[s.charCodeAt(i)];return c == null?-1:c;} // (protected) copy this to r
+	function bnpCopyTo(r){for(var i=this.t - 1;i >= 0;--i) {r[i] = this[i];}r.t = this.t;r.s = this.s;} // (protected) set from integer value x, -DV <= x < DV
+	function bnpFromInt(x){this.t = 1;this.s = x < 0?-1:0;if(x > 0)this[0] = x;else if(x < -1)this[0] = x + DV;else this.t = 0;} // return bigint initialized to value
+	function nbv(i){var r=nbi();r.fromInt(i);return r;} // (protected) set from string and radix
+	function bnpFromString(s,b){var k;if(b == 16)k = 4;else if(b == 8)k = 3;else if(b == 256)k = 8; // byte array
+	else if(b == 2)k = 1;else if(b == 32)k = 5;else if(b == 4)k = 2;else {this.fromRadix(s,b);return;}this.t = 0;this.s = 0;var i=s.length,mi=false,sh=0;while(--i >= 0) {var x=k == 8?s[i] & 0xff:intAt(s,i);if(x < 0){if(s.charAt(i) == "-")mi = true;continue;}mi = false;if(sh == 0)this[this.t++] = x;else if(sh + k > this.DB){this[this.t - 1] |= (x & (1 << this.DB - sh) - 1) << sh;this[this.t++] = x >> this.DB - sh;}else this[this.t - 1] |= x << sh;sh += k;if(sh >= this.DB)sh -= this.DB;}if(k == 8 && (s[0] & 0x80) != 0){this.s = -1;if(sh > 0)this[this.t - 1] |= (1 << this.DB - sh) - 1 << sh;}this.clamp();if(mi)BigInteger.ZERO.subTo(this,this);} // (protected) clamp off excess high words
+	function bnpClamp(){var c=this.s & this.DM;while(this.t > 0 && this[this.t - 1] == c) {--this.t;}} // (public) return string representation in given radix
+	function bnToString(b){if(this.s < 0)return "-" + this.negate().toString(b);var k;if(b == 16)k = 4;else if(b == 8)k = 3;else if(b == 2)k = 1;else if(b == 32)k = 5;else if(b == 4)k = 2;else return this.toRadix(b);var km=(1 << k) - 1,d,m=false,r=[],i=this.t;var p=this.DB - i * this.DB % k;if(i-- > 0){if(p < this.DB && (d = this[i] >> p) > 0){m = true;r.push(int2char(d));}while(i >= 0) {if(p < k){d = (this[i] & (1 << p) - 1) << k - p;d |= this[--i] >> (p += this.DB - k);}else {d = this[i] >> (p -= k) & km;if(p <= 0){p += this.DB;--i;}}if(d > 0)m = true;if(m)r.push(int2char(d));}}return m?r.join(""):"0";} // (public) -this
+	function bnNegate(){var r=nbi();BigInteger.ZERO.subTo(this,r);return r;} // (public) |this|
+	function bnAbs(){return this.s < 0?this.negate():this;} // (public) return + if this > a, - if this < a, 0 if equal
+	function bnCompareTo(a){var r=this.s - a.s;if(r != 0)return r;var i=this.t;if(this.s < 0){r = a.t - i;}else {r = i - a.t;}if(r != 0)return r;while(--i >= 0) {if((r = this[i] - a[i]) != 0)return r;}return 0;} // returns bit length of the integer x
+	function nbits(x){var r=1,t;if((t = x >>> 16) != 0){x = t;r += 16;}if((t = x >> 8) != 0){x = t;r += 8;}if((t = x >> 4) != 0){x = t;r += 4;}if((t = x >> 2) != 0){x = t;r += 2;}if((t = x >> 1) != 0){x = t;r += 1;}return r;} // (public) return the number of bits in "this"
+	function bnBitLength(){if(this.t <= 0)return 0;return this.DB * (this.t - 1) + nbits(this[this.t - 1] ^ this.s & this.DM);} // (protected) r = this << n*DB
+	function bnpDLShiftTo(n,r){var i;for(i = this.t - 1;i >= 0;--i) {r[i + n] = this[i];}for(i = n - 1;i >= 0;--i) {r[i] = 0;}r.t = this.t + n;r.s = this.s;} // (protected) r = this >> n*DB
+	function bnpDRShiftTo(n,r){for(var i=n;i < this.t;++i) {r[i - n] = this[i];}r.t = Math.max(this.t - n,0);r.s = this.s;} // (protected) r = this << n
+	function bnpLShiftTo(n,r){var bs=n % this.DB;var cbs=this.DB - bs;var bm=(1 << cbs) - 1;var ds=Math.floor(n / this.DB),c=this.s << bs & this.DM,i;for(i = this.t - 1;i >= 0;--i) {r[i + ds + 1] = this[i] >> cbs | c;c = (this[i] & bm) << bs;}for(i = ds - 1;i >= 0;--i) {r[i] = 0;}r[ds] = c;r.t = this.t + ds + 1;r.s = this.s;r.clamp();} // (protected) r = this >> n
+	function bnpRShiftTo(n,r){r.s = this.s;var ds=Math.floor(n / this.DB);if(ds >= this.t){r.t = 0;return;}var bs=n % this.DB;var cbs=this.DB - bs;var bm=(1 << bs) - 1;r[0] = this[ds] >> bs;for(var i=ds + 1;i < this.t;++i) {r[i - ds - 1] |= (this[i] & bm) << cbs;r[i - ds] = this[i] >> bs;}if(bs > 0)r[this.t - ds - 1] |= (this.s & bm) << cbs;r.t = this.t - ds;r.clamp();} // (protected) r = this - a
+	function bnpSubTo(a,r){var i=0,c=0,m=Math.min(a.t,this.t);while(i < m) {c += this[i] - a[i];r[i++] = c & this.DM;c >>= this.DB;}if(a.t < this.t){c -= a.s;while(i < this.t) {c += this[i];r[i++] = c & this.DM;c >>= this.DB;}c += this.s;}else {c += this.s;while(i < a.t) {c -= a[i];r[i++] = c & this.DM;c >>= this.DB;}c -= a.s;}r.s = c < 0?-1:0;if(c < -1)r[i++] = this.DV + c;else if(c > 0)r[i++] = c;r.t = i;r.clamp();} // (protected) r = this * a, r != this,a (HAC 14.12)
+	// "this" should be the larger one if appropriate.
+	function bnpMultiplyTo(a,r){var x=this.abs(),y=a.abs();var i=x.t;r.t = i + y.t;while(--i >= 0) {r[i] = 0;}for(i = 0;i < y.t;++i) {r[i + x.t] = x.am(0,y[i],r,i,0,x.t);}r.s = 0;r.clamp();if(this.s != a.s)BigInteger.ZERO.subTo(r,r);} // (protected) r = this^2, r != this (HAC 14.16)
+	function bnpSquareTo(r){var x=this.abs();var i=r.t = 2 * x.t;while(--i >= 0) {r[i] = 0;}for(i = 0;i < x.t - 1;++i) {var c=x.am(i,x[i],r,2 * i,0,1);if((r[i + x.t] += x.am(i + 1,2 * x[i],r,2 * i + 1,c,x.t - i - 1)) >= x.DV){r[i + x.t] -= x.DV;r[i + x.t + 1] = 1;}}if(r.t > 0)r[r.t - 1] += x.am(i,x[i],r,2 * i,0,1);r.s = 0;r.clamp();} // (protected) divide this by m, quotient and remainder to q, r (HAC 14.20)
+	// r != q, this != m.  q or r may be null.
+	function bnpDivRemTo(m,q,r){var pm=m.abs();if(pm.t <= 0)return;var pt=this.abs();if(pt.t < pm.t){if(q != null)q.fromInt(0);if(r != null)this.copyTo(r);return;}if(r == null)r = nbi();var y=nbi(),ts=this.s,ms=m.s;var nsh=this.DB - nbits(pm[pm.t - 1]); // normalize modulus
+	if(nsh > 0){pm.lShiftTo(nsh,y);pt.lShiftTo(nsh,r);}else {pm.copyTo(y);pt.copyTo(r);}var ys=y.t;var y0=y[ys - 1];if(y0 == 0)return;var yt=y0 * (1 << this.F1) + (ys > 1?y[ys - 2] >> this.F2:0);var d1=this.FV / yt,d2=(1 << this.F1) / yt,e=1 << this.F2;var i=r.t,j=i - ys,t=q == null?nbi():q;y.dlShiftTo(j,t);if(r.compareTo(t) >= 0){r[r.t++] = 1;r.subTo(t,r);}BigInteger.ONE.dlShiftTo(ys,t);t.subTo(y,y); // "negative" y so we can replace sub with am later
+	while(y.t < ys) {y[y.t++] = 0;}while(--j >= 0) { // Estimate quotient digit
+	var qd=r[--i] == y0?this.DM:Math.floor(r[i] * d1 + (r[i - 1] + e) * d2);if((r[i] += y.am(0,qd,r,j,0,ys)) < qd){ // Try it out
+	y.dlShiftTo(j,t);r.subTo(t,r);while(r[i] < --qd) {r.subTo(t,r);}}}if(q != null){r.drShiftTo(ys,q);if(ts != ms)BigInteger.ZERO.subTo(q,q);}r.t = ys;r.clamp();if(nsh > 0)r.rShiftTo(nsh,r); // Denormalize remainder
+	if(ts < 0)BigInteger.ZERO.subTo(r,r);} // (public) this mod a
+	function bnMod(a){var r=nbi();this.abs().divRemTo(a,null,r);if(this.s < 0 && r.compareTo(BigInteger.ZERO) > 0)a.subTo(r,r);return r;} // Modular reduction using "classic" algorithm
+	function Classic(m){this.m = m;}function cConvert(x){if(x.s < 0 || x.compareTo(this.m) >= 0)return x.mod(this.m);else return x;}function cRevert(x){return x;}function cReduce(x){x.divRemTo(this.m,null,x);}function cMulTo(x,y,r){x.multiplyTo(y,r);this.reduce(r);}function cSqrTo(x,r){x.squareTo(r);this.reduce(r);}Classic.prototype.convert = cConvert;Classic.prototype.revert = cRevert;Classic.prototype.reduce = cReduce;Classic.prototype.mulTo = cMulTo;Classic.prototype.sqrTo = cSqrTo; // (protected) return "-1/this % 2^DB"; useful for Mont. reduction
+	// justification:
+	//         xy == 1 (mod m)
+	//         xy =  1+km
+	//   xy(2-xy) = (1+km)(1-km)
+	// x[y(2-xy)] = 1-k^2m^2
+	// x[y(2-xy)] == 1 (mod m^2)
+	// if y is 1/x mod m, then y(2-xy) is 1/x mod m^2
+	// should reduce x and y(2-xy) by m^2 at each step to keep size bounded.
+	// JS multiply "overflows" differently from C/C++, so care is needed here.
+	function bnpInvDigit(){if(this.t < 1)return 0;var x=this[0];if((x & 1) == 0)return 0;var y=x & 3; // y == 1/x mod 2^2
+	y = y * (2 - (x & 0xf) * y) & 0xf; // y == 1/x mod 2^4
+	y = y * (2 - (x & 0xff) * y) & 0xff; // y == 1/x mod 2^8
+	y = y * (2 - ((x & 0xffff) * y & 0xffff)) & 0xffff; // y == 1/x mod 2^16
+	// last step - calculate inverse mod DV directly;
+	// assumes 16 < DB <= 32 and assumes ability to handle 48-bit ints
+	y = y * (2 - x * y % this.DV) % this.DV; // y == 1/x mod 2^dbits
+	// we really want the negative inverse, and -DV < y < DV
+	return y > 0?this.DV - y:-y;} // Montgomery reduction
+	function Montgomery(m){this.m = m;this.mp = m.invDigit();this.mpl = this.mp & 0x7fff;this.mph = this.mp >> 15;this.um = (1 << m.DB - 15) - 1;this.mt2 = 2 * m.t;} // xR mod m
+	function montConvert(x){var r=nbi();x.abs().dlShiftTo(this.m.t,r);r.divRemTo(this.m,null,r);if(x.s < 0 && r.compareTo(BigInteger.ZERO) > 0)this.m.subTo(r,r);return r;} // x/R mod m
+	function montRevert(x){var r=nbi();x.copyTo(r);this.reduce(r);return r;} // x = x/R mod m (HAC 14.32)
+	function montReduce(x){while(x.t <= this.mt2) { // pad x so am has enough room later
+	x[x.t++] = 0;}for(var i=0;i < this.m.t;++i) { // faster way of calculating u0 = x[i]*mp mod DV
+	var j=x[i] & 0x7fff;var u0=j * this.mpl + ((j * this.mph + (x[i] >> 15) * this.mpl & this.um) << 15) & x.DM; // use am to combine the multiply-shift-add into one call
+	j = i + this.m.t;x[j] += this.m.am(0,u0,x,i,0,this.m.t); // propagate carry
+	while(x[j] >= x.DV) {x[j] -= x.DV;x[++j]++;}}x.clamp();x.drShiftTo(this.m.t,x);if(x.compareTo(this.m) >= 0)x.subTo(this.m,x);} // r = "x^2/R mod m"; x != r
+	function montSqrTo(x,r){x.squareTo(r);this.reduce(r);} // r = "xy/R mod m"; x,y != r
+	function montMulTo(x,y,r){x.multiplyTo(y,r);this.reduce(r);}Montgomery.prototype.convert = montConvert;Montgomery.prototype.revert = montRevert;Montgomery.prototype.reduce = montReduce;Montgomery.prototype.mulTo = montMulTo;Montgomery.prototype.sqrTo = montSqrTo; // (protected) true iff this is even
+	function bnpIsEven(){return (this.t > 0?this[0] & 1:this.s) == 0;} // (protected) this^e, e < 2^32, doing sqr and mul with "r" (HAC 14.79)
+	function bnpExp(e,z){if(e > 0xffffffff || e < 1)return BigInteger.ONE;var r=nbi(),r2=nbi(),g=z.convert(this),i=nbits(e) - 1;g.copyTo(r);while(--i >= 0) {z.sqrTo(r,r2);if((e & 1 << i) > 0)z.mulTo(r2,g,r);else {var t=r;r = r2;r2 = t;}}return z.revert(r);} // (public) this^e % m, 0 <= e < 2^32
+	function bnModPowInt(e,m){var z;if(e < 256 || m.isEven())z = new Classic(m);else z = new Montgomery(m);return this.exp(e,z);} // protected
+	BigInteger.prototype.copyTo = bnpCopyTo;BigInteger.prototype.fromInt = bnpFromInt;BigInteger.prototype.fromString = bnpFromString;BigInteger.prototype.clamp = bnpClamp;BigInteger.prototype.dlShiftTo = bnpDLShiftTo;BigInteger.prototype.drShiftTo = bnpDRShiftTo;BigInteger.prototype.lShiftTo = bnpLShiftTo;BigInteger.prototype.rShiftTo = bnpRShiftTo;BigInteger.prototype.subTo = bnpSubTo;BigInteger.prototype.multiplyTo = bnpMultiplyTo;BigInteger.prototype.squareTo = bnpSquareTo;BigInteger.prototype.divRemTo = bnpDivRemTo;BigInteger.prototype.invDigit = bnpInvDigit;BigInteger.prototype.isEven = bnpIsEven;BigInteger.prototype.bnpExp = bnpExp; // public
+	BigInteger.prototype.toString = bnToString;BigInteger.prototype.negate = bnNegate;BigInteger.prototype.abs = bnAbs;BigInteger.prototype.compareTo = bnCompareTo;BigInteger.prototype.bitLength = bnBitLength;BigInteger.prototype.mod = bnMod;BigInteger.prototype.modPowInt = bnModPowInt; // "constants"
+	BigInteger.ZERO = nbv(0);BigInteger.ONE = nbv(1); // Copyright (c) 2005-2009  Tom Wu
+	// All Rights Reserved.
+	// See "LICENSE" for details.
+	// Extended JavaScript BN functions, required for RSA private ops.
+	// Version 1.1: new BigInteger("0", 10) returns "proper" zero
+	// (public)
+	function bnClone(){var r=nbi();this.copyTo(r);return r;} // (public) return value as integer
+	function bnIntValue(){if(this.s < 0){if(this.t == 1)return this[0] - this.DV;else if(this.t == 0)return -1;}else if(this.t == 1)return this[0];else if(this.t == 0)return 0; // assumes 16 < DB < 32
+	return (this[1] & (1 << 32 - this.DB) - 1) << this.DB | this[0];} // (public) return value as byte
+	function bnByteValue(){return this.t == 0?this.s:this[0] << 24 >> 24;} // (public) return value as short (assumes DB>=16)
+	function bnShortValue(){return this.t == 0?this.s:this[0] << 16 >> 16;} // (protected) return x s.t. r^x < DV
+	function bnpChunkSize(r){return Math.floor(Math.LN2 * this.DB / Math.log(r));} // (public) 0 if this == 0, 1 if this > 0
+	function bnSigNum(){if(this.s < 0)return -1;else if(this.t <= 0 || this.t == 1 && this[0] <= 0)return 0;else return 1;} // (protected) convert to radix string
+	function bnpToRadix(b){if(b == null)b = 10;if(this.signum() == 0 || b < 2 || b > 36)return "0";var cs=this.chunkSize(b);var a=Math.pow(b,cs);var d=nbv(a),y=nbi(),z=nbi(),r="";this.divRemTo(d,y,z);while(y.signum() > 0) {r = (a + z.intValue()).toString(b).substr(1) + r;y.divRemTo(d,y,z);}return z.intValue().toString(b) + r;} // (protected) convert from radix string
+	function bnpFromRadix(s,b){this.fromInt(0);if(b == null)b = 10;var cs=this.chunkSize(b);var d=Math.pow(b,cs),mi=false,j=0,w=0;for(var i=0;i < s.length;++i) {var x=intAt(s,i);if(x < 0){if(s.charAt(i) == "-" && this.signum() == 0)mi = true;continue;}w = b * w + x;if(++j >= cs){this.dMultiply(d);this.dAddOffset(w,0);j = 0;w = 0;}}if(j > 0){this.dMultiply(Math.pow(b,j));this.dAddOffset(w,0);}if(mi)BigInteger.ZERO.subTo(this,this);} // (protected) alternate constructor
+	function bnpFromNumber(a,b,c){if("number" == typeof b){ // new BigInteger(int,int,RNG)
+	if(a < 2)this.fromInt(1);else {this.fromNumber(a,c);if(!this.testBit(a - 1)) // force MSB set
+	this.bitwiseTo(BigInteger.ONE.shiftLeft(a - 1),op_or,this);if(this.isEven())this.dAddOffset(1,0); // force odd
+	while(!this.isProbablePrime(b)) {this.dAddOffset(2,0);if(this.bitLength() > a)this.subTo(BigInteger.ONE.shiftLeft(a - 1),this);}}}else { // new BigInteger(int,RNG)
+	var x=[],t=a & 7;x.length = (a >> 3) + 1;b.nextBytes(x);if(t > 0)x[0] &= (1 << t) - 1;else x[0] = 0;this.fromString(x,256);}} // (public) convert to bigendian byte array
+	function bnToByteArray(){var i=this.t,r=[];r[0] = this.s;var p=this.DB - i * this.DB % 8,d,k=0;if(i-- > 0){if(p < this.DB && (d = this[i] >> p) != (this.s & this.DM) >> p)r[k++] = d | this.s << this.DB - p;while(i >= 0) {if(p < 8){d = (this[i] & (1 << p) - 1) << 8 - p;d |= this[--i] >> (p += this.DB - 8);}else {d = this[i] >> (p -= 8) & 0xff;if(p <= 0){p += this.DB;--i;}}if((d & 0x80) != 0)d |= -256;if(k == 0 && (this.s & 0x80) != (d & 0x80))++k;if(k > 0 || d != this.s)r[k++] = d;}}return r;}function bnEquals(a){return this.compareTo(a) == 0;}function bnMin(a){return this.compareTo(a) < 0?this:a;}function bnMax(a){return this.compareTo(a) > 0?this:a;} // (protected) r = this op a (bitwise)
+	function bnpBitwiseTo(a,op,r){var i,f,m=Math.min(a.t,this.t);for(i = 0;i < m;++i) {r[i] = op(this[i],a[i]);}if(a.t < this.t){f = a.s & this.DM;for(i = m;i < this.t;++i) {r[i] = op(this[i],f);}r.t = this.t;}else {f = this.s & this.DM;for(i = m;i < a.t;++i) {r[i] = op(f,a[i]);}r.t = a.t;}r.s = op(this.s,a.s);r.clamp();} // (public) this & a
+	function op_and(x,y){return x & y;}function bnAnd(a){var r=nbi();this.bitwiseTo(a,op_and,r);return r;} // (public) this | a
+	function op_or(x,y){return x | y;}function bnOr(a){var r=nbi();this.bitwiseTo(a,op_or,r);return r;} // (public) this ^ a
+	function op_xor(x,y){return x ^ y;}function bnXor(a){var r=nbi();this.bitwiseTo(a,op_xor,r);return r;} // (public) this & ~a
+	function op_andnot(x,y){return x & ~y;}function bnAndNot(a){var r=nbi();this.bitwiseTo(a,op_andnot,r);return r;} // (public) ~this
+	function bnNot(){var r=nbi();for(var i=0;i < this.t;++i) {r[i] = this.DM & ~this[i];}r.t = this.t;r.s = ~this.s;return r;} // (public) this << n
+	function bnShiftLeft(n){var r=nbi();if(n < 0)this.rShiftTo(-n,r);else this.lShiftTo(n,r);return r;} // (public) this >> n
+	function bnShiftRight(n){var r=nbi();if(n < 0)this.lShiftTo(-n,r);else this.rShiftTo(n,r);return r;} // return index of lowest 1-bit in x, x < 2^31
+	function lbit(x){if(x == 0)return -1;var r=0;if((x & 0xffff) == 0){x >>= 16;r += 16;}if((x & 0xff) == 0){x >>= 8;r += 8;}if((x & 0xf) == 0){x >>= 4;r += 4;}if((x & 3) == 0){x >>= 2;r += 2;}if((x & 1) == 0)++r;return r;} // (public) returns index of lowest 1-bit (or -1 if none)
+	function bnGetLowestSetBit(){for(var i=0;i < this.t;++i) {if(this[i] != 0)return i * this.DB + lbit(this[i]);}if(this.s < 0)return this.t * this.DB;return -1;} // return number of 1 bits in x
+	function cbit(x){var r=0;while(x != 0) {x &= x - 1;++r;}return r;} // (public) return number of set bits
+	function bnBitCount(){var r=0,x=this.s & this.DM;for(var i=0;i < this.t;++i) {r += cbit(this[i] ^ x);}return r;} // (public) true iff nth bit is set
+	function bnTestBit(n){var j=Math.floor(n / this.DB);if(j >= this.t)return this.s != 0;return (this[j] & 1 << n % this.DB) != 0;} // (protected) this op (1<<n)
+	function bnpChangeBit(n,op){var r=BigInteger.ONE.shiftLeft(n);this.bitwiseTo(r,op,r);return r;} // (public) this | (1<<n)
+	function bnSetBit(n){return this.changeBit(n,op_or);} // (public) this & ~(1<<n)
+	function bnClearBit(n){return this.changeBit(n,op_andnot);} // (public) this ^ (1<<n)
+	function bnFlipBit(n){return this.changeBit(n,op_xor);} // (protected) r = this + a
+	function bnpAddTo(a,r){var i=0,c=0,m=Math.min(a.t,this.t);while(i < m) {c += this[i] + a[i];r[i++] = c & this.DM;c >>= this.DB;}if(a.t < this.t){c += a.s;while(i < this.t) {c += this[i];r[i++] = c & this.DM;c >>= this.DB;}c += this.s;}else {c += this.s;while(i < a.t) {c += a[i];r[i++] = c & this.DM;c >>= this.DB;}c += a.s;}r.s = c < 0?-1:0;if(c > 0)r[i++] = c;else if(c < -1)r[i++] = this.DV + c;r.t = i;r.clamp();} // (public) this + a
+	function bnAdd(a){var r=nbi();this.addTo(a,r);return r;} // (public) this - a
+	function bnSubtract(a){var r=nbi();this.subTo(a,r);return r;} // (public) this * a
+	function bnMultiply(a){var r=nbi();this.multiplyTo(a,r);return r;} // (public) this / a
+	function bnDivide(a){var r=nbi();this.divRemTo(a,r,null);return r;} // (public) this % a
+	function bnRemainder(a){var r=nbi();this.divRemTo(a,null,r);return r;} // (public) [this/a,this%a]
+	function bnDivideAndRemainder(a){var q=nbi(),r=nbi();this.divRemTo(a,q,r);return [q,r];} // (protected) this *= n, this >= 0, 1 < n < DV
+	function bnpDMultiply(n){this[this.t] = this.am(0,n - 1,this,0,0,this.t);++this.t;this.clamp();} // (protected) this += n << w words, this >= 0
+	function bnpDAddOffset(n,w){if(n == 0)return;while(this.t <= w) {this[this.t++] = 0;}this[w] += n;while(this[w] >= this.DV) {this[w] -= this.DV;if(++w >= this.t)this[this.t++] = 0;++this[w];}} // A "null" reducer
+	function NullExp(){}function nNop(x){return x;}function nMulTo(x,y,r){x.multiplyTo(y,r);}function nSqrTo(x,r){x.squareTo(r);}NullExp.prototype.convert = nNop;NullExp.prototype.revert = nNop;NullExp.prototype.mulTo = nMulTo;NullExp.prototype.sqrTo = nSqrTo; // (public) this^e
+	function bnPow(e){return this.bnpExp(e,new NullExp());} // (protected) r = lower n words of "this * a", a.t <= n
+	// "this" should be the larger one if appropriate.
+	function bnpMultiplyLowerTo(a,n,r){var i=Math.min(this.t + a.t,n);r.s = 0; // assumes a,this >= 0
+	r.t = i;while(i > 0) {r[--i] = 0;}var j;for(j = r.t - this.t;i < j;++i) {r[i + this.t] = this.am(0,a[i],r,i,0,this.t);}for(j = Math.min(a.t,n);i < j;++i) {this.am(0,a[i],r,i,0,n - i);}r.clamp();} // (protected) r = "this * a" without lower n words, n > 0
+	// "this" should be the larger one if appropriate.
+	function bnpMultiplyUpperTo(a,n,r){--n;var i=r.t = this.t + a.t - n;r.s = 0; // assumes a,this >= 0
+	while(--i >= 0) {r[i] = 0;}for(i = Math.max(n - this.t,0);i < a.t;++i) {r[this.t + i - n] = this.am(n - i,a[i],r,0,0,this.t + i - n);}r.clamp();r.drShiftTo(1,r);} // Barrett modular reduction
+	function Barrett(m){ // setup Barrett
+	this.r2 = nbi();this.q3 = nbi();BigInteger.ONE.dlShiftTo(2 * m.t,this.r2);this.mu = this.r2.divide(m);this.m = m;}function barrettConvert(x){if(x.s < 0 || x.t > 2 * this.m.t)return x.mod(this.m);else if(x.compareTo(this.m) < 0)return x;else {var r=nbi();x.copyTo(r);this.reduce(r);return r;}}function barrettRevert(x){return x;} // x = x mod m (HAC 14.42)
+	function barrettReduce(x){x.drShiftTo(this.m.t - 1,this.r2);if(x.t > this.m.t + 1){x.t = this.m.t + 1;x.clamp();}this.mu.multiplyUpperTo(this.r2,this.m.t + 1,this.q3);this.m.multiplyLowerTo(this.q3,this.m.t + 1,this.r2);while(x.compareTo(this.r2) < 0) {x.dAddOffset(1,this.m.t + 1);}x.subTo(this.r2,x);while(x.compareTo(this.m) >= 0) {x.subTo(this.m,x);}} // r = x^2 mod m; x != r
+	function barrettSqrTo(x,r){x.squareTo(r);this.reduce(r);} // r = x*y mod m; x,y != r
+	function barrettMulTo(x,y,r){x.multiplyTo(y,r);this.reduce(r);}Barrett.prototype.convert = barrettConvert;Barrett.prototype.revert = barrettRevert;Barrett.prototype.reduce = barrettReduce;Barrett.prototype.mulTo = barrettMulTo;Barrett.prototype.sqrTo = barrettSqrTo; // (public) this^e % m (HAC 14.85)
+	function bnModPow(e,m){var i=e.bitLength(),k,r=nbv(1),z;if(i <= 0)return r;else if(i < 18)k = 1;else if(i < 48)k = 3;else if(i < 144)k = 4;else if(i < 768)k = 5;else k = 6;if(i < 8)z = new Classic(m);else if(m.isEven())z = new Barrett(m);else z = new Montgomery(m); // precomputation
+	var g=[],n=3,k1=k - 1,km=(1 << k) - 1;g[1] = z.convert(this);if(k > 1){var g2=nbi();z.sqrTo(g[1],g2);while(n <= km) {g[n] = nbi();z.mulTo(g2,g[n - 2],g[n]);n += 2;}}var j=e.t - 1,w,is1=true,r2=nbi(),t;i = nbits(e[j]) - 1;while(j >= 0) {if(i >= k1)w = e[j] >> i - k1 & km;else {w = (e[j] & (1 << i + 1) - 1) << k1 - i;if(j > 0)w |= e[j - 1] >> this.DB + i - k1;}n = k;while((w & 1) == 0) {w >>= 1;--n;}if((i -= n) < 0){i += this.DB;--j;}if(is1){ // ret == 1, don't bother squaring or multiplying it
+	g[w].copyTo(r);is1 = false;}else {while(n > 1) {z.sqrTo(r,r2);z.sqrTo(r2,r);n -= 2;}if(n > 0)z.sqrTo(r,r2);else {t = r;r = r2;r2 = t;}z.mulTo(r2,g[w],r);}while(j >= 0 && (e[j] & 1 << i) == 0) {z.sqrTo(r,r2);t = r;r = r2;r2 = t;if(--i < 0){i = this.DB - 1;--j;}}}return z.revert(r);} // (public) gcd(this,a) (HAC 14.54)
+	function bnGCD(a){var x=this.s < 0?this.negate():this.clone();var y=a.s < 0?a.negate():a.clone();if(x.compareTo(y) < 0){var t=x;x = y;y = t;}var i=x.getLowestSetBit(),g=y.getLowestSetBit();if(g < 0)return x;if(i < g)g = i;if(g > 0){x.rShiftTo(g,x);y.rShiftTo(g,y);}while(x.signum() > 0) {if((i = x.getLowestSetBit()) > 0)x.rShiftTo(i,x);if((i = y.getLowestSetBit()) > 0)y.rShiftTo(i,y);if(x.compareTo(y) >= 0){x.subTo(y,x);x.rShiftTo(1,x);}else {y.subTo(x,y);y.rShiftTo(1,y);}}if(g > 0)y.lShiftTo(g,y);return y;} // (protected) this % n, n < 2^26
+	function bnpModInt(n){if(n <= 0)return 0;var d=this.DV % n,r=this.s < 0?n - 1:0;if(this.t > 0)if(d == 0)r = this[0] % n;else for(var i=this.t - 1;i >= 0;--i) {r = (d * r + this[i]) % n;}return r;} // (public) 1/this % m (HAC 14.61)
+	function bnModInverse(m){var ac=m.isEven();if(this.isEven() && ac || m.signum() == 0)return BigInteger.ZERO;var u=m.clone(),v=this.clone();var a=nbv(1),b=nbv(0),c=nbv(0),d=nbv(1);while(u.signum() != 0) {while(u.isEven()) {u.rShiftTo(1,u);if(ac){if(!a.isEven() || !b.isEven()){a.addTo(this,a);b.subTo(m,b);}a.rShiftTo(1,a);}else if(!b.isEven())b.subTo(m,b);b.rShiftTo(1,b);}while(v.isEven()) {v.rShiftTo(1,v);if(ac){if(!c.isEven() || !d.isEven()){c.addTo(this,c);d.subTo(m,d);}c.rShiftTo(1,c);}else if(!d.isEven())d.subTo(m,d);d.rShiftTo(1,d);}if(u.compareTo(v) >= 0){u.subTo(v,u);if(ac)a.subTo(c,a);b.subTo(d,b);}else {v.subTo(u,v);if(ac)c.subTo(a,c);d.subTo(b,d);}}if(v.compareTo(BigInteger.ONE) != 0)return BigInteger.ZERO;if(d.compareTo(m) >= 0)return d.subtract(m);if(d.signum() < 0)d.addTo(m,d);else return d;if(d.signum() < 0)return d.add(m);else return d;}var lowprimes=[2,3,5,7,11,13,17,19,23,29,31,37,41,43,47,53,59,61,67,71,73,79,83,89,97,101,103,107,109,113,127,131,137,139,149,151,157,163,167,173,179,181,191,193,197,199,211,223,227,229,233,239,241,251,257,263,269,271,277,281,283,293,307,311,313,317,331,337,347,349,353,359,367,373,379,383,389,397,401,409,419,421,431,433,439,443,449,457,461,463,467,479,487,491,499,503,509];var lplim=(1 << 26) / lowprimes[lowprimes.length - 1]; // (public) test primality with certainty >= 1-.5^t
+	function bnIsProbablePrime(t){var i,x=this.abs();if(x.t == 1 && x[0] <= lowprimes[lowprimes.length - 1]){for(i = 0;i < lowprimes.length;++i) {if(x[0] == lowprimes[i])return true;}return false;}if(x.isEven())return false;i = 1;while(i < lowprimes.length) {var m=lowprimes[i],j=i + 1;while(j < lowprimes.length && m < lplim) {m *= lowprimes[j++];}m = x.modInt(m);while(i < j) {if(m % lowprimes[i++] == 0)return false;}}return x.millerRabin(t);} // (protected) true if probably prime (HAC 4.24, Miller-Rabin)
+	function bnpMillerRabin(t){var n1=this.subtract(BigInteger.ONE);var k=n1.getLowestSetBit();if(k <= 0)return false;var r=n1.shiftRight(k);t = t + 1 >> 1;if(t > lowprimes.length)t = lowprimes.length;var a=nbi();for(var i=0;i < t;++i) {a.fromInt(lowprimes[i]);var y=a.modPow(r,this);if(y.compareTo(BigInteger.ONE) != 0 && y.compareTo(n1) != 0){var j=1;while(j++ < k && y.compareTo(n1) != 0) {y = y.modPowInt(2,this);if(y.compareTo(BigInteger.ONE) == 0)return false;}if(y.compareTo(n1) != 0)return false;}}return true;} // protected
+	BigInteger.prototype.chunkSize = bnpChunkSize;BigInteger.prototype.toRadix = bnpToRadix;BigInteger.prototype.fromRadix = bnpFromRadix;BigInteger.prototype.fromNumber = bnpFromNumber;BigInteger.prototype.bitwiseTo = bnpBitwiseTo;BigInteger.prototype.changeBit = bnpChangeBit;BigInteger.prototype.addTo = bnpAddTo;BigInteger.prototype.dMultiply = bnpDMultiply;BigInteger.prototype.dAddOffset = bnpDAddOffset;BigInteger.prototype.multiplyLowerTo = bnpMultiplyLowerTo;BigInteger.prototype.multiplyUpperTo = bnpMultiplyUpperTo;BigInteger.prototype.modInt = bnpModInt;BigInteger.prototype.millerRabin = bnpMillerRabin; // public
+	BigInteger.prototype.clone = bnClone;BigInteger.prototype.intValue = bnIntValue;BigInteger.prototype.byteValue = bnByteValue;BigInteger.prototype.shortValue = bnShortValue;BigInteger.prototype.signum = bnSigNum;BigInteger.prototype.toByteArray = bnToByteArray;BigInteger.prototype.equals = bnEquals;BigInteger.prototype.min = bnMin;BigInteger.prototype.max = bnMax;BigInteger.prototype.and = bnAnd;BigInteger.prototype.or = bnOr;BigInteger.prototype.xor = bnXor;BigInteger.prototype.andNot = bnAndNot;BigInteger.prototype.not = bnNot;BigInteger.prototype.shiftLeft = bnShiftLeft;BigInteger.prototype.shiftRight = bnShiftRight;BigInteger.prototype.getLowestSetBit = bnGetLowestSetBit;BigInteger.prototype.bitCount = bnBitCount;BigInteger.prototype.testBit = bnTestBit;BigInteger.prototype.setBit = bnSetBit;BigInteger.prototype.clearBit = bnClearBit;BigInteger.prototype.flipBit = bnFlipBit;BigInteger.prototype.add = bnAdd;BigInteger.prototype.subtract = bnSubtract;BigInteger.prototype.multiply = bnMultiply;BigInteger.prototype.divide = bnDivide;BigInteger.prototype.remainder = bnRemainder;BigInteger.prototype.divideAndRemainder = bnDivideAndRemainder;BigInteger.prototype.modPow = bnModPow;BigInteger.prototype.modInverse = bnModInverse;BigInteger.prototype.pow = bnPow;BigInteger.prototype.expt = bnPow;BigInteger.prototype.gcd = bnGCD;BigInteger.prototype.isProbablePrime = bnIsProbablePrime; // BigInteger interfaces not implemented in jsbn:
+	// BigInteger(int signum, byte[] magnitude)
+	// double doubleValue()
+	// float floatValue()
+	// int hashCode()
+	// long longValue()
+	// static BigInteger valueOf(long val)
+	//////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////
+	// END OF copy-and-paste of jsbn.
+	BigInteger.NEGATIVE_ONE = BigInteger.ONE.negate(); // Other methods we need to add for compatibilty with js-numbers numeric tower.
+	// add is implemented above.
+	// subtract is implemented above.
+	// multiply is implemented above.
+	// equals is implemented above.
+	// abs is implemented above.
+	// negate is defined above.
+	// makeBignum: string -> BigInteger
+	var makeBignum=function makeBignum(s){if(typeof s === 'number'){s = s + '';}s = expandExponent(s);return new BigInteger(s,10);};var zerostring=function zerostring(n){var buf=[];for(var i=0;i < n;i++) {buf.push('0');}return buf.join('');};BigInteger.prototype.level = 0;BigInteger.prototype.liftTo = function(target){if(target.level === 1){return new Rational(this,1);}if(target.level === 2){var fixrep=this.toFixnum();if(fixrep === Number.POSITIVE_INFINITY)return TOO_POSITIVE_TO_REPRESENT;if(fixrep === Number.NEGATIVE_INFINITY)return TOO_NEGATIVE_TO_REPRESENT;return new FloatPoint(fixrep);}if(target.level === 3){return new Complex(this,0);}return throwRuntimeError("invalid level for BigInteger lift",this,target);};BigInteger.prototype.isFinite = function(){return true;};BigInteger.prototype.isInteger = function(){return true;};BigInteger.prototype.isRational = function(){return true;};BigInteger.prototype.isReal = function(){return true;};BigInteger.prototype.isExact = function(){return true;};BigInteger.prototype.isInexact = function(){return false;};BigInteger.prototype.toExact = function(){return this;};BigInteger.prototype.toInexact = function(){return FloatPoint.makeInstance(this.toFixnum());};BigInteger.prototype.toFixnum = function(){var result=0,str=this.toString(),i;if(str[0] === '-'){for(i = 1;i < str.length;i++) {result = result * 10 + Number(str[i]);}return -result;}else {for(i = 0;i < str.length;i++) {result = result * 10 + Number(str[i]);}return result;}};BigInteger.prototype.greaterThan = function(other){return this.compareTo(other) > 0;};BigInteger.prototype.greaterThanOrEqual = function(other){return this.compareTo(other) >= 0;};BigInteger.prototype.lessThan = function(other){return this.compareTo(other) < 0;};BigInteger.prototype.lessThanOrEqual = function(other){return this.compareTo(other) <= 0;}; // divide: scheme-number -> scheme-number
+	// WARNING NOTE: we override the old version of divide.
+	BigInteger.prototype.divide = function(other){var quotientAndRemainder=bnDivideAndRemainder.call(this,other);if(quotientAndRemainder[1].compareTo(BigInteger.ZERO) === 0){return quotientAndRemainder[0];}else {var result=add(quotientAndRemainder[0],Rational.makeInstance(quotientAndRemainder[1],other));return result;}};BigInteger.prototype.numerator = function(){return this;};BigInteger.prototype.denominator = function(){return 1;};(function(){ // Classic implementation of Newton-Ralphson square-root search,
+	// adapted for integer-sqrt.
+	// http://en.wikipedia.org/wiki/Newton's_method#Square_root_of_a_number
+	var searchIter=function searchIter(n,guess){while(!(lessThanOrEqual(sqr(guess),n) && lessThan(n,sqr(add(guess,1))))) {guess = floor(divide(add(guess,floor(divide(n,guess))),2));}return guess;}; // integerSqrt: -> scheme-number
+	BigInteger.prototype.integerSqrt = function(){var n;if(sign(this) >= 0){return searchIter(this,this);}else {n = this.negate();return Complex.makeInstance(0,searchIter(n,n));}};})(); // sqrt: -> scheme-number
+	// http://en.wikipedia.org/wiki/Newton's_method#Square_root_of_a_number
+	// Produce the square root.
+	(function(){ // Get an approximation using integerSqrt, and then start another
+	// Newton-Ralphson search if necessary.
+	BigInteger.prototype.sqrt = function(){var approx=this.integerSqrt(),fix;if(eqv(sqr(approx),this)){return approx;}fix = toFixnum(this);if(isFinite(fix)){if(fix >= 0){return FloatPoint.makeInstance(Math.sqrt(fix));}else {return Complex.makeInstance(0,FloatPoint.makeInstance(Math.sqrt(-fix)));}}else {return approx;}};})(); // floor: -> scheme-number
+	// Produce the floor.
+	BigInteger.prototype.floor = function(){return this;}; // ceiling: -> scheme-number
+	// Produce the ceiling.
+	BigInteger.prototype.ceiling = function(){return this;}; // Until we have a feature-complete Big Number implementation, we'll
+	// convert BigInteger objects into FloatPoint objects and perform
+	// unsupported operations there.
+	function temporaryAccuracyLosingWorkAroundForBigNums(function_name){return function(){var inexact=this.toInexact();return inexact[function_name].apply(inexact,arguments);};} // conjugate: -> scheme-number
+	// Produce the conjugate.
+	BigInteger.prototype.conjugate = temporaryAccuracyLosingWorkAroundForBigNums("conjugate"); // magnitude: -> scheme-number
+	// Produce the magnitude.
+	BigInteger.prototype.magnitude = temporaryAccuracyLosingWorkAroundForBigNums("magnitude"); // log: -> scheme-number
+	// Produce the log.
+	BigInteger.prototype.log = temporaryAccuracyLosingWorkAroundForBigNums("log"); // angle: -> scheme-number
+	// Produce the angle.
+	BigInteger.prototype.angle = temporaryAccuracyLosingWorkAroundForBigNums("angle"); // atan: -> scheme-number
+	// Produce the arc tangent.
+	BigInteger.prototype.atan = temporaryAccuracyLosingWorkAroundForBigNums("atan"); // acos: -> scheme-number
+	// Produce the arc cosine.
+	BigInteger.prototype.acos = temporaryAccuracyLosingWorkAroundForBigNums("acos"); // asin: -> scheme-number
+	// Produce the arc sine.
+	BigInteger.prototype.asin = temporaryAccuracyLosingWorkAroundForBigNums("asin"); // tan: -> scheme-number
+	// Produce the tangent.
+	BigInteger.prototype.tan = temporaryAccuracyLosingWorkAroundForBigNums("tan"); // cos: -> scheme-number
+	// Produce the cosine.
+	BigInteger.prototype.cos = temporaryAccuracyLosingWorkAroundForBigNums("cos"); // sin: -> scheme-number
+	// Produce the sine.
+	BigInteger.prototype.sin = temporaryAccuracyLosingWorkAroundForBigNums("sin"); // exp: -> scheme-number
+	// Produce e raised to the given power.
+	BigInteger.prototype.exp = temporaryAccuracyLosingWorkAroundForBigNums("exp");BigInteger.prototype.imaginaryPart = function(){return 0;};BigInteger.prototype.realPart = function(){return this;}; // round: -> scheme-number
+	// Round to the nearest integer.
+	BigInteger.prototype.round = function(){return this;}; //////////////////////////////////////////////////////////////////////
+	// toRepeatingDecimal: jsnum jsnum {limit: number}? -> [string, string, string]
+	//
+	// Given the numerator and denominator parts of a rational,
+	// produces the repeating-decimal representation, where the first
+	// part are the digits before the decimal, the second are the
+	// non-repeating digits after the decimal, and the third are the
+	// remaining repeating decimals.
+	// 
+	// An optional limit on the decimal expansion can be provided, in which
+	// case the search cuts off if we go past the limit.
+	// If this happens, the third argument returned becomes '...' to indicate
+	// that the search was prematurely cut off.
+	var toRepeatingDecimal=(function(){var getResidue=function getResidue(r,d,limit){var digits=[];var seenRemainders={};seenRemainders[r] = true;while(true) {if(limit-- <= 0){return [digits.join(''),'...'];}var nextDigit=quotient(multiply(r,10),d);var nextRemainder=remainder(multiply(r,10),d);digits.push(nextDigit.toString());if(seenRemainders[nextRemainder]){r = nextRemainder;break;}else {seenRemainders[nextRemainder] = true;r = nextRemainder;}}var firstRepeatingRemainder=r;var repeatingDigits=[];while(true) {var nextDigit=quotient(multiply(r,10),d);var nextRemainder=remainder(multiply(r,10),d);repeatingDigits.push(nextDigit.toString());if(equals(nextRemainder,firstRepeatingRemainder)){break;}else {r = nextRemainder;}};var digitString=digits.join('');var repeatingDigitString=repeatingDigits.join('');while(digitString.length >= repeatingDigitString.length && digitString.substring(digitString.length - repeatingDigitString.length) === repeatingDigitString) {digitString = digitString.substring(0,digitString.length - repeatingDigitString.length);}return [digitString,repeatingDigitString];};return function(n,d,options){ // default limit on decimal expansion; can be overridden
+	var limit=512;if(options && typeof options.limit !== 'undefined'){limit = options.limit;}if(!isInteger(n)){throwRuntimeError('toRepeatingDecimal: n ' + n.toString() + " is not an integer.");}if(!isInteger(d)){throwRuntimeError('toRepeatingDecimal: d ' + d.toString() + " is not an integer.");}if(equals(d,0)){throwRuntimeError('toRepeatingDecimal: d equals 0');}if(lessThan(d,0)){throwRuntimeError('toRepeatingDecimal: d < 0');}var sign=lessThan(n,0)?"-":"";n = abs(n);var beforeDecimalPoint=sign + quotient(n,d);var afterDecimals=getResidue(remainder(n,d),d,limit);return [beforeDecimalPoint].concat(afterDecimals);};})(); //////////////////////////////////////////////////////////////////////
+	// External interface of js-numbers:
+	Numbers['fromFixnum'] = fromFixnum;Numbers['fromString'] = fromString;Numbers['makeBignum'] = makeBignum;Numbers['makeRational'] = Rational.makeInstance;Numbers['makeFloat'] = FloatPoint.makeInstance;Numbers['makeComplex'] = Complex.makeInstance;Numbers['makeComplexPolar'] = makeComplexPolar;Numbers['pi'] = FloatPoint.pi;Numbers['e'] = FloatPoint.e;Numbers['nan'] = FloatPoint.nan;Numbers['negative_inf'] = FloatPoint.neginf;Numbers['inf'] = FloatPoint.inf;Numbers['negative_one'] = -1; // Rational.NEGATIVE_ONE;
+	Numbers['zero'] = 0; // Rational.ZERO;
+	Numbers['one'] = 1; // Rational.ONE;
+	Numbers['i'] = plusI;Numbers['negative_i'] = minusI;Numbers['negative_zero'] = NEGATIVE_ZERO;Numbers['onThrowRuntimeError'] = onThrowRuntimeError;Numbers['isSchemeNumber'] = isSchemeNumber;Numbers['isRational'] = isRational;Numbers['isReal'] = isReal;Numbers['isExact'] = isExact;Numbers['isInexact'] = isInexact;Numbers['isInteger'] = isInteger;Numbers['toFixnum'] = toFixnum;Numbers['toExact'] = toExact;Numbers['toInexact'] = toInexact;Numbers['add'] = add;Numbers['subtract'] = subtract;Numbers['multiply'] = multiply;Numbers['divide'] = divide;Numbers['equals'] = equals;Numbers['eqv'] = eqv;Numbers['approxEquals'] = approxEquals;Numbers['greaterThanOrEqual'] = greaterThanOrEqual;Numbers['lessThanOrEqual'] = lessThanOrEqual;Numbers['greaterThan'] = greaterThan;Numbers['lessThan'] = lessThan;Numbers['expt'] = expt;Numbers['exp'] = exp;Numbers['modulo'] = modulo;Numbers['numerator'] = numerator;Numbers['denominator'] = denominator;Numbers['integerSqrt'] = integerSqrt;Numbers['sqrt'] = sqrt;Numbers['abs'] = abs;Numbers['quotient'] = quotient;Numbers['remainder'] = remainder;Numbers['floor'] = floor;Numbers['ceiling'] = ceiling;Numbers['conjugate'] = conjugate;Numbers['magnitude'] = magnitude;Numbers['log'] = log;Numbers['angle'] = angle;Numbers['tan'] = tan;Numbers['atan'] = atan;Numbers['cos'] = cos;Numbers['sin'] = sin;Numbers['tan'] = tan;Numbers['acos'] = acos;Numbers['asin'] = asin;Numbers['cosh'] = cosh;Numbers['sinh'] = sinh;Numbers['imaginaryPart'] = imaginaryPart;Numbers['realPart'] = realPart;Numbers['round'] = round;Numbers['sqr'] = sqr;Numbers['gcd'] = gcd;Numbers['lcm'] = lcm;Numbers['toRepeatingDecimal'] = toRepeatingDecimal; // The following exposes the class representations for easier
+	// integration with other projects.
+	Numbers['BigInteger'] = BigInteger;Numbers['Rational'] = Rational;Numbers['FloatPoint'] = FloatPoint;Numbers['Complex'] = Complex;Numbers['MIN_FIXNUM'] = MIN_FIXNUM;Numbers['MAX_FIXNUM'] = MAX_FIXNUM;})();
+
+/***/ },
+/* 234 */
+/***/ function(module, exports) {
+
+	"use strict";
+	
+	/**
+	 * Copyright 2009 Tim Down.
+	 *
+	 * Licensed under the Apache License, Version 2.0 (the "License");
+	 * you may not use this file except in compliance with the License.
+	 * You may obtain a copy of the License at
+	 *
+	 *      http://www.apache.org/licenses/LICENSE-2.0
+	 *
+	 * Unless required by applicable law or agreed to in writing, software
+	 * distributed under the License is distributed on an "AS IS" BASIS,
+	 * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+	 * See the License for the specific language governing permissions and
+	 * limitations under the License.
+	 */
+	
+	//     *
+	//       void put(Object key, Object value)
+	
+	//       Sets the value associated with the key supplied. If the hash table already contains the key then the old value is overwritten.
+	//     *
+	//       void get(Object key)
+	
+	//       Returns the value associated with the key supplied, or null if no value is found for that key.
+	//     *
+	//       Boolean containsKey(Object key)
+	
+	//       Returns whether the hash table contains the specified key.
+	//     *
+	//       Boolean containsValue(Object value)
+	
+	//       Returns whether the hash table contains the specified value.
+	//     *
+	//       void clear()
+	
+	//       Removes all entries from the hash table.
+	//     *
+	//       Boolean isEmpty()
+	
+	//       Returns true if the hash table contains no key/value pairs.
+	//     *
+	//       Array keys()
+	
+	//       Returns an array containing all the keys contained in the hash table.
+	//     *
+	//       Array values()
+	
+	//       Returns an array containing all the values contained in the hash table.
+	//     *
+	//       void remove(Object key)
+	
+	//       Removes the key and its corresponding value from the hash table.
+	//     *
+	//       Number size()
+	
+	//       Returns the number of key/value pairs contained in the hash table.
+	
+	var _Hashtable = (function () {
+	  function _1(_2) {
+	    return typeof _2 === "undefined";
+	  };function _3(_4) {
+	    return typeof _4 === "function";
+	  };function _5(_6) {
+	    return typeof _6 === "string";
+	  };function _7(_8, _9) {
+	    return _3(_8[_9]);
+	  };function _a(_b) {
+	    return _7(_b, "equals");
+	  };function _c(_d) {
+	    return _7(_d, "hashCode");
+	  };function _e(_f) {
+	    if (_5(_f)) {
+	      return _f;
+	    } else {
+	      if (_c(_f)) {
+	        var _10 = _f.hashCode();if (!_5(_10)) {
+	          return _e(_10);
+	        }
+	        return _10;
+	      } else {
+	        if (_7(_f, "toString")) {
+	          return _f.toString();
+	        } else {
+	          return String(_f);
+	        }
+	      }
+	    }
+	  };function _11(_12, _13) {
+	    return _12.equals(_13);
+	  };function _14(_15, _16) {
+	    if (_a(_16)) {
+	      return _16.equals(_15);
+	    } else {
+	      return _15 === _16;
+	    }
+	  };function _17(o1, o2) {
+	    return o1 === o2;
+	  };function _1a(arr, _1c, _1d, _1e, _1f) {
+	    var _20;for (var i = 0, len = arr.length; i < len; i++) {
+	      _20 = arr[i];if (_1f(_1c, _1d(_20))) {
+	        return _1e ? [i, _20] : true;
+	      }
+	    }
+	    return false;
+	  };function _23(arr, idx) {
+	    if (_7(arr, "splice")) {
+	      arr.splice(idx, 1);
+	    } else {
+	      if (idx === arr.length - 1) {
+	        arr.length = idx;
+	      } else {
+	        var _26 = arr.slice(idx + 1);arr.length = idx;for (var i = 0, len = _26.length; i < len; i++) {
+	          arr[idx + i] = _26[i];
+	        }
+	      }
+	    }
+	  };function _29(kv, _2b) {
+	    if (kv === null) {
+	      throw new Error("null is not a valid " + _2b);
+	    } else {
+	      if (_1(kv)) {
+	        throw new Error(_2b + " must not be undefined");
+	      }
+	    }
+	  };var _2c = "key",
+	      _2d = "value";function _2e(key) {
+	    _29(key, _2c);
+	  };function _30(_31) {
+	    _29(_31, _2d);
+	  };function _32(_33, _34, _35) {
+	    this.entries = [];this.addEntry(_33, _34);if (_35 !== null) {
+	      this.getEqualityFunction = function () {
+	        return _35;
+	      };
+	    }
+	  };function _36(_37) {
+	    return _37[0];
+	  };function _38(_39) {
+	    return _39[1];
+	  };_32.prototype = { getEqualityFunction: function getEqualityFunction(_3a) {
+	      if (_a(_3a)) {
+	        return _11;
+	      } else {
+	        return _14;
+	      }
+	    }, searchForEntry: function searchForEntry(key) {
+	      return _1a(this.entries, key, _36, true, this.getEqualityFunction(key));
+	    }, getEntryForKey: function getEntryForKey(key) {
+	      return this.searchForEntry(key)[1];
+	    }, getEntryIndexForKey: function getEntryIndexForKey(key) {
+	      return this.searchForEntry(key)[0];
+	    }, removeEntryForKey: function removeEntryForKey(key) {
+	      var _3f = this.searchForEntry(key);if (_3f) {
+	        _23(this.entries, _3f[0]);return true;
+	      }
+	      return false;
+	    }, addEntry: function addEntry(key, _41) {
+	      this.entries[this.entries.length] = [key, _41];
+	    }, size: function size() {
+	      return this.entries.length;
+	    }, keys: function keys(_42) {
+	      var _43 = _42.length;for (var i = 0, len = this.entries.length; i < len; i++) {
+	        _42[_43 + i] = this.entries[i][0];
+	      }
+	    }, values: function values(_46) {
+	      var _47 = _46.length;for (var i = 0, len = this.entries.length; i < len; i++) {
+	        _46[_47 + i] = this.entries[i][1];
+	      }
+	    }, containsKey: function containsKey(key) {
+	      return _1a(this.entries, key, _36, false, this.getEqualityFunction(key));
+	    }, containsValue: function containsValue(_4b) {
+	      return _1a(this.entries, _4b, _38, false, _17);
+	    } };function _4c() {};_4c.prototype = [];function _4d(_4e) {
+	    return _4e[0];
+	  };function _4f(_50, _51, _52) {
+	    return _1a(_50, _51, _4d, true, _52);
+	  };function _53(_54, _55) {
+	    var _56 = _54[_55];if (_56 && _56 instanceof _4c) {
+	      return _56[1];
+	    }
+	    return null;
+	  };function _57(_58, _59) {
+	    var _5a = [];var _5b = {};_58 = _3(_58) ? _58 : _e;_59 = _3(_59) ? _59 : null;this.put = function (key, _5d) {
+	      _2e(key);_30(_5d);var _5e = _58(key);var _5f = _53(_5b, _5e);if (_5f) {
+	        var _60 = _5f.getEntryForKey(key);if (_60) {
+	          _60[1] = _5d;
+	        } else {
+	          _5f.addEntry(key, _5d);
+	        }
+	      } else {
+	        var _61 = new _4c();_61[0] = _5e;_61[1] = new _32(key, _5d, _59);_5a[_5a.length] = _61;_5b[_5e] = _61;
+	      }
+	    };this.get = function (key) {
+	      _2e(key);var _63 = _58(key);var _64 = _53(_5b, _63);if (_64) {
+	        var _65 = _64.getEntryForKey(key);if (_65) {
+	          return _65[1];
+	        }
+	      }
+	      return null;
+	    };this.containsKey = function (key) {
+	      _2e(key);var _67 = _58(key);var _68 = _53(_5b, _67);if (_68) {
+	        return _68.containsKey(key);
+	      }
+	      return false;
+	    };this.containsValue = function (_69) {
+	      _30(_69);for (var i = 0, len = _5a.length; i < len; i++) {
+	        if (_5a[i][1].containsValue(_69)) {
+	          return true;
+	        }
+	      }
+	      return false;
+	    };this.clear = function () {
+	      _5a.length = 0;_5b = {};
+	    };this.isEmpty = function () {
+	      return _5a.length === 0;
+	    };this.keys = function () {
+	      var _6c = [];for (var i = 0, len = _5a.length; i < len; i++) {
+	        _5a[i][1].keys(_6c);
+	      }
+	      return _6c;
+	    };this.values = function () {
+	      var _6f = [];for (var i = 0, len = _5a.length; i < len; i++) {
+	        _5a[i][1].values(_6f);
+	      }
+	      return _6f;
+	    };this.remove = function (key) {
+	      _2e(key);var _73 = _58(key);var _74 = _53(_5b, _73);if (_74) {
+	        if (_74.removeEntryForKey(key)) {
+	          if (_74.size() === 0) {
+	            var _75 = _4f(_5a, _73, _74.getEqualityFunction(key));_23(_5a, _75[0]);delete _5b[_73];
+	          }
+	        }
+	      }
+	    };this.size = function () {
+	      var _76 = 0;for (var i = 0, len = _5a.length; i < len; i++) {
+	        _76 += _5a[i][1].size();
+	      }
+	      return _76;
+	    };
+	  };return _57;
+	})();
+	
+	module.exports = _Hashtable;
+
+/***/ },
+/* 235 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	__webpack_require__(231);
+	var jsnums = __webpack_require__(233);
+	var types = __webpack_require__(232);
+	
+	// if not defined, declare the compiler object as part of plt
+	window.plt = window.plt || {};
+	plt.compiler = plt.compiler || {};
+	
+	/*
+	 TODO
+	 - compiled-indirects
+	 - someday, get rid of convertToBytecode()
+	 - PERF: Switch from array to hashtable for freeVariables search
+	 - fix uniqueGlobalNames hack!
+	 - deal with more complex module resolution (e.g. - rename-out, etc)
+	 */
+	
+	(function () {
+	
+	  // import frequently-used bindings
+	  var literal = plt.compiler.literal;
+	  var symbolExpr = plt.compiler.symbolExpr;
+	  var Program = plt.compiler.Program;
+	  var ifExpr = plt.compiler.ifExpr;
+	  var beginExpr = plt.compiler.beginExpr;
+	  var localExpr = plt.compiler.localExpr;
+	  var andExpr = plt.compiler.andExpr;
+	  var orExpr = plt.compiler.orExpr;
+	  var lambdaExpr = plt.compiler.lambdaExpr;
+	  var quotedExpr = plt.compiler.quotedExpr;
+	  var callExpr = plt.compiler.callExpr;
+	  var defFunc = plt.compiler.defFunc;
+	  var defVar = plt.compiler.defVar;
+	  var defVars = plt.compiler.defVars;
+	  var defStruct = plt.compiler.defStruct;
+	  var requireExpr = plt.compiler.requireExpr;
+	  var provideStatement = plt.compiler.provideStatement;
+	
+	  // Inheritance from pg 168: Javascript, the Definitive Guide.
+	  var heir = function heir(p) {
+	    var f = function f() {};
+	    f.prototype = p;
+	    return new f();
+	  };
+	
+	  literal.prototype.toBytecode = function () {
+	    var str = this.val.toBytecode ? this.val.toBytecode() : this.val === true ? "true" : this.val === false ? "false" : this.toString();
+	    return '{"$":"constant","value":' + str + '}';
+	  };
+	  symbolExpr.prototype.toBytecode = function () {
+	    return 'types.symbol("' + escapeSym(this.val) + '")';
+	  };
+	  Vector.prototype.toBytecode = function () {
+	    return 'types.vector([' + this.elts.join(',') + '])';
+	  };
+	  Array.prototype.toBytecode = function (quoted) {
+	    return 'types.' + (this.length === 0 ? 'EMPTY' : 'list([' + this.map(convertToBytecode).join(',') + '])');
+	  };
+	  // Bytecode generation for jsnums types
+	  jsnums.Rational.prototype.toBytecode = function () {
+	    return 'types.rational(' + convertToBytecode(this.n) + ', ' + convertToBytecode(this.d) + ')';
+	  };
+	  jsnums.BigInteger.prototype.toBytecode = function () {
+	    return 'types.bignum("' + this.toString() + '")';
+	  };
+	  jsnums.FloatPoint.prototype.toBytecode = function () {
+	    var num = this.toString();
+	    if (num === "+nan.0") num = "NaN";
+	    if (num === "+inf.0") num = "Infinity";
+	    if (num === "-inf.0") num = "-Infinity";
+	    return 'types["float"](' + num + ')';
+	  };
+	  jsnums.Complex.prototype.toBytecode = function () {
+	    return 'types.complex(' + convertToBytecode(this.r) + ', ' + convertToBytecode(this.i) + ')';
+	  };
+	  Char.prototype.toBytecode = function () {
+	    return 'types[\'char\'](String.fromCharCode(' + this.val.charCodeAt(0) + '))';
+	  };
+	  // STACKREF STRUCTS ////////////////////////////////////////////////////////////////
+	  function stackReference() {}
+	  function localStackReference(name, isBoxed, depth) {
+	    stackReference.call(this);
+	    this.name = name;
+	    this.isBoxed = isBoxed;
+	    this.depth = depth;
+	  }
+	  localStackReference.prototype = heir(stackReference.prototype);
+	  function globalStackReference(name, depth, pos) {
+	    stackReference.call(this);
+	    this.name = name;
+	    this.pos = pos;
+	    this.depth = depth;
+	  }
+	  globalStackReference.prototype = heir(stackReference.prototype);
+	  function unboundStackReference(name) {
+	    stackReference.call(this);
+	    this.name = name;
+	  }
+	  unboundStackReference.prototype = heir(stackReference.prototype);
+	
+	  /**************************************************************************
+	   *
+	   *    BYTECODE STRUCTS -
+	   *    (see https://github.com/bootstrapworld/wescheme-compiler2012/blob/master/js-runtime/src/bytecode-structs.ss)
+	   *
+	   **************************************************************************/
+	
+	  // all Programs, by default, print out their values and have no location
+	  // anything that behaves differently must provide their own toBytecode() function
+	  var Bytecode = function Bytecode() {
+	    // -> JSON
+	    this.toBytecode = function () {
+	      console.log(this);throw "IMPOSSIBLE - generic bytecode toBytecode method was called";
+	    };
+	  };
+	
+	  // for mapping JSON conversion over an array
+	  function convertToBytecode(bc) {
+	    if (types.isString(bc) && bc.chars !== undefined) return '"' + bc.toString() + '"';
+	    return bc.toBytecode ? bc.toBytecode() : bc;
+	  }
+	
+	  // convert a symbol-name into bytecode string
+	  function escapeSym(symName) {
+	    var str = symName.toString().replace(/\|/g, ''),
+	        bcStr = "";
+	    // possible characters that need to be escaped
+	    var escapes = ["{", "}", "[", "]", ",", "'", "`", " ", "\\", '"'];
+	    for (var j = 0; j < str.length; j++) {
+	      bcStr += (escapes.indexOf(str.charAt(j)) > -1 ? '\\' : '') + str.charAt(j);
+	    }
+	    // special-case for newline characters
+	    bcStr = bcStr.replace(/\n/g, "\\n");
+	    return bcStr;
+	  }
+	
+	  // Global bucket
+	  function globalBucket(name) {
+	    Bytecode.call(this);
+	    this.name = name; // symbol
+	    this.toBytecode = function () {
+	      return '{"$":"global-bucket","value":"' + escapeSym(this.name) + '"}';
+	    };
+	  };
+	  globalBucket.prototype = heir(Bytecode.prototype);
+	
+	  // Module variable
+	  function moduleVariable(modidx, sym, pos, phase) {
+	    Bytecode.call(this);
+	    this.$ = 'module-variable';
+	    this.modidx = modidx; // module-path-index
+	    this.sym = sym; // symbol
+	    this.pos = pos; // exact integer
+	    this.phase = phase; // 1/0 - direct access to exported id
+	    this.toBytecode = function () {
+	      return '{"$":"module-variable","sym":' + this.sym.toBytecode() + ',"modidx":' + this.modidx.toBytecode() + ',"pos":' + this.pos + ',"phase":' + this.phase + '}';
+	    };
+	  };
+	  moduleVariable.prototype = heir(Bytecode.prototype);
+	
+	  // Wrap syntax object
+	  function wrap() {
+	    Bytecode.call(this);
+	  };
+	  wrap.prototype = heir(Bytecode.prototype);
+	
+	  // Wrapped syntax object
+	  function wrapped(datum, wraps, certs) {
+	    Bytecode.call(this);
+	    this.datum = datum; // any
+	    this.wraps = wraps; // list of wrap
+	    this.certs = certs; // list or false
+	  };
+	  wrapped.prototype = heir(Bytecode.prototype);
+	
+	  // Stx
+	  function stx(encoded) {
+	    this.encoded = encoded; // wrapped
+	    Bytecode.call(this);
+	  };
+	  stx.prototype = heir(Bytecode.prototype);
+	
+	  // prefix
+	  function prefix(numLifts, topLevels, stxs) {
+	    Bytecode.call(this);
+	    this.numLifts = numLifts; // exact, non-negative integer
+	    this.topLevels = topLevels; // list of (false, symbol, globalBucket or moduleVariable)
+	    this.stxs = stxs; // list of stxs
+	    this.toBytecode = function () {
+	      return '{"$":"prefix","num-lifts":' + this.numLifts + ',"toplevels":[' + this.topLevels.map(function (v) {
+	        return convertToBytecode(v);
+	      }).join(',') + '],"stxs":[' + this.stxs.map(convertToBytecode) + ']}';
+	    };
+	  };
+	  prefix.prototype = heir(Bytecode.prototype);
+	
+	  // form
+	  function form() {
+	    Bytecode.call(this);
+	  };
+	  form.prototype = heir(Bytecode.prototype);
+	
+	  // expr
+	  function expr(form) {
+	    Bytecode.call(this);
+	  };
+	  expr.prototype = heir(Bytecode.prototype);
+	
+	  // Indirect
+	  function indirect(v) {
+	    Bytecode.call(this);
+	    this.v = v; // ??
+	    this.toBytecode = function () {
+	      return '{"$":"indirect","v":' + this.v.toBytecode() + '}';
+	    };
+	  };
+	  indirect.prototype = heir(Bytecode.prototype);
+	
+	  // compilationTop
+	  function compilationTop(maxLetDepth, prefix, code) {
+	    Bytecode.call(this);
+	    this.maxLetDepth = maxLetDepth; // exact non-negative integer
+	    this.prefix = prefix; // prefix
+	    this.code = code; // form, indirect, or any
+	    this.toBytecode = function () {
+	      return '{"$":"compilation-top","max-let-depth":' + this.maxLetDepth + ',"prefix":' + this.prefix.toBytecode() + ',"compiled-indirects":[],"code":' + this.code.toBytecode() + '}';
+	    };
+	  };
+	  compilationTop.prototype = heir(Bytecode.prototype);
+	
+	  // provided
+	  function provided(name, src, srcName, nomSrc, srcPhase, isProtected, insp) {
+	    Bytecode.call(this);
+	    this.name = name; // symbol
+	    this.src = src; // false or modulePathIndex
+	    this.srcName = srcName; // symbol
+	    this.nomSrc = nomSrc; // false or modulePathIndex
+	    this.srcPhase = srcPhase; // 0/1
+	    this.insp = insp; // boolean or void
+	    this.isProtected = isProtected; // boolean
+	  };
+	  provided.prototype = heir(Bytecode.prototype);
+	
+	  // topLevel
+	  function topLevel(depth, pos, constant, ready, loc) {
+	    Bytecode.call(this);
+	    this.depth = depth; // exact, non-negative integer
+	    this.pos = pos; // exact, non-negative integer
+	    this.constant = constant; // boolean
+	    this.ready = ready; // boolean
+	    this.loc = loc; // false or Location
+	    this.toBytecode = function () {
+	      return '{"$":"toplevel","depth":' + this.depth.toString() + ',"pos":' + this.pos.toString() + ',"const?":' + this.constant + ',"ready?":' + this.ready + ',"loc":' + (this.loc && this.loc.toVector().toBytecode()) + '}';
+	    };
+	  };
+	  topLevel.prototype = heir(Bytecode.prototype);
+	
+	  // seq
+	  function seq(forms) {
+	    Bytecode.call(this);
+	    this.forms = forms; // list of form, indirect, any
+	    this.toBytecode = function () {
+	      return '{"$":"seq","forms":[' + this.forms.map(convertToBytecode).join(',') + ']}';
+	    };
+	  };
+	  seq.prototype = heir(Bytecode.prototype);
+	
+	  // defValues
+	  function defValues(ids, rhs) {
+	    Bytecode.call(this);
+	    this.ids = ids; // list of toplevel or symbol
+	    this.rhs = rhs; // expr, indirect, seq, any
+	    this.toBytecode = function () {
+	      return '{"$":"def-values","ids":[' + this.ids.map(convertToBytecode).join(',') + '],"body":' + this.rhs.toBytecode() + '}';
+	    };
+	  };
+	  defValues.prototype = heir(Bytecode.prototype);
+	
+	  // defSyntaxes
+	  function defSyntaxes(ids, rhs, prefix, maxLetDepth) {
+	    Bytecode.call(this);
+	    this.$ = 'def-values';
+	    this.ids = ids; // list of toplevel or symbol
+	    this.rhs = rhs; // expr, indirect, seq, any
+	    this.prefix = prefix; // prefix
+	    this.maxLetDepth = maxLetDepth; // exact, non-negative integer
+	    this.toBytecode = function () {
+	      return '{"$":"def-values","ids":[' + this.ids.toBytecode().join(',') + '],"rhs":' + this.rhs.toBytecode() + ',"prefix":' + this.prefix.toBytecode() + ',"max-let-depth":' + this.maxLetDepth.toBytecode() + '}';
+	    };
+	  };
+	  defSyntaxes.prototype = heir(Bytecode.prototype);
+	
+	  // defForSyntax
+	  function defForSyntax(ids, rhs, prefix, maxLetDepth) {
+	    Bytecode.call(this);
+	    this.ids = ids; // list of toplevel or symbol
+	    this.rhs = rhs; // expr, indirect, seq, any
+	    this.prefix = prefix; // prefix
+	    this.maxLetDepth = maxLetDepth; // exact, non-negative integer
+	  };
+	  defForSyntax.prototype = heir(Bytecode.prototype);
+	
+	  // mod
+	  function mod(name, selfModidx, prefix, provides, requires, body, syntaxBody, unexported, maxLetDepth, dummy, langInfo, internalContext) {
+	    Bytecode.call(this);
+	    this.name = name; // exact, non-negative integer
+	    this.selfModidx = selfModidx; // exact, non-negative integer
+	    this.prefix = prefix; // boolean
+	    this.provides = provides; // boolean
+	    this.requires = requires; // false or Location
+	    this.body = body; // exact, non-negative integer
+	    this.syntaxBody = syntaxBody; // exact, non-negative integer
+	    this.unexported = unexported; // boolean
+	    this.maxLetDepth = maxLetDepth; // exact, non-negative integer
+	    this.dummy = dummy; // false or Location
+	    this.langInfo = langInfo; // false or (vector modulePath symbol any)
+	    this.internalContext = internalContext;
+	    this.toBytecode = function () {
+	      return '{"$":"mod","name":' + this.name.toBytecode() + ',"self-modidx":' + this.selfModidx.toBytecode() + ',"prefix":' + this.prefix.toBytecode() + ',"provides":' + this.provides.toBytecode() + ',"requires":' + (this.requires && this.requires.toVector().toBytecode()) + ',"body":' + this.body.toBytecode() + ',"stx-body":' + this.syntaxBody.toBytecode() + ',"max-let-depth":' + this.maxLetDepth.toBytecode() + '}';
+	    };
+	  };
+	  mod.prototype = heir(Bytecode.prototype);
+	
+	  // lam
+	  function lam(name, operatorAndRandLocs, flags, numParams, paramTypes, rest, closureMap, closureTypes, maxLetDepth, body) {
+	
+	    Bytecode.call(this);
+	    this.name = name; // symbol, vector, empty
+	    this.flags = flags; // (list of ('preserves-marks 'is-method 'single-result))
+	    this.numParams = numParams; // exact, non-negative integer
+	    this.paramTypes = paramTypes; // list of ('val 'ref 'flonum)
+	    this.rest = rest; // boolean
+	    this.body = body; // expr, seq, indirect
+	    this.closureMap = closureMap; // vector of exact, non-negative integers
+	    this.maxLetDepth = maxLetDepth; // exact, non-negative integer
+	    this.closureTypes = closureTypes; // list of ('val/ref or 'flonum)
+	    this.operatorAndRandLocs = operatorAndRandLocs; // list of Vectors
+	    // operator+rand-locs includes a list of vectors corresponding to the location
+	    // of the operator, operands, etc if we can pick them out.  If we can't get
+	    // this information, it's false
+	    this.toBytecode = function () {
+	      return '{"$":"lam","name":' + this.name.toBytecode() + ',"locs":[' + this.operatorAndRandLocs.map(convertToBytecode).join(',') + '],"flags":[' + this.flags.map(convertToBytecode).join(',') + '],"num-params":' + this.numParams + ',"param-types":[' + this.paramTypes.map(convertToBytecode).join(',') + '],"rest?":' + this.rest + ',"closure-map":[' + this.closureMap.map(convertToBytecode).join(',') + '],"closure-types":[' + this.closureTypes.map(convertToBytecode).join(',') + '],"max-let-depth":' + this.maxLetDepth + ',"body":' + this.body.toBytecode() + '}';
+	    };
+	  };
+	  lam.prototype = heir(Bytecode.prototype);
+	
+	  // closure: a static closure (nothing to close over)
+	  function closure(code, genId) {
+	    Bytecode.call(this);
+	    this.code = code; // lam
+	    this.genId = genId; // symbol
+	    this.toBytecode = function () {
+	      return '{"$":"closure","code":' + this.code.toBytecode() + ',"gen-id":' + this.genId.toBytecode() + '}';
+	    };
+	  };
+	  closure.prototype = heir(Bytecode.prototype);
+	
+	  // caseLam: each clause is a lam (added indirect)
+	  function caseLam(name, clauses) {
+	    Bytecode.call(this);
+	    this.name = name; // symbol, vector, empty
+	    this.clauses = clauses; // list of (lambda or indirect)
+	    this.toBytecode = function () {
+	      return '{"$":"case-lam","name":' + this.name.toBytecode() + ',"clauses":' + this.clauses.toBytecode() + '}';
+	    };
+	  };
+	  caseLam.prototype = heir(Bytecode.prototype);
+	
+	  // letOne
+	  function letOne(rhs, body, flonum) {
+	    Bytecode.call(this);
+	    this.rhs = rhs; // expr, seq, indirect, any
+	    this.body = body; // expr, seq, indirect, any
+	    this.flonum = flonum; // boolean
+	    this.toBytecode = function () {
+	      return '{"$": "let-one","rhs":' + this.rhs.toBytecode() + ',"body":' + this.body.toBytecode() + ',"flonum":' + this.flonum.toBytecode() + '}';
+	    };
+	  };
+	  letOne.prototype = heir(Bytecode.prototype);
+	
+	  // letVoid
+	  function letVoid(count, boxes, body) {
+	    Bytecode.call(this);
+	    this.count = count; // exact, non-negative integer
+	    this.boxes = boxes; // boolean
+	    this.body = body; // expr, seq, indirect, any
+	    this.toBytecode = function () {
+	      return '{"$":"let-void","count":' + convertToBytecode(this.count) + ',"boxes?":' + convertToBytecode(this.boxes) + ',"body":' + this.body.toBytecode() + '}';
+	    };
+	  };
+	  letVoid.prototype = heir(Bytecode.prototype);
+	
+	  // letRec: put `letrec'-bound closures into existing stack slots
+	  function letRec(procs, body) {
+	    Bytecode.call(this);
+	    this.procs = procs; // list of lambdas
+	    this.body = body; // expr, seq, indirect, any
+	    this.toBytecode = function () {
+	      return '{"$":"let-rec","procs":' + this.procs.toBytecode() + ',"body":' + this.body.toBytecode() + '}';
+	    };
+	  };
+	  letRec.prototype = heir(Bytecode.prototype);
+	
+	  // installValue
+	  function installValue(count, pos, boxes, rhs, body) {
+	    Bytecode.call(this);
+	    this.count = count; // exact, non-negative integer
+	    this.pos = pos; // exact, non-negative integer
+	    this.boxes = boxes; // boolean
+	    this.rhs = rhs; // expr, seq, indirect, any
+	    this.body = body; // expr, seq, indirect, any -- set existing stack slot(s)
+	    this.toBytecode = function () {
+	      return '{"$":"install-value","count":' + convertToBytecode(this.count) + ',"pos":' + convertToBytecode(this.pos) + ',"boxes?":' + convertToBytecode(this.boxes) + ',"rhs":' + this.rhs.toBytecode() + ',"body":' + this.body.toBytecode() + '}';
+	    };
+	  };
+	  installValue.prototype = heir(Bytecode.prototype);
+	
+	  // boxEnv: box existing stack element
+	  function boxEnv(pos, body) {
+	    Bytecode.call(this);
+	    this.pos = pos; // exact, non-negative integer
+	    this.body = body; // expr, seq, indirect, any
+	    this.toBytecode = function () {
+	      return '{"$":"boxenv","pos":' + this.pos.toBytecode() + ',"body":' + this.body.toBytecode() + '}';
+	    };
+	  };
+	  boxEnv.prototype = heir(Bytecode.prototype);
+	
+	  // localRef: access local via stack
+	  function localRef(unbox, pos, clear, otherClears, flonum) {
+	    Bytecode.call(this);
+	    this.unbox = unbox || false; // boolean
+	    this.pos = pos; // exact, non-negative integer
+	    this.clear = clear; // boolean
+	    this.flonum = flonum; // boolean
+	    this.otherClears = otherClears; // boolean
+	    this.toBytecode = function () {
+	      return '{"$":"localref","unbox?":' + this.unbox + ',"pos":' + this.pos + ',"clear":' + this.clear + ',"other-clears?":' + this.otherClears + ',"flonum?":' + this.flonum + '}';
+	    };
+	  };
+	  localRef.prototype = heir(Bytecode.prototype);
+	
+	  // topSyntax : access syntax object via prefix array (which is on stack)
+	  function topSyntax(depth, pos, midpt) {
+	    Bytecode.call(this);
+	    this.depth = depth; // exact, non-negative integer
+	    this.pos = pos; // exact, non-negative integer
+	    this.midpt = midpt; // exact, non-negative integer
+	  };
+	  topSyntax.prototype = heir(Bytecode.prototype);
+	
+	  // application: function call
+	  function application(rator, rands) {
+	    Bytecode.call(this);
+	    this.rator = rator; // expr, seq, indirect, any
+	    this.rands = rands; // list of (expr, seq, indirect, any)
+	    this.toBytecode = function () {
+	      return '{"$":"application","rator":' + this.rator.toBytecode() + ',"rands":[' + this.rands.map(convertToBytecode).join(',') + ']}';
+	    };
+	  };
+	  application.prototype = heir(Bytecode.prototype);
+	
+	  // branch
+	  function branch(testExpr, thenExpr, elseExpr) {
+	    Bytecode.call(this);
+	    this.testExpr = testExpr; // expr, seq, indirect, any
+	    this.thenExpr = thenExpr; // expr, seq, indirect, any
+	    this.elseExpr = elseExpr; // expr, seq, indirect, any
+	    this.toBytecode = function () {
+	      return '{"$":"branch","test":' + this.testExpr.toBytecode() + ',"then":' + this.thenExpr.toBytecode() + ',"else":' + this.elseExpr.toBytecode() + '}';
+	    };
+	  };
+	  branch.prototype = heir(Bytecode.prototype);
+	
+	  // withContMark:'with-cont-mark'
+	  function withContMark(key, val, body) {
+	    Bytecode.call(this);
+	    this.$ = 'with-cont-mark';
+	    this.key = key; // expr, seq, indirect, any
+	    this.val = val; // expr, seq, indirect, any
+	    this.body = body; // expr, seq, indirect, any
+	    this.toBytecode = function () {
+	      return '{"$":"with-cont-mark","key":' + new literal(new symbolExpr(this.key)).toBytecode() + ',"val":' + new literal(this.val).toBytecode() + ',"body":' + this.body.toBytecode() + '}';
+	    };
+	  };
+	  withContMark.prototype = heir(Bytecode.prototype);
+	
+	  // beg0: begin0
+	  function beg0(seq) {
+	    Bytecode.call(this);
+	    this.seq = seq; // list  of (expr, seq, indirect, any)
+	    this.toBytecode = function () {
+	      return '{"$":"beg0","seq":' + this.seq.toBytecode() + '}';
+	    };
+	  };
+	  beg0.prototype = heir(Bytecode.prototype);
+	
+	  // splice: top-level 'begin'
+	  function splice(forms) {
+	    Bytecode.call(this);
+	    this.forms = forms; // list  of (expr, seq, indirect, any)
+	    this.toBytecode = function () {
+	      return '{"$":"splice","forms":' + this.forms.toBytecode() + '}';
+	    };
+	  };
+	  splice.prototype = heir(Bytecode.prototype);
+	
+	  // varRef: `#%variable-reference'
+	  function varRef(topLevel) {
+	    Bytecode.call(this);
+	    this.topLevel = topLevel; // topLevel
+	    this.toBytecode = function () {
+	      return '{"$":"varref","top-level":' + this.topLevel.toBytecode() + '}';
+	    };
+	  };
+	  varRef.prototype = heir(Bytecode.prototype);
+	
+	  // assign: top-level or module-level set!
+	  function assign(id, rhs, undefOk) {
+	    Bytecode.call(this);
+	    this.id = id; // topLevel
+	    this.rhs = rhs; // expr, seq, indirect, any
+	    this.undefOk = undefOk; // boolean
+	    this.toBytecode = function () {
+	      return '{"$":"assign","id":' + this.id.toBytecode() + ',"rhs":' + this.rhs.toBytecode() + ',"undef-ok":' + this.undefOk.toBytecode() + '}';
+	    };
+	  };
+	  assign.prototype = heir(Bytecode.prototype);
+	
+	  // applyValues: `(call-with-values (lambda () ,args-expr) ,proc)
+	  function applyValues(proc, args) {
+	    Bytecode.call(this);
+	    this.proc = proc; // expr, seq, indirect, any
+	    this.args = args; // expr, seq, indirect, any
+	    this.toBytecode = function () {
+	      return '{"$":"apply-values","proc":' + this.proc.toBytecode() + ',"args":' + this.args.toBytecode() + '}';
+	    };
+	  };
+	  applyValues.prototype = heir(Bytecode.prototype);
+	
+	  // primVal: direct preference to a kernel primitive
+	  function primVal(id) {
+	    Bytecode.call(this);
+	    this.id = id; // exact, non-negative integer
+	    this.toBytecode = function () {
+	      return '{"$":"primval","id":' + this.id.toBytecode() + '}';
+	    };
+	  };
+	  primVal.prototype = heir(Bytecode.prototype);
+	
+	  // req
+	  function req(reqs, dummy) {
+	    Bytecode.call(this);
+	    this.$ = 'req';
+	    this.reqs = reqs; // syntax
+	    this.dummy = dummy; // toplevel
+	    this.toBytecode = function () {
+	      var reqBytecode = this.reqs instanceof literal ? '"' + this.reqs.val + '"' : this.reqs.toBytecode();
+	      return '{"$":"req","reqs":' + reqBytecode + ',"dummy":' + this.dummy.toBytecode() + '}';
+	    };
+	  };
+	  req.prototype = heir(Bytecode.prototype);
+	
+	  // lexicalRename
+	  function lexicalRename(bool1, bool2, alist) {
+	    this.bool1 = bool1; // boolean
+	    this.bool2 = bool2; // boolean
+	    this.alist = alist; // should be list of (cons symbol, symbol)
+	    Bytecode.call(this);
+	  };
+	  lexicalRename.prototype = heir(Bytecode.prototype);
+	
+	  // phaseShift
+	  function phaseShift(amt, src, dest) {
+	    this.amt = amt; // syntax
+	    this.src = src; // false or modulePathIndex
+	    this.dest = dest; // false or modulePathIndex
+	    Bytecode.call(this);
+	  };
+	  phaseShift.prototype = heir(Bytecode.prototype);
+	
+	  // wrapMark
+	  function wrapMark(val) {
+	    this.val = val; // exact integer
+	    Bytecode.call(this);
+	  };
+	  wrapMark.prototype = heir(Bytecode.prototype);
+	
+	  // prune
+	  function prune(sym) {
+	    this.sym = sym; // any
+	    Bytecode.call(this);
+	  };
+	  prune.prototype = heir(Bytecode.prototype);
+	
+	  // allFromModule
+	  function allFromModule(path, phase, srcPhase, exceptions, prefix) {
+	    this.path = path; // modulePathIndex
+	    this.phase = phase; // false or exact integer
+	    this.srcPhase = srcPhase; // any
+	    this.prefix = prefix; // false or symbol
+	    this.exceptions = exceptions; // list of symbols
+	    Bytecode.call(this);
+	  };
+	  allFromModule.prototype = heir(Bytecode.prototype);
+	
+	  // nominalPath
+	  function nominalPath() {
+	    Bytecode.call(this);
+	  };
+	  nominalPath.prototype = heir(Bytecode.prototype);
+	
+	  // simpleNominalPath
+	  function simpleNominalPath(value) {
+	    this.value = value; // modulePathIndex
+	    Bytecode.call(this);
+	  };
+	  simpleNominalPath.prototype = heir(Bytecode.prototype);
+	
+	  /*    // moduleBinding
+	      function moduleBinding() {
+	        Bytecode.call(this);
+	      };
+	      moduleBinding.prototype = heir(Bytecode.prototype);
+	  */
+	  // phasedModuleBinding
+	  function phasedModuleBinding(path, phase, exportName, nominalPath, nominalExportName) {
+	    this.path = path; // modulePathIndex
+	    this.phase = phase; // exact integer
+	    this.exportName = nominalPath; // nominalPath
+	    this.nominalExportName = nominalExportName; // any
+	    Bytecode.call(this);
+	  };
+	  phasedModuleBinding.prototype = heir(Bytecode.prototype);
+	
+	  // exportedNominalModuleBinding
+	  function exportedNominalModuleBinding(path, exportName, nominalPath, nominalExportName) {
+	    this.path = path; // modulePathIndex
+	    this.exportName = exportName; // any
+	    this.nominalPath = nominalPath; // nominalPath
+	    this.nominalExportName = nominalExportName; // any
+	    Bytecode.call(this);
+	  };
+	  exportedNominalModuleBinding.prototype = heir(Bytecode.prototype);
+	
+	  // nominalModuleBinding
+	  function nominalModuleBinding(path, nominalPath) {
+	    this.path = path; // modulePathIndex
+	    this.nominalPath = nominalPath; // any
+	    Bytecode.call(this);
+	  };
+	  nominalModuleBinding.prototype = heir(Bytecode.prototype);
+	
+	  // exportedModuleBinding
+	  function exportedModuleBinding(path, exportName) {
+	    this.path = path; // modulePathIndex
+	    this.exportName = exportName; // any
+	    Bytecode.call(this);
+	  };
+	  exportedModuleBinding.prototype = heir(Bytecode.prototype);
+	
+	  // simpleModuleBinding
+	  function simpleModuleBinding(path) {
+	    this.path = path; // modulePathIndex
+	    Bytecode.call(this);
+	  };
+	  simpleModuleBinding.prototype = heir(Bytecode.prototype);
+	
+	  // ModuleRename
+	  function ModuleRename(phase, kind, setId, unmarshals, renames, markRenames, plusKern) {
+	    this.phase = phase; // false or exact integer
+	    this.kind = kind; // "marked" or "normal"
+	    this.unmarshals = unmarshals; // list of allFromModule
+	    this.renames = renames; // list of (symbol or moduleBinding)
+	    this.markRenames = markRenames; // any
+	    this.plusKern = plusKern; // boolean
+	    Bytecode.call(this);
+	  };
+	  ModuleRename.prototype = heir(Bytecode.prototype);
+	
+	  // HACK: module-path
+	  function modulePath(path, base) {
+	    this.path = path;
+	    this.base = base;
+	    Bytecode.call(this);
+	    this.toBytecode = function () {
+	      return '{"$":"module-path","path":' + convertToBytecode(this.path) + ',"base":' + convertToBytecode(this.base) + '}';
+	    };
+	  };
+	  modulePath.prototype = heir(Bytecode.prototype);
+	
+	  // freeVariables : [listof symbols] env -> [list of symbols]
+	  Program.prototype.freeVariables = function (acc, env) {
+	    return acc;
+	  };
+	  ifExpr.prototype.freeVariables = function (acc, env) {
+	    return this.alternative.freeVariables(this.consequence.freeVariables(this.predicate.freeVariables(acc, env), env), env);
+	  };
+	  beginExpr.prototype.freeVariables = function (acc, env) {
+	    return this.exprs.reduceRight(function (acc, expr) {
+	      return expr.freeVariables(acc, env);
+	    }, acc);
+	  };
+	  // if it's an unbound variable that we haven't seen before, add it to acc
+	  symbolExpr.prototype.freeVariables = function (acc, env) {
+	    return env.lookup(this.val, 0) instanceof unboundStackReference && acc.indexOf(this) == -1 ? acc.concat([this]) : acc;
+	  };
+	  localExpr.prototype.freeVariables = function (acc, env) {
+	    // helper functions
+	    var pushLocalBoxedFromSym = function pushLocalBoxedFromSym(env, sym) {
+	      return new plt.compiler.localEnv(sym.val, true, env);
+	    },
+	        pushLocalFromSym = function pushLocalFromSym(env, sym) {
+	      return new plt.compiler.localEnv(sym.val, false, env);
+	    };
+	
+	    // collect all the defined names in the local
+	    var definedNames = this.defs.reduce(function (names, d) {
+	      return (d instanceof defVars ? d.names : [d.name]).concat(names);
+	    }, []),
+	
+	    // make an environment with those names added to the stack
+	    updatedEnv = definedNames.reduce(pushLocalBoxedFromSym, env),
+	
+	    // use that env to find all free variables in the body
+	    freeVarsInBody = this.body.freeVariables(acc, updatedEnv),
+	
+	    // given free variables and a definition, add the free variables from that definition...
+	    // while *also* updating the stack to reflect defined names
+	    addFreeVarsInDef = function addFreeVarsInDef(acc, d) {
+	      if (d instanceof defFunc) {
+	        var envWithArgs = d.args.reduce(function (env, arg) {
+	          return pushLocalFromSym(env, arg);
+	        }, updatedEnv);
+	        return d.body.freeVariables(acc, envWithArgs);
+	      }
+	      if (d instanceof defStruct) {
+	        return acc;
+	      } else {
+	        return d.expr.freeVariables(acc, updatedEnv);
+	      }
+	    };
+	
+	    // collect free variables from all the definitions and the body, while simultaneously
+	    // updating the environment to reflect defined names
+	    return this.defs.reduce(addFreeVarsInDef, freeVarsInBody);
+	  };
+	  andExpr.prototype.freeVariables = function (acc, env) {
+	    return this.exprs.reduceRight(function (acc, expr) {
+	      return expr.freeVariables(acc, env);
+	    }, acc);
+	  };
+	  orExpr.prototype.freeVariables = function (acc, env) {
+	    return this.exprs.reduceRight(function (acc, expr) {
+	      return expr.freeVariables(acc, env);
+	    }, acc);
+	  };
+	  // be careful to make a copy of the array before reversing!
+	  lambdaExpr.prototype.freeVariables = function (acc, env) {
+	    var pushLocalFromSym = function pushLocalFromSym(env, sym) {
+	      return new plt.compiler.localEnv(sym.val, false, env);
+	    },
+	        envWithArgs = this.args.slice(0).reverse().reduce(pushLocalFromSym, env);
+	    return this.body.freeVariables(acc, envWithArgs);
+	  };
+	  quotedExpr.prototype.freeVariables = function (acc, env) {
+	    return acc;
+	  };
+	  callExpr.prototype.freeVariables = function (acc, env) {
+	    return this.func.freeVariables(acc, env).concat(this.args).reduceRight(function (acc, expr) {
+	      return expr.freeVariables(acc, env);
+	    }, acc);
+	  };
+	
+	  /**************************************************************************
+	   *
+	   *    COMPILATION -
+	   *    (see https://github.com/bootstrapworld/wescheme-compiler2012/blob/master/js-runtime/src/mzscheme-vm.ss)
+	   *
+	   **************************************************************************/
+	
+	  // sort-and-unique: (listof X) (X X -> boolean) (X X -> boolean) -> (listof X)
+	  function sortAndUnique(elts, lessThan, equalTo) {
+	    function unique(elts) {
+	      return elts.length <= 1 ? elts : equalTo(elts[0], elts[1]) ? unique(elts.slice(1)) : [elts[0]].concat(unique(elts.slice(1)));
+	    }
+	    // convert lessThan fn into a fn that returns -1 for less, 1 for greater, 0 for equal
+	    var convertedSortFn = function convertedSortFn(x, y) {
+	      return lessThan(x, y) ? -1 : lessThan(y, x);
+	    };
+	    return unique(elts.sort(convertedSortFn));
+	  }
+	
+	  // [bytecodes, pinfo, env], Program -> [bytecodes, pinfo, env]
+	  // compile the program, then add the bytecodes and pinfo information to the acc
+	  function compilePrograms(acc, p) {
+	    var bytecodes = acc[0],
+	        pinfo = acc[1],
+	        env = acc[2],
+	        compiledProgramAndPinfo = p.compile(env, pinfo),
+	        compiledProgram = compiledProgramAndPinfo[0],
+	        pinfo = compiledProgramAndPinfo[1];
+	    return [[compiledProgram].concat(bytecodes), pinfo, env];
+	  }
+	
+	  // extend the Program class to include compilation
+	  // compile: pinfo -> [bytecode, pinfo]
+	
+	  // literals evaluate to themselves
+	  Program.prototype.compile = function (env, pinfo) {
+	    return [this, pinfo];
+	  };
+	
+	  defFunc.prototype.compile = function (env, pinfo) {
+	    var compiledFunNameAndPinfo = this.name.compile(env, pinfo),
+	        compiledFunName = compiledFunNameAndPinfo[0],
+	        pinfo = compiledFunNameAndPinfo[1];
+	    var lambda = new lambdaExpr(this.args, this.body),
+	        compiledLambdaAndPinfo = lambda.compile(env, pinfo, false, this.name),
+	        compiledLambda = compiledLambdaAndPinfo[0],
+	        pinfo = compiledLambdaAndPinfo[1];
+	    var bytecode = new defValues([compiledFunName], compiledLambda);
+	    return [bytecode, pinfo];
+	  };
+	
+	  defVar.prototype.compile = function (env, pinfo) {
+	    var compiledIdAndPinfo = this.name.compile(env, pinfo),
+	        compiledId = compiledIdAndPinfo[0],
+	        pinfo = compiledIdAndPinfo[1];
+	    var compiledExprAndPinfo = this.expr.compile(env, pinfo),
+	        compiledExpr = compiledExprAndPinfo[0],
+	        pinfo = compiledExprAndPinfo[1];
+	    var bytecode = new defValues([compiledId], compiledExpr);
+	    return [bytecode, pinfo];
+	  };
+	
+	  defVars.prototype.compile = function (env, pinfo) {
+	    var compiledIdsAndPinfo = this.names.reduceRight(compilePrograms, [[], pinfo, env]),
+	        compiledIds = compiledIdsAndPinfo[0],
+	        pinfo = compiledIdsAndPinfo[1];
+	    var compiledBodyAndPinfo = this.expr.compile(env, pinfo),
+	        compiledBody = compiledBodyAndPinfo[0],
+	        pinfo = compiledBodyAndPinfo[1];
+	    var bytecode = new defValues(compiledIds, compiledBody);
+	    return [bytecode, pinfo];
+	  };
+	
+	  beginExpr.prototype.compile = function (env, pinfo) {
+	    var compiledExpressionsAndPinfo = this.exprs.reduceRight(compilePrograms, [[], pinfo, env]),
+	        compiledExpressions = compiledExpressionsAndPinfo[0],
+	        pinfo1 = compiledExpressionsAndPinfo[1];
+	    var bytecode = new seq(compiledExpressions);
+	    return [bytecode, pinfo1];
+	  };
+	
+	  // Compile a lambda expression.  The lambda must close its free variables over the
+	  // environment.
+	  lambdaExpr.prototype.compile = function (env, pinfo, isUnnamedLambda, name) {
+	    if (isUnnamedLambda === undefined) isUnnamedLambda = true;
+	
+	    // maskUnusedGlobals : (listof symbol?) (listof symbol?) -> (listof symbol or false)
+	    function maskUnusedGlobals(listOfNames, namesToKeep) {
+	      return listOfNames.map(function (n) {
+	        return namesToKeep.indexOf(n) > -1 ? n : false;
+	      });
+	    }
+	
+	    function pushLocal(env, n) {
+	      return new plt.compiler.localEnv(n, false, env);
+	    }
+	    function pushLocalBoxed(env, n) {
+	      return new plt.compiler.localEnv(n, true, env);
+	    }
+	    function pushGlobals(names, env) {
+	      return new plt.compiler.globalEnv(names, false, env);
+	    }
+	
+	    // getClosureVectorAndEnv : (list of Symbols) (list of Symbols) env -> [(Vector of number), env]
+	    // take in a list of args, a list of freevars, and an empty env that ONLY includes the arguments
+	    function getClosureVectorAndEnv(args, freeVariables, originalEnv) {
+	      // pull out the stack references for all variables that are free in this environment
+	      var freeVariableRefs = freeVariables.map(function (v) {
+	        return originalEnv.lookup(v.val, 0);
+	      }),
+	
+	      // some utility functions
+	      ormap = function ormap(f, l) {
+	        return l.length === 0 ? false : f(l[0]) ? l[0] : ormap(f, l.slice(1));
+	      },
+	          isLocalStackRef = function isLocalStackRef(r) {
+	        return r instanceof localStackReference;
+	      },
+	          isGlobalStackRef = function isGlobalStackRef(r) {
+	        return r instanceof globalStackReference;
+	      },
+	          isUnboundStackRef = function isUnboundStackRef(r) {
+	        return r instanceof unboundStackReference;
+	      },
+	          getDepthFromRef = function getDepthFromRef(r) {
+	        return r.depth;
+	      },
+	
+	      // this will either be #f, or the first unboundStackRef
+	      anyUnboundStackRefs = ormap(isUnboundStackRef, freeVariableRefs);
+	      // if any of the references are unbound, freak out!
+	      if (anyUnboundStackRefs) {
+	        throw "Can't produce closure; I don't know where " + anyUnboundStackRefs.name + " is bound.";
+	        // otherwise, compute the depths of all local and global free variables
+	      } else {
+	          var lexicalFreeRefs = sortAndUnique(freeVariableRefs.filter(isLocalStackRef), function (x, y) {
+	            return x.depth < y.depth;
+	          }, function (x, y) {
+	            return x.depth === y.depth;
+	          }),
+	              lexicalFreeDepths = lexicalFreeRefs.map(getDepthFromRef),
+	              globalRefs = freeVariableRefs.filter(isGlobalStackRef),
+	              globalDepths = sortAndUnique(globalRefs.map(getDepthFromRef), function (x, y) {
+	            return x < y;
+	          }, function (x, y) {
+	            return x === y;
+	          });
+	          // Add Function Arguments (in reverse order) to the environment
+	          var env1 = args.reverse().map(function (s) {
+	            return s.val;
+	          }).reduce(pushLocal, originalEnv);
+	
+	          // Add the lexical free variables (in reverse order)
+	          var env2 = lexicalFreeRefs.reverse().reduce(function (env, ref) {
+	            return ref.isBoxed ? pushLocalBoxed(env, ref.name) : pushLocal(env, ref.name);
+	          }, env1);
+	
+	          // Add the global free variables (in reverse order)
+	          var env3 = globalDepths.reverse().reduce(function (env, depth) {
+	            var refsAtDepth = globalRefs.filter(function (ref) {
+	              return ref.depth === depth;
+	            }),
+	                usedGlobals = refsAtDepth.map(function (ref) {
+	              return ref.name;
+	            }),
+	                newGlobals = maskUnusedGlobals(originalEnv.peek(depth).names, usedGlobals);
+	            return pushGlobals(newGlobals, env);
+	          }, env2);
+	
+	          // return a vector of depths (global, then local), along with the environment
+	          return [globalDepths.concat(lexicalFreeDepths), env3];
+	        }
+	    }
+	    // push each arg onto an empty Env, the compute the free variables in the function body with that Env
+	    var envWithArgs = this.args.map(function (s) {
+	      return s.val;
+	    }).reduce(pushLocal, new plt.compiler.emptyEnv());
+	    freeVarsInBody = this.body.freeVariables([], envWithArgs);
+	    // compute the closure information using a COPY of the args array (protect against in-place reversal)
+	    var closureVectorAndEnv = getClosureVectorAndEnv(this.args.slice(0), freeVarsInBody, env),
+	        closureVector = closureVectorAndEnv[0],
+	        extendedEnv = closureVectorAndEnv[1];
+	    // compile the body using the closure's environent
+	    var compiledBodyAndPinfo = this.body.compile(extendedEnv, pinfo),
+	        compiledBody = compiledBodyAndPinfo[0],
+	        pinfo1 = compiledBodyAndPinfo[1];
+	    // emit the bytecode
+	    var getLocs = function getLocs(id) {
+	      return id.location.toVector();
+	    },
+	        bytecode = new lam(isUnnamedLambda ? [] : new symbolExpr(name), [isUnnamedLambda ? this.stx : name].concat(this.args).map(getLocs), [], // flags
+	    this.args.length, // numParams
+	    this.args.map(function () {
+	      return new symbolExpr("val");
+	    }), // paramTypes
+	    false, // rest
+	    closureVector, // closureMap
+	    closureVector.map(function () {
+	      return new symbolExpr("val/ref");
+	    }), // closureTypes
+	    0, // maxLetDepth
+	    compiledBody); // body
+	    return [bytecode, pinfo1];
+	  };
+	
+	  localExpr.prototype.compile = function (env, pinfo) {
+	    // if there are no definitions, just pull the body out and compile it.
+	    if (this.defs.length === 0) return this.body.compile(env, pinfo);
+	
+	    // Otherwise...
+	    // (1) create an environment where all defined names are given local, boxed stackrefs
+	    var that = this,
+	        definedNames = this.defs.reduce(getDefinedNames, []),
+	        pushLocalBoxedFromSym = function pushLocalBoxedFromSym(env, sym) {
+	      return new plt.compiler.localEnv(sym.val, true, env);
+	    },
+	        envWithBoxedNames = definedNames.reverse().reduce(pushLocalBoxedFromSym, env);
+	
+	    // (2) process the definitions, starting with pinfo and our new environment as the base
+	    var letVoidBodyAndPinfo = processDefns(this.defs, pinfo, envWithBoxedNames, 0),
+	        letVoidBody = letVoidBodyAndPinfo[0],
+	        pinfo = letVoidBodyAndPinfo[1];
+	
+	    // (3) return a new letVoid for the stack depth we require, then use the bytecode as the body
+	    return [new letVoid(definedNames.length, true, letVoidBody), pinfo];
+	
+	    // getDefinedNames : [names], def -> names
+	    // given a list of names and a defn, add defined name(s) to the list
+	    function getDefinedNames(names, def) {
+	      return names.concat(def instanceof defVars ? def.names : def.name);
+	    }
+	
+	    // processDefns : [defs], pinfo, numInstalled -> [bytecode, pinfo]
+	    // fold-like function that will generate bytecode to install each defn at the
+	    // correct stack location , then move on to the rest of the definitions
+	    function processDefns(defs, pinfo, env, numInstalled) {
+	      if (defs.length === 0) {
+	        return that.body.compile(envWithBoxedNames, pinfo);
+	      }
+	
+	      // compile the first definition in the current environment
+	      var compiledDefAndPInfo = defs[0].compile(env, pinfo),
+	          compiledRhs = compiledDefAndPInfo[0].rhs,
+	          // important: all we need is the rhs!!
+	      pinfo = compiledDefAndPInfo[1];
+	
+	      // figure out how much room we'll need on the stack for this defn
+	      // compile the rest of the definitions, using the new pinfo and stack size
+	      var numToInstall = defs[0] instanceof defVars ? defs[0].names.length : 1,
+	          newBodyAndPinfo = processDefns(defs.slice(1), pinfo, env, numInstalled + numToInstall);
+	      newBody = newBodyAndPinfo[0], pinfo = newBodyAndPinfo[1];
+	
+	      // generate bytecode to install new values for the remaining body
+	      var bytecode = new installValue(numToInstall, numInstalled, true, compiledRhs, newBody);
+	      return [bytecode, pinfo];
+	    }
+	  };
+	
+	  callExpr.prototype.compile = function (env, pinfo) {
+	    // add space to the stack for each argument, then build the bytecode for the application itself
+	    var makeSpace = function makeSpace(env, operand) {
+	      return new plt.compiler.unnamedEnv(env);
+	    },
+	        extendedEnv = this.args.reduce(makeSpace, env);
+	    var compiledOperatorAndPinfo = this.func.compile(extendedEnv, pinfo),
+	        compiledOperator = compiledOperatorAndPinfo[0],
+	        pinfo1 = compiledOperatorAndPinfo[1];
+	    var compiledOperandsAndPinfo = this.args.reduceRight(compilePrograms, [[], pinfo, extendedEnv]),
+	        compiledOperands = compiledOperandsAndPinfo[0],
+	        pinfo2 = compiledOperatorAndPinfo[1],
+	        app = new application(compiledOperator, compiledOperands);
+	    // extract the relevant locations for error reporting, then wrap the application in continuation marks
+	    var extractLoc = function extractLoc(e) {
+	      return e.location;
+	    },
+	        locs = [this.func.location].concat(this.args.map(extractLoc)),
+	        locVectors = locs.concat(this.location).map(function (loc) {
+	      return loc.toVector();
+	    }),
+	        appWithcontMark = new withContMark(new symbolExpr("moby-application-position-key"), locVectors, new withContMark(new symbolExpr("moby-stack-record-continuation-mark-key"), this.location.toVector(), app));
+	    return [appWithcontMark, pinfo2];
+	  };
+	
+	  ifExpr.prototype.compile = function (env, pinfo) {
+	    var compiledPredicateAndPinfo = this.predicate.compile(env, pinfo),
+	        compiledPredicate = compiledPredicateAndPinfo[0],
+	        pinfo1 = compiledPredicateAndPinfo[1];
+	    var compiledConsequenceAndPinfo = this.consequence.compile(env, pinfo),
+	        compiledConsequence = compiledConsequenceAndPinfo[0],
+	        pinfo2 = compiledConsequenceAndPinfo[1];
+	    var compiledAlternateAndPinfo = this.alternative.compile(env, pinfo),
+	        compiledAlternate = compiledAlternateAndPinfo[0],
+	        pinfo3 = compiledAlternateAndPinfo[1];
+	    var bytecode = new branch(compiledPredicate, compiledConsequence, compiledAlternate);
+	    return [bytecode, pinfo3];
+	  };
+	
+	  symbolExpr.prototype.compile = function (env, pinfo) {
+	    var stackReference = env.lookup(this.val, 0),
+	        bytecode;
+	    if (stackReference instanceof localStackReference) {
+	      bytecode = new localRef(stackReference.isBoxed, stackReference.depth, false, false, false);
+	    } else if (stackReference instanceof globalStackReference) {
+	      bytecode = new topLevel(stackReference.depth, stackReference.pos, false, false, this.location);
+	    } else if (stackReference instanceof unboundStackReference) {
+	      throw "Couldn't find '" + this.val + "' in the environment";
+	    } else {
+	      throw "IMPOSSIBLE: env.lookup failed for '" + this.val + "'! A reference should be added to the environment!";
+	    }
+	    return [bytecode, pinfo];
+	  };
+	
+	  // a quotedExpr is a literal version of the raw stx object
+	  quotedExpr.prototype.compile = function (env, pinfo) {
+	    function unwrapLiterals(v) {
+	      return v instanceof literal ? unwrapLiterals(v.val) : v instanceof Array ? v.map(unwrapLiterals) : v;
+	    }
+	    result = new literal(unwrapLiterals(this.val));
+	    return [result, pinfo];
+	  };
+	
+	  provideStatement.prototype.compile = function (env, pinfo) {};
+	  requireExpr.prototype.compile = function (env, pinfo) {
+	    return [new req(this.spec, new topLevel(0, 0, false, false, false)), pinfo];
+	  };
+	
+	  // compile-compilation-top: program pinfo -> bytecode
+	  function compileCompilationTop(program, pinfo) {
+	    // makeModulePrefixAndEnv : pinfo -> [prefix, env]
+	    // collect all the free names being defined and used at toplevel
+	    // Create a prefix that refers to those values
+	    // Create an environment that maps to the prefix
+	    function makeModulePrefixAndEnv(pinfo) {
+	      var requiredModuleBindings = pinfo.modules.reduce(function (acc, m) {
+	        return acc.concat(m.bindings);
+	      }, []),
+	          isNotRequiredModuleBinding = function isNotRequiredModuleBinding(b) {
+	        return b.moduleSource && requiredModuleBindings.indexOf(b) === -1;
+	      },
+	          moduleOrTopLevelDefinedBindings = pinfo.usedBindingsHash.values().filter(isNotRequiredModuleBinding),
+	          allModuleBindings = requiredModuleBindings.concat(moduleOrTopLevelDefinedBindings),
+	
+	      // utility functions for making globalBuckets and moduleVariables
+	      makeGlobalBucket = function makeGlobalBucket(name) {
+	        return new globalBucket(name);
+	      },
+	          modulePathIndexJoin = function modulePathIndexJoin(path, base) {
+	        return new modulePath(path, base);
+	      },
+	
+	      // Match Moby: if it's a module that was imported via 'require', we treat it differently for some reason (WTF)
+	      makeModuleVariablefromBinding = function makeModuleVariablefromBinding(b) {
+	        return new moduleVariable(modulePathIndexJoin(b.moduleSource, b.imported ? false : modulePathIndexJoin(false, false)), new symbolExpr(b.name), -1, 0);
+	      };
+	      var globalNames = pinfo.freeVariables.concat(pinfo.definedNames.keys()),
+	
+	      // FIXME: we have to make uniqueGlobalNames because a function name can also be a free variable,
+	      // due to a bug in analyze-lambda-expression in which the base pinfo is used for the function body.
+	      uniqueGlobalNames = sortAndUnique(globalNames, function (a, b) {
+	        return a < b;
+	      }, function (a, b) {
+	        return a == b;
+	      }),
+	          topLevels = [false].concat(uniqueGlobalNames.map(makeGlobalBucket), allModuleBindings.map(makeModuleVariablefromBinding)),
+	          globals = [false].concat(uniqueGlobalNames, allModuleBindings.map(function (b) {
+	        return b.name;
+	      }));
+	      return [new prefix(0, topLevels, []), new plt.compiler.globalEnv(globals, false, new plt.compiler.emptyEnv())];
+	    };
+	    // The toplevel is going to include all of the defined identifiers in the pinfo
+	    // The environment will refer to elements in the toplevel.
+	    var toplevelPrefixAndEnv = makeModulePrefixAndEnv(pinfo),
+	        toplevelPrefix = toplevelPrefixAndEnv[0],
+	        env = toplevelPrefixAndEnv[1];
+	    // pull out separate program components for ordered compilation
+	    var defns = program.filter(plt.compiler.isDefinition),
+	        requires = program.filter(function (p) {
+	      return p instanceof requireExpr;
+	    }),
+	        exprs = program.filter(plt.compiler.isExpression);
+	    var compiledRequiresAndPinfo = requires.reduceRight(compilePrograms, [[], pinfo, env]),
+	        compiledRequires = compiledRequiresAndPinfo[0],
+	        pinfo = compiledRequiresAndPinfo[1];
+	    var compiledDefinitionsAndPinfo = defns.reduceRight(compilePrograms, [[], pinfo, env]),
+	        compiledDefinitions = compiledDefinitionsAndPinfo[0],
+	        pinfo = compiledDefinitionsAndPinfo[1];
+	    var compiledExpressionsAndPinfo = exprs.reduceRight(compilePrograms, [[], pinfo, env]),
+	        compiledExpressions = compiledExpressionsAndPinfo[0],
+	        pinfo = compiledExpressionsAndPinfo[1];
+	    // generate the bytecode for the program and return it, along with the program info
+	    var forms = new seq([].concat(compiledRequires, compiledDefinitions, compiledExpressions)),
+	        zo_bytecode = new compilationTop(0, toplevelPrefix, forms),
+	        response = { "bytecode": "/* runtime-version: local-compiler-summer2014 */\n" + zo_bytecode.toBytecode(),
+	      "permissions": pinfo.permissions(),
+	      "provides": pinfo.providedNames.keys() };
+	    return response;
+	  }
+	
+	  /////////////////////
+	  /* Export Bindings */
+	  /////////////////////
+	  plt.compiler.localStackReference = localStackReference;
+	  plt.compiler.globalStackReference = globalStackReference;
+	  plt.compiler.unboundStackReference = unboundStackReference;
+	  plt.compiler.compile = function (program, pinfo, debug) {
+	    var start = new Date().getTime();
+	    try {
+	      var response = compileCompilationTop(program, pinfo);
+	    } // do the actual work
+	    catch (e) {
+	      console.log("COMPILATION ERROR");throw e;
+	    }
+	    var end = new Date().getTime();
+	    if (debug) {
+	      console.log("Compiled in " + Math.floor(end - start) + "ms");
+	      console.log(JSON.stringify(response));
+	    }
+	    return response;
+	  };
+	})();
+	
+	module.exports = plt.compiler;
+
+/***/ },
+/* 236 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	
+	// if not defined, declare the compiler object as part of plt
+	window.plt = window.plt || {};
+	plt.compiler = __webpack_require__(231);
+	/*
+	 TODO
+	 -
+	 */
+	
+	//////////////////////////////////////////////////////////////////////////////
+	/////////////////// MODULE BINDINGS //////////////////////////
+	(function () {
+	
+	  var moduleBinding = plt.compiler.moduleBinding;
+	  var functionBinding = plt.compiler.functionBinding;
+	  var constantBinding = plt.compiler.constantBinding;
+	
+	  // given a moduleName, return a function that converts binding specs into function bindings
+	  function makeFunctionBinding(modulePath) {
+	    return function (binding) {
+	      binding[3] = binding[3] || []; // permissions default to none
+	      binding[4] = binding[4] || false; // isCps defaults to false
+	      binding[5] = binding[5] || false; // loc defaults to false
+	      return new functionBinding(binding[0], modulePath, binding[1], binding[2], binding[3], binding[4], binding[5]);
+	    };
+	  }
+	
+	  // kernel-misc-module
+	  var kernelMiscModule = new moduleBinding("moby/runtime/kernel/misc", [["verify-boolean-branch-value", 2], ["throw-cond-exhausted-error", 1], ["'check-operator-is-function", 3], ["print-values", 0]].map(makeFunctionBinding('"moby/runtime/kernel/misc"')));
+	
+	  // foreign-module
+	  var foreignModule = new moduleBinding("moby/foreign", [["get-js-object", 2, false, ["android.permission.FOREIGN-FUNCTION-INTERFACE"]]].map(makeFunctionBinding('"moby/foreign"')));
+	
+	  // world-effects-module
+	  var worldEffectsModule = new moduleBinding("world-effects", [["make-effect:none", 0, false], ["make-effect:beep", 0, false, ["android.permission.VIBRATE"]], ["make-effect:play-dtmf-tone", 2, false], ["make-effect:send-sms", 2, false, ["android.permission.SEND-SMS"]], ["make-effect:play-sound", 1, false, ["android.permission.INTERNET"]], ["make-effect:stop-sound", 1, false], ["make-effect:pause-sound", 1, false], ["make-effect:set-sound-volume", 1, false], ["make-effect:set-beep-volume", 1, false], ["make-effect:raise-sound-volume", 0, false], ["make-effect:lower-sound-volume", 1, false], ["make-effect:set-wake-lock", 1, false, ["android.permission.WAKE-LOCK"]], ["make-effect:release-wake-lock", 1, false, ["android.permission.WAKE-LOCK"]], ["make-effect:pick-playlist", 1, false], ["make-effect:pick-random", 2, false]].map(makeFunctionBinding('"moby/world-effects"')));
+	
+	  // world-handlers-module
+	  var worldHandlersModule = new moduleBinding("world-config", [["on-tick", 1, true], ["initial-effect", 1, false], ["on-key", 1, false], ["on-key!", 2, false], ["on-mouse", 1, false], ["on-tap", 1, false], ["on-tilt", 1, false], ["on-redraw", 1, false], ["to-draw", 1, false], ["on-draw", 2, false], ["stop-when", 1, false]].map(makeFunctionBinding('"moby/world-handlers"')));
+	
+	  // bootstrap-teachpack
+	  var bootstrapTeachpackFunctions = [["START", 14, false], ["test-frame", 1, false], ["sine", 1, false], ["cosine", 1, false], ["tangent", 1, false]];
+	  var bootstrapTeachpack = new moduleBinding("bootstrap/bootstrap-teachpack", bootstrapTeachpackFunctions.map(makeFunctionBinding('"bootstrap/bootstrap-teachpack"'))),
+	      bootstrapTeachpack2011 = new moduleBinding("bootstrap2011/bootstrap-teachpack", bootstrapTeachpackFunctions.map(makeFunctionBinding('"bootstrap2011/bootstrap-teachpack"'))),
+	      bootstrapTeachpack2012 = new moduleBinding("bootstrap2012/bootstrap-teachpack", bootstrapTeachpackFunctions.map(makeFunctionBinding('"bootstrap2012/bootstrap-teachpack"'))),
+	      bootstrapTiltTeachpack2012 = new moduleBinding("bootstrap2012/bootstrap-tilt-teachpack", bootstrapTeachpackFunctions.map(makeFunctionBinding('"bootstrap2012/bootstrap-tilt-teachpack"'))),
+	      bootstrapTeachpack2014 = new moduleBinding("bootstrap2014/bootstrap-teachpack", bootstrapTeachpackFunctions.map(makeFunctionBinding('"bootstrap2014/bootstrap-teachpack"'))),
+	      bootstrapTiltTeachpack2014 = new moduleBinding("bootstrap2014/bootstrap-tilt-teachpack", bootstrapTeachpackFunctions.map(makeFunctionBinding('"bootstrap2014/bootstrap-tilt-teachpack"'))),
+	      bootstrapTeachpack2015 = new moduleBinding("bootstrap2015/bootstrap-teachpack", bootstrapTeachpackFunctions.map(makeFunctionBinding('"bootstrap2015/bootstrap-teachpack"'))),
+	      bootstrapTiltTeachpack2015 = new moduleBinding("bootstrap2015/bootstrap-tilt-teachpack", bootstrapTeachpackFunctions.map(makeFunctionBinding('"bootstrap2015/bootstrap-tilt-teachpack"')));
+	
+	  // cage-teachpack
+	  var cageTeachpack = new moduleBinding("bootstrap/cage-teachpack", [["start", 1, false]].map(makeFunctionBinding('"bootstrap/cage-teachpack"'))),
+	      cageTeachpack2011 = new moduleBinding("bootstrap2011/cage-teachpack", [["start", 1, false]].map(makeFunctionBinding('"bootstrap2011/cage-teachpack"'))),
+	      cageTeachpack2012 = new moduleBinding("bootstrap2012/cage-teachpack", [["start", 1, false]].map(makeFunctionBinding('"bootstrap2012/cage-teachpack"'))),
+	      cageTeachpack2014 = new moduleBinding("bootstrap2014/cage-teachpack", [["start", 1, false]].map(makeFunctionBinding('"bootstrap2014/cage-teachpack"')));
+	
+	  // function-teachpack
+	  var functionTeachpack = new moduleBinding("bootstrap/function-teachpack", [["start", 1, false]].map(makeFunctionBinding('"bootstrap/function-teachpack"'))),
+	      functionTeachpack2011 = new moduleBinding("bootstrap2011/function-teachpack", [["start", 1, false]].map(makeFunctionBinding('"bootstrap2011/function-teachpack"'))),
+	      functionTeachpack2012 = new moduleBinding("bootstrap2012/function-teachpack", [["start", 1, false]].map(makeFunctionBinding('"bootstrap2012/function-teachpack"'))),
+	      functionTeachpack2014 = new moduleBinding("bootstrap2014/function-teachpack", [["start", 1, false]].map(makeFunctionBinding('"bootstrap2014/function-teachpack"'))),
+	      functionTeachpack2015 = new moduleBinding("bootstrap2015/function-teachpack", [["start", 1, false]].map(makeFunctionBinding('"bootstrap2015/function-teachpack"')));
+	
+	  // location module
+	  var locationModule = new moduleBinding("location", [["get-latitude", 0, false, ["android.permission.LOCATION"]], ["get-longitude", 0, false, ["android.permission.LOCATION"]], ["get-altitude", 0, false, ["android.permission.LOCATION"]], ["get-bearing", 0, false, ["android.permission.LOCATION"]], ["get-speed", 0, false, ["android.permission.LOCATION"]], ["location-distance", 0, false, ["android.permission.LOCATION"]]].map(makeFunctionBinding('"moby/geolocation"')));
+	
+	  // accelerometer library
+	  var tiltModule = new moduleBinding("tilt", [["get-x-acceleration", 0, false, ["android.permission.TILT"]], ["get-y-acceleration", 0, false, ["android.permission.TILT"]], ["get-z-acceleration", 0, false, ["android.permission.TILT"]], ["get-azimuth", 0, false, ["android.permission.TILT"]], ["get-pitch", 0, false, ["android.permission.TILT"]], ["get-roll", 0, false, ["android.permission.TILT"]]].map(makeFunctionBinding('"moby/tilt"')));
+	
+	  // telephony module
+	  var telephonyModule = new moduleBinding("telephony", [["get-signal-strength", 0, false, ["android.permission.TELEPHONY"]]].map(makeFunctionBinding('"moby/net"')));
+	
+	  // net module
+	  var netModule = new moduleBinding("net", [["get-url", 1, false, ["android.permission.INTERNET"]]].map(makeFunctionBinding('"moby/net"')));
+	
+	  // parser module
+	  var parserModule = new moduleBinding("parser", [["xml->s-sexp", 1, false]].map(makeFunctionBinding('"moby/parser"')));
+	
+	  // js-world module
+	  var jsWorldModule = new moduleBinding("jsworld", [["js-big-bang", 1, false], ["big-bang", 1, false], ["js-div", 0, false], ["js-p", 0, false], ["js-button", 2, false], ["js-button!", 2, false], ["js-node", 1, false], ["js-text", 1, false], ["js-select", 2, false], ["js-img", 1, false, ["android.permission.INTERNET"]]].map(makeFunctionBinding('"moby/jsworld"')));
+	
+	  // world
+	  var worldModule = new moduleBinding("world", worldHandlersModule.bindings.concat(worldEffectsModule.bindings, ["key=?", "play-sound", "animate", "big-bang"
+	  // colors
+	  , "make-color", "color?", "color-red", "color-green", "color-blue", "color-alpha", "empty-scene", "empty-image", "scene+line", "put-image", "place-image", "place-image/align", "put-pinhole", "circle", "star", "polygon", "radial-star", "star-polygon", "nw:rectangle", "rectangle", "regular-polygon", "rhombus", "square", "triangle", "triangle/sas", "triangle/sss", "triangle/ass", "triangle/ssa", "triangle/aas", "triangle/asa", "triangle/saa", "right-triangle", "isosceles-triangle", "ellipse", "line", "add-line", "overlay", "overlay/xy", "overlay/align", "underlay", "underlay/xy", "underlay/align", "beside", "beside/align", "above", "above/align", "rotate", "scale", "scale/xy", "crop", "frame", "flip-horizontal", "flip-vertical", "text", "text/font", "video-url" // needs network
+	  , "video/url" // needs network
+	  , "bitmap/url" // needs network
+	  , "image-url" // needs network
+	  , "open-image-url" // needs network
+	  , "image?", "image=?", "image-width", "image-height"
+	
+	  // mouse-events
+	  , "mouse-event?", "mouse=?", "image->color-list", "color-list->image", "color-list->bitmap", "image-baseline", "mode?", "image-color?", "name->color", "x-place?", "y-place?", "angle?", "side-count?", "step-count?"].map(function (binding) {
+	    var needsPermission = ["video/url", "bitmap/url", "image-url", "open-image-url"];
+	    var permissions = needsPermission.indexOf(binding) > -1 ? ["android.permission.INTERNET"] : [];
+	    return new constantBinding(binding, '"moby/world"', permissions, false);
+	  })));
+	
+	  // top-level
+	  var topLevelModule = new moduleBinding("moby/topLevel", [["<", 2, true] // Numerics
+	  , ["<=", 2, true], ["=", 2, true], [">", 2, true], [">=", 2, true], ["=~", 3], ["number->string", 1], ["even?", 1], ["odd?", 1], ["positive?", 1], ["negative?", 1], ["number?", 1], ["rational?", 1], ["quotient", 2], ["remainder", 2], ["numerator", 1], ["denominator", 1], ["integer?", 1], ["real?", 1], ["abs", 1], ["acos", 1], ["add1", 1], ["angle", 1], ["asin", 1], ["atan", 1, true] // arity is either 1 or 2
+	  , ["ceiling", 1], ["complex?", 1], ["conjugate", 1], ["cos", 1], ["cosh", 1], ["denominator", 1], ["even?", 1], ["exact->inexact", 1], ["exact?", 1] // *
+	  , ["exp", 1], ["expt", 2], ["floor", 1], ["gcd", 1, true], ["imag-part", 1], ["inexact->exact", 1], ["inexact?", 1], ["integer->char", 1], ["integer-sqrt", 1] // *
+	  , ["integer?", 1], ["lcm", 1, true], ["log", 1], ["magnitude", 1], ["make-polar", 2] // *
+	  , ["make-rectangular", 2] // *
+	  , ["max", 1, true], ["min", 1, true], ["modulo", 2], ["negative?", 1], ["number?", 1], ["numerator", 1], ["odd?", 1], ["positive?", 1], ["random", 1], ["rational?", 1], ["real-part", 1], ["real?", 1], ["round", 1], ["sgn", 1], ["sin", 1], ["sinh", 1]
+	  //,["sq", 1]
+	  , ["sqr", 1], ["sqrt", 1], ["sub1", 1], ["tan", 1], ["zero?", 1], ["+", 0, true], ["-", 1, true], ["*", 0, true], ["/", 1, true]
+	
+	  // Logic
+	  , ["not", 1], ["false?", 1], ["boolean?", 1], ["boolean=?", 2]
+	
+	  // Symbols
+	  , ["symbol->string", 1], ["symbol=?", 2], ["symbol?", 1]
+	
+	  // Lists
+	  , ["append", 0, true], ["assq", 2] // *
+	  , ["assv", 2] // *
+	  , ["assoc", 2] // *
+	  , ["caaar", 1], ["caadr", 1], ["caar", 1], ["cadar", 1], ["cadddr", 1], ["caddr", 1], ["cadr", 1], ["car", 1], ["cddar", 1], ["cdddr", 1], ["cddr", 1], ["cdr", 1], ["cdaar", 1], ["cdadr", 1], ["cdar", 1], ["cons?", 1], ["list?", 1], ["cons", 2], ["empty?", 1], ["length", 1], ["list", 0, true], ["list*", 1, true], ["list-ref", 2], ["remove", 2], ["member", 2], ["member?", 2], ["memq", 2], ["memv", 2], ["null?", 1], ["pair?", 1], ["rest", 1], ["reverse", 1], ["first", 1], ["second", 1], ["third", 1], ["fourth", 1], ["fifth", 1], ["sixth", 1], ["seventh", 1], ["eighth", 1]
+	
+	  // We're commenting out the mutation operation on pairs
+	  // because they're not supported in ISL/ASL anymore.
+	  //;,["set-car! 2]
+	  //;,["set-cdr! 2]
+	
+	  // Box
+	  , ["box", 1], ["unbox", 1], ["set-box!", 2], ["box?", 1]
+	
+	  // Posn
+	  , ["make-posn", 2], ["posn-x", 1], ["posn-y", 1], ["posn?", 1]
+	
+	  // Characters
+	  , ["char->integer", 1], ["char-alphabetic?", 1], ["char-ci<=?", 2, true], ["char-ci<?", 2, true], ["char-ci=?", 2, true], ["char-ci>=?", 2, true], ["char-ci>?", 2, true], ["char-downcase", 1], ["char-lower-case?", 1], ["char-numeric?", 1], ["char-upcase", 1], ["char-upper-case?", 1], ["char-whitespace?", 1], ["char<=?", 2, true], ["char<?", 2, true], ["char=?", 2, true], ["char>=?", 2, true], ["char>?", 2, true], ["char?", 1]
+	
+	  // Strings
+	  , ["format", 1, true], ["list->string", 1], ["make-string", 2], ["replicate", 2], ["string", 0, true], ["string->list", 1], ["string->number", 1], ["string->symbol", 1], ["string-alphabetic?", 1], ["string-append", 0, true], ["string-ci<=?", 2, true], ["string-ci<?", 2, true], ["string-ci=?", 2, true], ["string-ci>=?", 2, true], ["string-ci>?", 2, true], ["string-copy", 1], ["string-length", 1], ["string-lower-case?", 1] // *
+	  , ["string-numeric?", 1] // *
+	  , ["string-ref", 2], ["string-upper-case?", 1] // *
+	  , ["string-whitespace?", 1] // *
+	  , ["string<=?", 2, true], ["string<?", 2, true], ["string=?", 2, true], ["string>=?", 2, true], ["string>?", 2, true], ["string?", 1], ["substring", 3], ["string-ith", 2], ["int->string", 1], ["string->int", 1], ["explode", 1], ["implode", 1]
+	
+	  // Eof
+	  , ["eof-object?", 1]
+	
+	  // Misc
+	  , ["=~", 3], ["eq?", 2], ["equal?", 2], ["equal~?", 3], ["eqv?", 2], ["error", 2], ["identity", 1], ["struct?", 1], ["current-seconds", 0]
+	
+	  // Higher-Order Functions
+	  , ["andmap", 1, true], ["apply", 2, true] // *
+	  , ["argmax", 2] // *
+	  , ["argmin", 2] // *
+	  , ["build-list", 2], ["build-string", 2] // *
+	  , ["compose", 0, true] // *
+	  , ["filter", 2] // *
+	  , ["foldl", 2, true], ["foldr", 2, true] // *
+	  , ["map", 1, true], ["for-each", 1, true], ["memf", 2] // *
+	  , ["ormap", 1, true] // *
+	  , ["procedure?", 1] // *
+	  , ["quicksort", 2] // *
+	  , ["sort", 2] // *
+	
+	  , ["void", 0, true]
+	
+	  // Parsing
+	  , ["xml->s-exp", 1]
+	
+	  // Vectors
+	  , ["build-vector", 2]
+	  // FIXME: should only take one or two arguments", not vararity
+	  , ["make-vector", 1, true], ["vector", 0, true], ["vector-length", 1], ["vector-ref", 2], ["vector-set!", 3], ["vector->list", 1], ["list->vector", 1], ["vector?", 1], ["printf", 1, true], ["display", 1], ["write", 1], ["newline", 0], ["call/cc", 1], ["procedure-arity", 1]
+	
+	  // Testing functions.
+	  // NOTE: the desugar.ss module converts use of check-expect into ones that
+	  // thunk its arguments", and pass an additional location argument.
+	  , ["check-expect", 2], ["EXAMPLE", 2], ["check-within", 3], ["check-error", 2], ["make-hasheq", 0], ["make-hash", 0], ["hash-set!", 3], ["hash-ref", 3], ["hash-remove!", 2], ["hash-map", 2], ["hash-for-each", 2], ["hash?", 1]
+	
+	  // Exception raising
+	  , ["raise", 1]
+	
+	  // Checking for undefined
+	  , ["undefined?", 1]
+	
+	  // values for multiple value definition
+	  , ["values", 0, true]
+	
+	  // structures
+	  , ["make-struct-type", 4, true], ["make-struct-field-accessor", 2, true], ["make-struct-field-mutator", 2, true]
+	
+	  // continuation mark stuff
+	  // FIXME: add support for prompt optional argument
+	  , ["current-continuation-marks", 0, false], ["continuation-mark-set->list", 2, false]
+	
+	  // Things for javascript FFI and world
+	  , ["scheme->prim-js", 1, false], ["prim-js->scheme", 1, false], ["procedure->cps-js-fun", 1, false], ["procedure->void-js-fun", 1, false], ["js-===", 2, false], ["js-get-named-object", 1, false], ["js-get-field", 2, true]
+	  //,["get-js-array-field", 2, false]
+	  , ["js-set-field!", 3, false]
+	  //,["js-set-array-field!", 3, false]
+	  , ["js-typeof", 1, false], ["js-instanceof", 2, false], ["js-call", 2, true], ["js-new", 1, true], ["js-make-hash", 0, true], ["make-world-config", 2, true], ["make-bb-info", 2, false], ["bb-info?", 1, false], ["bb-info-change-world", 1, false], ["bb-info-toplevel-node", 1, false], ["make-effect-type", 4, true], ["effect?", 1, false], ["world-with-effects", 2, false]
+	  //,["coerce-world-handler", 1, false]
+	  , ["make-render-effect-type", 4, true], ["render-effect-type?", 1], ["render-effect?", 1]
+	
+	  //,["make-effect:do-nothing 0, false]
+	  //,["effect:do-nothing? 1, false]
+	
+	  , ["make-render-effect-type", 4, true]
+	  //,["render-effect-name 1, false]
+	  //,["render-effect-dom-node 1, false]
+	  //,["render-effect-effects 1, false]
+	  //,["render-effect? 1, false]
+	
+	  , ["values", 0, true], ["sleep", 0, true], ["current-inexact-milliseconds", 0, false], ["make-exn", 2, false], ["exn-message", 1, false], ["exn-continuation-marks", 1, false]].map(makeFunctionBinding('"moby/toplevel"')));
+	
+	  // The core environment includes the baseConstants, the topLevel bindings, and the world bindings
+	  // NOTE: worldModule *includes* worldEffects and worldHandlers, according to Danny's modules.ss file
+	  plt.compiler.topLevelModules = [topLevelModule, kernelMiscModule,, jsWorldModule, worldModule];
+	  plt.compiler.knownCollections = ["bootstrap", "bootstrap2011", "bootstrap2012", "bootstrap2014", "bootstrap2015"];
+	
+	  plt.compiler.knownModules = [kernelMiscModule, jsWorldModule, foreignModule, worldModule, bootstrapTeachpack, bootstrapTeachpack2011, bootstrapTeachpack2012, bootstrapTeachpack2014, bootstrapTeachpack2015, bootstrapTiltTeachpack2012, bootstrapTiltTeachpack2014, bootstrapTiltTeachpack2015, cageTeachpack, cageTeachpack2011, cageTeachpack2012, cageTeachpack2014, functionTeachpack, functionTeachpack2011, functionTeachpack2012, functionTeachpack2014, functionTeachpack2015, locationModule, tiltModule, telephonyModule, netModule, parserModule, topLevelModule];
+	})();
+	
+	module.exports = plt.compiler;
+
+/***/ },
+/* 237 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	exports.analyze = exports.desugar = undefined;
+	exports.provideBindingId = provideBindingId;
+	exports.provideBindingStructId = provideBindingStructId;
+	
+	var _structures = __webpack_require__(231);
+	
+	var structures = _interopRequireWildcard(_structures);
+	
+	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
+	
+	__webpack_require__(236);
+	var types = __webpack_require__(232);
+	
+	/*
+	 TODO
+	 - stop using synchronous XmlHttpRequests -> probably only after the compiler is folded into the evaluator
+	*/
+	
+	// checkDuplicateIdentifiers : [listof SymbolExprs], Program -> Void
+	// sort the array, and throw errors for non-symbols, keywords or duplicates
+	function checkDuplicateIdentifiers(lst, stx, unusedLoc) {
+	  var visitedIds = {}; // initialize a dictionary of ids we've seen
+	  lst.forEach(function (id) {
+	    if (!(id instanceof _structures.symbolExpr)) {
+	      (0, _structures.throwError)("expected identifier " + id.val, id.location);
+	    } else if (visitedIds[id.val]) {
+	      // if we've seen this variable before, throw an error
+	      (0, _structures.throwError)(new types.Message([new types.ColoredPart(stx.toString(), stx.location), ": found ", new types.ColoredPart("a variable", id.location), " that is already used ", new types.ColoredPart("here", visitedIds[id.val].location)]), id.location);
+	    } else {
+	      visitedIds[id.val] = id; // otherwise, record the identifier as being visited
+	    }
+	  });
+	}
+	
+	// tag-application-operator/module: Stx module-name -> Stx
+	// Adjust the lexical context of the func so it refers to the environment of a particular module.
+	function tagApplicationOperator_Module(application, moduleName) {
+	  // get the module's env
+	  var module = (0, _structures.defaultModuleResolver)(moduleName);
+	  var env = new _structures.emptyEnv().extendEnv_moduleBinding(module);
+	  // assign it as the context of the function, and each of the arguments
+	  [application.func].concat(application.args).forEach(function (expr) {
+	    expr.context = env;
+	  });
+	  return application;
+	}
+	
+	// forceBooleanContext: stx, loc, bool -> stx
+	// Force a boolean runtime test on the given expression.
+	function forceBooleanContext(stx, loc, boolExpr) {
+	  stx = new _structures.literal(new types.string(stx.toString())); // turn the stx object into a string literal
+	  var verifyCall = new _structures.symbolExpr("verify-boolean-branch-value");
+	  var stxQuote = new _structures.quotedExpr(stx);
+	  var locQuote = new _structures.quotedExpr(new _structures.literal(loc.toVector()));
+	  var boolLocQuote = new _structures.quotedExpr(new _structures.literal(boolExpr.location.toVector()));
+	  var runtimeCall = new _structures.callExpr(verifyCall, [stxQuote, locQuote, boolExpr, boolLocQuote]);
+	  runtimeCall.location = verifyCall.location = boolExpr.location;
+	  stxQuote.location = locQuote.location = boolLocQuote.location = boolExpr.location;
+	  tagApplicationOperator_Module(runtimeCall, 'moby/runtime/kernel/misc');
+	  return runtimeCall;
+	}
+	
+	//////////////////////////////////////////////////////////////////////////////
+	// DESUGARING ////////////////////////////////////////////////////////////////
+	
+	// desugarProgram : Listof Programs null/pinfo -> [Listof Programs, pinfo]
+	// desugar each program, appending those that desugar to multiple programs
+	function desugarProgram(programs, pinfo, isTopLevelExpr) {
+	  var acc = [[], pinfo || new structures.pinfo()];
+	  var res = programs.reduce(function (acc, p) {
+	    var desugaredAndPinfo = p.desugar(acc[1]);
+	    // if it's an expression, insert a print-values call so it shows up in the repl
+	    if (structures.isExpression(p) && isTopLevelExpr) {
+	      var printValues = new _structures.symbolExpr("print-values");
+	      var printCall = new _structures.callExpr(printValues, [desugaredAndPinfo[0]]);
+	      // set the location of the print-values call to that of the expression
+	      printValues.location = printCall.location = desugaredAndPinfo[0].location;
+	      desugaredAndPinfo[0] = printCall;
+	      tagApplicationOperator_Module(printCall, 'moby/runtime/kernel/misc');
+	    }
+	    if (desugaredAndPinfo[0].length) {
+	      acc[0] = acc[0].concat(desugaredAndPinfo[0]);
+	    } else {
+	      acc[0].push(desugaredAndPinfo[0]);
+	    }
+	    return [acc[0], desugaredAndPinfo[1]];
+	  }, acc);
+	  res[0].location = programs.location;
+	  return res;
+	}
+	
+	// Program.prototype.desugar: pinfo -> [Program, pinfo]
+	_structures.Program.prototype.desugar = function (pinfo) {
+	  return [this, pinfo];
+	};
+	_structures.defFunc.prototype.desugar = function (pinfo) {
+	  // check for duplicate arguments
+	  checkDuplicateIdentifiers([this.name].concat(this.args), this.stx[0], this.location);
+	  // check for non-symbol arguments
+	  this.args.forEach(function (arg) {
+	    if (!(arg instanceof _structures.symbolExpr)) {
+	      (0, _structures.throwError)(new types.Message([new types.ColoredPart(this.stx.val, this.stx.location), ": expected a variable but found ", new types.ColoredPart("something else", arg.location)]), sexp.location);
+	    }
+	  });
+	  var bodyAndPinfo = this.body.desugar(pinfo);
+	  var newDefFunc = new _structures.defFunc(this.name, this.args, bodyAndPinfo[0], this.stx);
+	  newDefFunc.location = this.location;
+	  return [newDefFunc, bodyAndPinfo[1]];
+	};
+	_structures.defVar.prototype.desugar = function (pinfo) {
+	  // convert (define f (lambda (x) x)) into (define (f x) x)
+	  if (this.expr instanceof _structures.lambdaExpr) {
+	    var newDefFunc = new _structures.defFunc(this.name, this.expr.args, this.expr.body, this.stx);
+	    newDefFunc.location = this.location;
+	    return newDefFunc.desugar(pinfo);
+	  } else {
+	    var exprAndPinfo = this.expr.desugar(pinfo);
+	    var newDefVar = new _structures.defVar(this.name, exprAndPinfo[0], this.stx);
+	    newDefVar.location = this.location;
+	    return [newDefVar, exprAndPinfo[1]];
+	  }
+	};
+	_structures.defVars.prototype.desugar = function (pinfo) {
+	  var exprAndPinfo = this.expr.desugar(pinfo),
+	      newDefVars = new _structures.defVars(this.names, exprAndPinfo[0], this.stx);
+	  newDefVars.location = this.location;
+	  return [newDefVars, exprAndPinfo[1]];
+	};
+	_structures.defStruct.prototype.desugar = function (pinfo) {
+	  var that = this;
+	  var ids = ['make-' + this.name.val, this.name.val + '?', this.name.val + '-ref', this.name.val + '-set!'];
+	  var idSymbols = ids.map(function (id) {
+	    return new _structures.symbolExpr(id);
+	  });
+	  var makeStructTypeFunc = new _structures.symbolExpr('make-struct-type');
+	  var makeStructTypeArgs = [new _structures.quotedExpr(new _structures.symbolExpr(this.name.val)), new _structures.literal(false), new _structures.literal(this.fields.length), new _structures.literal(0)];
+	  var makeStructTypeCall = new _structures.callExpr(makeStructTypeFunc, makeStructTypeArgs);
+	  // set location for all of these nodes
+	  [makeStructTypeCall, makeStructTypeFunc].concat(idSymbols, makeStructTypeArgs).forEach(function (p) {
+	    p.location = that.location;
+	  });
+	
+	  // make the define-values stx object, but store the original stx for define-struct
+	  var defineValuesStx = new _structures.defVars([this.name].concat(idSymbols), makeStructTypeCall, this.stx);
+	  var stxs = [defineValuesStx];
+	  defineValuesStx.location = this.location;
+	  // given a field, make a definition that binds struct-field to the result of
+	  // a make-struct-field accessor call in the runtime
+	  function makeAccessorDefn(f, i) {
+	    var makeFieldFunc = new _structures.symbolExpr('make-struct-field-accessor');
+	    var makeFieldArgs = [new _structures.symbolExpr(that.name.val + '-ref'), new _structures.literal(i), new _structures.quotedExpr(new _structures.symbolExpr(f.val))];
+	    var makeFieldCall = new _structures.callExpr(makeFieldFunc, makeFieldArgs);
+	    var accessorSymbol = new _structures.symbolExpr(that.name.val + '-' + f.val);
+	    var defineVar = new _structures.defVar(accessorSymbol, makeFieldCall);
+	    // set location for all of these nodes
+	    [defineVar, makeFieldFunc, makeFieldCall, accessorSymbol].concat(makeFieldArgs).forEach(function (p) {
+	      p.location = f.location;
+	    });
+	    stxs.push(defineVar);
+	  }
+	  this.fields.forEach(makeAccessorDefn);
+	  return [stxs, pinfo];
+	};
+	_structures.beginExpr.prototype.desugar = function (pinfo) {
+	  var exprsAndPinfo = desugarProgram(this.exprs, pinfo);
+	  var newBeginExpr = new _structures.beginExpr(exprsAndPinfo[0], this.stx);
+	  newBeginExpr.location = this.location;
+	  return [newBeginExpr, exprsAndPinfo[1]];
+	};
+	_structures.lambdaExpr.prototype.desugar = function (pinfo) {
+	  // if this was parsed from raw syntax, check for duplicate arguments
+	  if (this.stx) checkDuplicateIdentifiers(this.args, this.stx, this.location);
+	  var bodyAndPinfo = this.body.desugar(pinfo);
+	  var newLambdaExpr = new _structures.lambdaExpr(this.args, bodyAndPinfo[0], this.stx);
+	  newLambdaExpr.location = this.location;
+	  return [newLambdaExpr, bodyAndPinfo[1]];
+	};
+	_structures.localExpr.prototype.desugar = function (pinfo) {
+	  var defnsAndPinfo = desugarProgram(this.defs, pinfo);
+	  var exprAndPinfo = this.body.desugar(defnsAndPinfo[1]);
+	  var newLocalExpr = new _structures.localExpr(defnsAndPinfo[0], exprAndPinfo[0], this.stx);
+	  newLocalExpr.location = this.location;
+	  return [newLocalExpr, exprAndPinfo[1]];
+	};
+	_structures.callExpr.prototype.desugar = function (pinfo) {
+	  var exprsAndPinfo = desugarProgram([this.func].concat(this.args), pinfo);
+	  var newCallExpr = new _structures.callExpr(exprsAndPinfo[0][0], exprsAndPinfo[0].slice(1), this.stx);
+	  newCallExpr.location = this.location;
+	  return [newCallExpr, exprsAndPinfo[1]];
+	};
+	_structures.ifExpr.prototype.desugar = function (pinfo) {
+	  var exprsAndPinfo = desugarProgram([this.predicate, this.consequence, this.alternative], pinfo);
+	  var predicate = forceBooleanContext(this.stx, this.stx.location, exprsAndPinfo[0][0]);
+	  var consequence = exprsAndPinfo[0][1];
+	  var alternative = exprsAndPinfo[0][2];
+	  var newIfExpr = new _structures.ifExpr(predicate, consequence, alternative, this.stx);
+	  newIfExpr.location = this.location;
+	  return [newIfExpr, exprsAndPinfo[1]];
+	};
+	_structures.whenUnlessExpr.prototype.desugar = function (pinfo) {
+	  var begin_exp = new _structures.beginExpr(this.exprs, this.stx);
+	  var void_exp = new _structures.symbolExpr('void');
+	  var call_exp = new _structures.callExpr(void_exp, [], this.stx);
+	  var consequence = this.stx.val === "when" ? begin_exp : call_exp;
+	  var alternative = this.stx.val === "when" ? call_exp : begin_exp;
+	  begin_exp.location = this.exprs.location;
+	  void_exp.location = call_exp.location = this.location;
+	  // desugar each expression and construct an ifExpr
+	  var exprsAndPinfo = desugarProgram([this.predicate, consequence, alternative], pinfo);
+	  var if_exp = new _structures.ifExpr(exprsAndPinfo[0][0], exprsAndPinfo[0][1], exprsAndPinfo[0][2], this.stx);
+	  if_exp.location = this.location;
+	  // DON'T desugar the ifExpr -- we don't forceBooleanContext on when/unless!
+	  return [if_exp, exprsAndPinfo[1]];
+	};
+	// letrecs become locals
+	_structures.letrecExpr.prototype.desugar = function (pinfo) {
+	  function bindingToDefn(b) {
+	    var def = new _structures.defVar(b.first, b.second, b.stx);
+	    def.location = b.location;
+	    return def;
+	  }
+	  var localAndPinfo = new _structures.localExpr(this.bindings.map(bindingToDefn), this.body, this.stx).desugar(pinfo);
+	  localAndPinfo[0].location = this.location;
+	  return localAndPinfo;
+	};
+	// lets become calls
+	_structures.letExpr.prototype.desugar = function (pinfo) {
+	  // utility functions for accessing first and second
+	  function coupleFirst(x) {
+	    return x.first;
+	  }
+	  function coupleSecond(x) {
+	    return x.second;
+	  }
+	
+	  var ids = this.bindings.map(coupleFirst);
+	  var exprs = this.bindings.map(coupleSecond);
+	  var lambda = new _structures.lambdaExpr(ids, this.body, this.stx);
+	  var call = new _structures.callExpr(lambda, exprs);
+	  lambda.location = call.location = this.location;
+	  return call.desugar(pinfo);
+	};
+	// let*s become nested lets
+	_structures.letStarExpr.prototype.desugar = function (pinfo) {
+	  function bindingToLet(body, binding) {
+	    var let_exp = new _structures.letExpr([binding], body, binding.stx);
+	    let_exp.location = binding.location;
+	    return let_exp;
+	  }
+	  // if there are no bindings, desugar the body. Otherwise, reduce to nested lets first
+	  if (this.bindings.length === 0) return this.body.desugar(pinfo);else return this.bindings.reduceRight(bindingToLet, this.body).desugar(pinfo);
+	};
+	// conds become nested ifs
+	_structures.condExpr.prototype.desugar = function (pinfo) {
+	  // base case is all-false
+	  var condExhausted = new _structures.symbolExpr("throw-cond-exhausted-error");
+	  var exhaustedLoc = new _structures.quotedExpr(new _structures.literal(this.location.toVector()));
+	  var expr = tagApplicationOperator_Module(new _structures.callExpr(condExhausted, [exhaustedLoc]), "moby/runtime/kernel/misc");
+	  var ifStx = new _structures.symbolExpr("if");
+	  ifStx.location = this.stx.location;
+	
+	  expr.location = condExhausted.location = exhaustedLoc.location = this.location;
+	  for (var i = this.clauses.length - 1; i > -1; i--) {
+	    // desugar else to true
+	    if (this.clauses[i].first instanceof _structures.symbolExpr && this.clauses[i].first.val === "else") {
+	      this.clauses[i].first.val = "true";
+	    }
+	    expr = new _structures.ifExpr(this.clauses[i].first, this.clauses[i].second, expr, this.stx);
+	    expr.location = this.location;
+	  }
+	  return expr.desugar(pinfo);
+	};
+	// case become nested ifs, with ormap as the predicate
+	_structures.caseExpr.prototype.desugar = function (pinfo) {
+	  var that = this;
+	  var caseStx = new _structures.symbolExpr("if"); // TODO: The server returns "if" here, but I am almost certain it should be "case"
+	  caseStx.location = that.location;
+	
+	  var pinfoAndValSym = pinfo.gensym('val'); // create a symbol 'val
+	  var updatedPinfo1 = pinfoAndValSym[0]; // generate pinfo containing 'val
+	  var valStx = pinfoAndValSym[1]; // remember the symbolExpr for 'val'
+	  var pinfoAndXSym = updatedPinfo1.gensym('x'); // create another symbol 'x' using pinfo1
+	  var updatedPinfo2 = pinfoAndXSym[0]; // generate pinfo containing 'x'
+	  var xStx = pinfoAndXSym[1]; // remember the symbolExpr for 'x'
+	  var voidStx = new _structures.symbolExpr('void'); // make the void symbol
+	
+	  // track all the syntax we've created so far...
+	  var stxs = [valStx, xStx, voidStx];
+	  // if there's an 'else', pop off the clause and use the result as the base
+	  var expr,
+	      clauses = this.clauses,
+	      lastClause = clauses[this.clauses.length - 1];
+	  if (lastClause.first instanceof _structures.symbolExpr && lastClause.first.val === 'else') {
+	    expr = lastClause.second;
+	    clauses.pop();
+	  } else {
+	    expr = new _structures.callExpr(voidStx, [], that.stx);
+	    expr.location = that.location;
+	  }
+	  // This is the predicate we'll be applying using ormap: (lambda (x) (equal? x val))
+	  var equalStx = new _structures.symbolExpr('equal?');
+	  var equalTestStx = new _structures.callExpr(equalStx, [xStx, valStx], caseStx);
+	  var predicateStx = new _structures.lambdaExpr([xStx], equalTestStx, caseStx);
+	  // track the syntax that will need location information reset
+	  stxs = stxs.concat([equalStx, equalTestStx, predicateStx]);
+	
+	  // generate (if (ormap <predicate> clause.first) clause.second base)
+	  function processClause(base, clause) {
+	    var ormapStx = new _structures.symbolExpr('ormap');
+	    var callStx = new _structures.callExpr(ormapStx, [predicateStx, clause.first], that.stx);
+	    var ifStx = new _structures.ifExpr(callStx, clause.second, base, caseStx);
+	    // track the syntax that will need location information reset
+	    stxs = stxs.concat([ormapStx, callStx, clause.first, ifStx]);
+	    return ifStx;
+	  }
+	
+	  // build the body of the let by decomposing cases into nested ifs
+	  var binding = new _structures.couple(valStx, this.expr);
+	  var body = clauses.reduceRight(processClause, expr);
+	  var letExp = new _structures.letExpr([binding], body, caseStx);
+	  // track the syntax that will need location information reset
+	  stxs = stxs.concat([binding, letExp]);
+	
+	  // assign location to every stx element we created
+	  stxs.forEach(function (stx) {
+	    stx.location = that.location;
+	  });
+	
+	  return letExp.desugar(updatedPinfo2);
+	};
+	
+	// ands become nested ifs
+	_structures.andExpr.prototype.desugar = function (pinfo) {
+	  var that = this,
+	      ifStx = new _structures.symbolExpr("if");
+	  var exprsAndPinfo = desugarProgram(this.exprs, pinfo);
+	  var exprs = exprsAndPinfo[0];
+	  pinfo = exprsAndPinfo[1];
+	
+	  // recursively walk through the exprs
+	  function desugarAndExprs(exprs) {
+	    var predicate = forceBooleanContext(that.stx, that.stx.location, exprs[0]);
+	    // if there only two exprs in the chain, force a boolean ctx on the second expr and make it the consequence
+	    // otherwise, desugar the rest of the chain before adding it
+	    var consequence = exprs.length > 2 ? desugarAndExprs(exprs.slice(1)) : forceBooleanContext(that.stx, that.stx.location, exprs[1]);
+	    var alternative = new _structures.literal(false);
+	    var ifLink = new _structures.ifExpr(predicate, consequence, alternative, ifStx);
+	    var stxs = [alternative, ifStx, ifLink];
+	
+	    // assign location information to everything
+	    stxs.forEach(function (stx) {
+	      return stx.location = that.location;
+	    });
+	    return ifLink;
+	  }
+	
+	  var ifChain = desugarAndExprs(exprs);
+	  ifChain.location = that.location;
+	  return [ifChain, pinfo];
+	};
+	// ors become nested lets-with-if-bodies
+	_structures.orExpr.prototype.desugar = function (pinfo) {
+	  var that = this,
+	      orStx = new _structures.symbolExpr("or");
+	  var exprsAndPinfo = desugarProgram(this.exprs, pinfo);
+	  var exprs = exprsAndPinfo[0];
+	  pinfo = exprsAndPinfo[1];
+	
+	  // recursively walk through the exprs
+	  function desugarOrExprs(exprs, pinfo) {
+	    var firstExpr = exprs[0],
+	        exprLoc = firstExpr.location;
+	    var pinfoAndTempSym = pinfo.gensym('tmp');
+	    var firstExprSym = pinfoAndTempSym[1];
+	    var ifStx = new _structures.symbolExpr("if");
+	    firstExprSym.notOriginalSource = true;
+	
+	    // to match Racket's behavior, we override any expression's
+	    // stx to be "if", with the location of the whole expression
+	    if (firstExpr.stx && firstExpr.stx.val !== "if") {
+	      ifStx.location = firstExpr.location;
+	      firstExpr.stx = ifStx;
+	    }
+	    pinfo = pinfoAndTempSym[0];
+	    var tmpBinding = new _structures.couple(firstExprSym, forceBooleanContext(that.stx, that.stx.location, firstExpr));
+	    var secondExpr;
+	
+	    // if there are only two exprs in the chain, force a boolean ctx on the second expr before adding
+	    // otherwise, desugar the rest of the chain before adding it
+	    if (exprs.length == 2) {
+	      secondExpr = forceBooleanContext(orStx, that.stx.location, exprs[1]);
+	    } else {
+	      var secondExprAndPinfo = desugarOrExprs(exprs.slice(1), pinfo);
+	      secondExpr = secondExprAndPinfo[0];
+	      pinfo = secondExprAndPinfo[1];
+	    }
+	
+	    // create if and let expressions, using these new symbols and bindings
+	    var if_exp = new _structures.ifExpr(firstExprSym, firstExprSym, secondExpr, new _structures.symbolExpr("if"));
+	    var let_exp = new _structures.letExpr([tmpBinding], if_exp, orStx);
+	    var stxs = [orStx, firstExprSym, tmpBinding, if_exp, if_exp.stx, let_exp];
+	    // assign location information to everything
+	    stxs.forEach(function (stx) {
+	      return stx.location = that.location;
+	    });
+	    return let_exp.desugar(pinfo);
+	  }
+	
+	  return desugarOrExprs(exprs, pinfo);
+	};
+	
+	_structures.quotedExpr.prototype.desugar = function (pinfo) {
+	  if (typeof this.location === 'undefined') {
+	    (0, _structures.throwError)(new types.Message(["ASSERTION ERROR: Every quotedExpr should have a location"]), loc);
+	  }
+	  // Sexp-lists (arrays) become lists
+	  // literals and symbols stay themselves
+	  // everything else gets desugared
+	  function desugarQuotedItem(pinfo, loc) {
+	    return function (x) {
+	      if (x instanceof _structures.callExpr || x instanceof _structures.quotedExpr || x instanceof _structures.unsupportedExpr) {
+	        return x.desugar(pinfo);
+	      } else if (x instanceof _structures.symbolExpr || x instanceof _structures.literal || x instanceof Array) {
+	        var res = new _structures.quotedExpr(x);
+	        res.location = loc;
+	        return [res, pinfo];
+	      } else {
+	        (0, _structures.throwError)(new types.Message(["ASSERTION ERROR: Found an unexpected item in a quotedExpr"]), loc);
+	      }
+	    };
+	  }
+	
+	  return desugarQuotedItem(pinfo, this.location)(this.val);
+	};
+	
+	_structures.unquotedExpr.prototype.desugar = function (pinfo, depth) {
+	  if (typeof depth === 'undefined') {
+	    (0, _structures.throwError)(new types.Message(["misuse of a ', not under a quasiquoting backquote"]), this.location);
+	  } else if (depth === 1) {
+	    return this.val.desugar(pinfo);
+	  } else if (depth > 1) {
+	    if (this.val instanceof Array) {
+	      return desugarQuasiQuotedList(element, pinfo, depth - 1);
+	    } else {
+	      var uSym = new _structures.quotedExpr(new _structures.symbolExpr('unquote'));
+	      var listSym = new _structures.symbolExpr('list');
+	      var listArgs = [uSym, this.val.desugar(pinfo, depth - 1)[0]];
+	      var listCall = new _structures.callExpr(listSym, listArgs);
+	      uSym.location = this.location;
+	      uSym.parent = listArgs;
+	      listSym.location = this.location;
+	      listSym.parent = listCall;
+	      listCall.location = this.location;
+	      return [listCall, pinfo];
+	    }
+	  } else {
+	    (0, _structures.throwError)(new types.Message(["ASSERTION FAILURE: depth should have been undefined, or a natural number"]), this.location);
+	  }
+	};
+	
+	_structures.unquoteSplice.prototype.desugar = function (pinfo, depth) {
+	  if (typeof depth === 'undefined') {
+	    (0, _structures.throwError)(new types.Message(["misuse of a ,@, not under a quasiquoting backquote"]), this.location);
+	  } else if (depth === 1) {
+	    return this.val.desugar(pinfo);
+	  } else if (depth > 1) {
+	    if (this.val instanceof Array) {
+	      return desugarQuasiQuotedList(element, pinfo, depth - 1);
+	    } else {
+	      var usSym = new _structures.quotedExpr(new _structures.symbolExpr('unquote-splicing'));
+	      var listSym = new _structures.symbolExpr('list');
+	      var listArgs = [usSym, this.val.desugar(pinfo, depth - 1)[0]];
+	      var listCall = new _structures.callExpr(listSym, listArgs);
+	      usSym.location = this.location;
+	      usSym.parent = listArgs;
+	      listSym.location = this.location;
+	      listSym.parent = listCall;
+	      listCall.location = this.location;
+	      return [listCall, pinfo];
+	    }
+	  } else {
+	    (0, _structures.throwError)(new types.Message(["ASSERTION FAILURE: depth should have been undefined, or a natural number"]), this.location);
+	  }
+	};
+	
+	function desugarQuasiQuotedList(qqlist, pinfo, depth) {
+	
+	  // helper function for a single QQ-list element
+	  function desugarQuasiQuotedListElement(element, pinfo, depth, loc) {
+	    if (depth === 0 && element instanceof _structures.unquoteSplice) {
+	      return element.desugar(pinfo, depth);
+	    } else {
+	      var argument = element instanceof Array ? desugarQuasiQuotedList(element, depth, depth)[0] : element.desugar(pinfo, depth)[0];
+	      var listSym = new _structures.symbolExpr('list');
+	      var listCall = new _structures.callExpr(listSym, [argument]);
+	      listSym.parent = listCall;
+	      listCall.location = listSym.location = loc;
+	      return [listCall, pinfo];
+	    }
+	  }
+	
+	  var loc = typeof qqlist.location != 'undefined' ? qqlist.location : qqlist instanceof Array && typeof qqlist[0].location != 'undefined' ? qqlist[0].location : (0, _structures.throwError)(types.Message(["ASSERTION FAILURE: couldn't find a usable location"]), new Location(0, 0, 0, 0));
+	  var appendArgs = qqlist.map(function (x) {
+	    return desugarQuasiQuotedListElement(x, pinfo, depth, loc)[0];
+	  });
+	  var appendSym = new _structures.symbolExpr('append');
+	  appendSym.location = loc;
+	  var appendCall = new _structures.callExpr(appendSym, appendArgs);
+	  appendCall.location = loc;
+	  return [appendCall, pinfo];
+	}
+	
+	// go through each item in search of unquote or unquoteSplice
+	_structures.quasiquotedExpr.prototype.desugar = function (pinfo, depth) {
+	  depth = typeof depth === 'undefined' ? 0 : depth;
+	  if (depth >= 0) {
+	    var result;
+	    if (this.val instanceof Array) {
+	      result = desugarQuasiQuotedList(this.val, pinfo, depth + 1)[0];
+	    } else {
+	      result = this.val.desugar(pinfo, depth + 1)[0];
+	    }
+	  } else {
+	    (0, _structures.throwError)(new types.Message(["ASSERTION FAILURE: depth should have been undefined, or a natural number"]), this.location);
+	  }
+	
+	  if (depth == 0) {
+	    return [result, pinfo];
+	  } else {
+	    var qqSym = new _structures.quotedExpr(new _structures.symbolExpr('quasiquote'));
+	    var listArgs = [qqSym, result];
+	    var listSym = new _structures.symbolExpr('list');
+	    var listCall = new _structures.callExpr(listSym, listArgs);
+	    qqSym.parent = listArgs;
+	    qqSym.location = this.location;
+	    result.parent = listArgs;
+	    listSym.parent = listCall;
+	    listSym.location = this.location;
+	    listCall.location = this.location;
+	    return [listCall, pinfo];
+	  }
+	};
+	
+	_structures.symbolExpr.prototype.desugar = function (pinfo) {
+	  // if we're not in a clause, we'd better not see an "else"...
+	  if (!this.isClause && this.val === "else") {
+	    var loc = this.parent && this.parent[0] === this ? this.parent.location : this.location;
+	    (0, _structures.throwError)(new types.Message([new types.ColoredPart(this.val, loc), ": not allowed ", new types.ColoredPart("here", loc), ", because this is not a question in a clause"]), loc);
+	  }
+	  // if this is a define without a parent, or if it's not the first child of the parent
+	  if (this.parent && this.parent[0] !== this && this.val === "define") {
+	    var msg = new types.Message([new types.ColoredPart(this.val, this.location), ": not allowed inside an expression"]);
+	    (0, _structures.throwError)(msg, this.location);
+	  }
+	  // if this is a keyword without a parent, or if it's not the first child of the parent
+	  if (!this.parent && structures.keywords.indexOf(this.val) > -1 && this.val !== "else") {
+	    (0, _structures.throwError)(new types.Message([new types.ColoredPart(this.val, this.location), ": expected an open parenthesis before ", this.val, ", but found none"]), this.location);
+	  }
+	  // the dot operator is not supported by WeScheme
+	  if (this.val === ".") {
+	    var _msg = new types.Message([this.location.source, ":", this.location.startRow.toString(), ":", this.location.startCol.toString(), ": read: '.' is not supported as a symbol in WeScheme"]);
+	    (0, _structures.throwError)(_msg, this.location, "Error-GenericReadError");
+	  }
+	  return [this, pinfo];
+	};
+	_structures.unsupportedExpr.prototype.desugar = function (unusedPinfo) {
+	  this.location.span = this.errorSpan;
+	  (0, _structures.throwError)(this.errorMsg, this.location, "Error-GenericReadError");
+	};
+	
+	//////////////////////////////////////////////////////////////////////////////
+	// COLLECT DEFINITIONS ///////////////////////////////////////////////////////
+	
+	// extend the Program class to collect definitions
+	// Program.collectDefnitions: pinfo -> pinfo
+	_structures.Program.prototype.collectDefinitions = function (pinfo) {
+	  return pinfo;
+	};
+	
+	// bf: symbol path number boolean string -> binding:function
+	// Helper function.
+	function bf(name, modulePath, arity, vararity, loc) {
+	  return new _structures.functionBinding(name, modulePath, arity, vararity, [], false, loc);
+	}
+	_structures.defFunc.prototype.collectDefinitions = function (pinfo) {
+	  this.args.forEach(function (arg) {
+	    if (structures.keywords.indexOf(arg.val) > -1) {
+	      (0, _structures.throwError)(new types.Message([new types.ColoredPart(arg.val, arg.location), ": this is a reserved keyword and cannot be used" + " as a variable or function name"]), arg.location);
+	    }
+	  });
+	
+	  var binding = bf(this.name.val, false, this.args.length, false, this.name.location);
+	  return pinfo.accumulateDefinedBinding(binding, this.location);
+	};
+	_structures.defVar.prototype.collectDefinitions = function (pinfo) {
+	  var binding = this.expr instanceof _structures.lambdaExpr ? bf(this.name.val, false, this.expr.args.length, false, this.name.location) : new _structures.constantBinding(this.name.val, false, [], this.name.location);
+	  return pinfo.accumulateDefinedBinding(binding, this.location);
+	};
+	_structures.defVars.prototype.collectDefinitions = function (pinfo) {
+	  var that = this;
+	  var fieldToAccessor = function fieldToAccessor(f) {
+	    return that.stx[1].val + "-" + f.val;
+	  };
+	  var fieldToMutator = function fieldToMutator(f) {
+	    return "set-" + that.stx[1].val + "-" + f.val + "!";
+	  };
+	  // if it's define-struct, create a struct binding
+	  if (that.stx[0].val === "define-struct") {
+	    var id = that.stx[1].val;
+	    var fields = that.stx[2];
+	    var constructorId = "make-" + id;
+	    var predicateId = id + "?";
+	    var selectorIds = fields.map(fieldToAccessor);
+	    var mutatorIds = fields.map(fieldToMutator);
+	    var structNameLoc = that.stx[1].location; // location of <name> in (define-struct <name> (..))
+	    // build bindings out of these ids
+	    var structureBinding = new _structures.structBinding(id, false, fields, constructorId, predicateId, selectorIds, mutatorIds, null, that.stx[1].location);
+	    var constructorBinding = bf(constructorId, false, fields.length, false, structNameLoc);
+	    var predicateBinding = bf(predicateId, false, 1, false, structNameLoc);
+	    var mutatorBinding = bf(id + "-set!", false, 1, false, structNameLoc);
+	    var refBinding = bf(id + "-ref", false, 1, false, structNameLoc);
+	    // COMMENTED OUT ON PURPOSE:
+	    // these symbols are provided by separate definitions that result from desugaring, in keeping with the original compiler's behavior
+	    //        selectorBindings   = selectorIds.map(function(id){return bf(id, false, 1, false, that.location)}),
+	    // AND WOULD YOU BELIEVE IT:
+	    //  these symbols aren't exposed by the compiler either (maybe since set! isn't supported?)
+	    //        mutatorBindings    = mutatorIds.map(function(id){return bf(id, false, 2, false, that.location)}),
+	    // assemble all the bindings together
+	    var bindings = [structureBinding, refBinding, constructorBinding, predicateBinding, mutatorBinding];
+	    return pinfo.accumulateDefinedBindings(bindings, that.location);
+	  } else {
+	    return this.names.reduce(function (pinfo, id) {
+	      var binding = new _structures.constantBinding(id.val, false, [], id.location);
+	      return pinfo.accumulateDefinedBinding(binding, that.location);
+	    }, pinfo);
+	  }
+	};
+	
+	// When we hit a require, we have to extend our environment to include the list of module
+	// bindings provided by that module.
+	// FIXME: we currently override moduleName, which SHOULD just give us the proper name
+	_structures.requireExpr.prototype.collectDefinitions = function (pinfo) {
+	  // if it's a literal, pull out the actual value. if it's a symbol use it as-is
+	  var moduleName = this.spec instanceof _structures.literal ? this.spec.val.toString() : this.spec.toString();
+	  var resolvedModuleName = pinfo.modulePathResolver(moduleName, pinfo.currentModulePath);
+	  var that = this;
+	  var newPinfo;
+	
+	  // is this a shared WeScheme program?
+	  function getWeSchemeModule(name) {
+	    var m = name.match(/^wescheme\/(\w+)$/);
+	    return m ? m[1] : false;
+	  }
+	
+	  function throwModuleError(unusedModuleName) {
+	    var bestGuess = structures.moduleGuess(that.spec.toString());
+	    var msg = new types.Message(["Found require of the module ", new types.ColoredPart(that.spec.toString(), that.spec.location), ", but this module is unknown.", bestGuess.name === that.spec.toString() ? "" : " Did you mean '" + bestGuess.name + "'?"]);
+	    (0, _structures.throwError)(msg, that.spec.location, "Error-UnknownModule");
+	  }
+	
+	  // if it's an invalid moduleName, throw an error
+	  if (!(resolvedModuleName || getWeSchemeModule(moduleName))) {
+	    throwModuleError(moduleName);
+	  }
+	
+	  // processModule : JS -> pinfo
+	  // assumes the module has been assigned to window.COLLECTIONS.
+	  // pull out the bindings, and then add them to pinfo
+	  function processModule(moduleName) {
+	    var provides = window.COLLECTIONS[moduleName].provides;
+	    var strToBinding = function strToBinding(p) {
+	      var b = new _structures.constantBinding(p, new _structures.symbolExpr(moduleName), false);
+	      b.imported = true; // WTF: Moby treats imported bindings differently, so we need to identify them
+	      return b;
+	    };
+	    var provideBindings = provides.map(strToBinding);
+	    var modulebinding = new _structures.moduleBinding(moduleName, provideBindings);
+	    newPinfo = pinfo.accumulateModule(modulebinding).accumulateModuleBindings(provideBindings);
+	  }
+	
+	  // open a *synchronous* GET request -- FIXME to use callbacks?
+	  var url = window.location.protocol + "//" + window.location.host + (getWeSchemeModule(moduleName) ? "/loadProject?publicId=" + getWeSchemeModule(moduleName) : "/js/mzscheme-vm/collects/" + moduleName + ".js");
+	
+	  // if the module is already loaded, we can just process without loading
+	  if (window.COLLECTIONS && window.COLLECTIONS[moduleName]) {
+	    processModule(moduleName);
+	  } else {
+	    if (window.jQuery) {
+	      window.jQuery.ajax({
+	        url: url,
+	        success: function success(result) {
+	          // if it's not a native module, manually assign it to window.COLLECTIONS
+	          if (getWeSchemeModule(moduleName)) {
+	            var program = (0, eval)('(' + result + ')');
+	            // Create the COLLECTIONS array, if it doesn't exist
+	            if (window.COLLECTIONS === undefined) {
+	              window.COLLECTIONS = [];
+	            }
+	            // extract the sourcecode
+	            var lexemes = __webpack_require__(230).lex(program.source.src, moduleName);
+	            var AST = __webpack_require__(238).parse(lexemes);
+	            var desugared = desugar(AST)[0]; // includes [AST, pinfo]
+	            var pinfo = analyze(desugared);
+	            var objectCode = __webpack_require__(235).compile(desugared, pinfo);
+	            window.COLLECTIONS[moduleName] = {
+	              'name': moduleName,
+	              'bytecode': (0, eval)('(' + objectCode.bytecode + ')'),
+	              'provides': objectCode.provides
+	            };
+	            // otherwise, simply evaluate the raw JS
+	          } else {
+	              eval(result);
+	            }
+	          if (result) {
+	            processModule(moduleName);
+	          } else {
+	            throwModuleError(moduleName);
+	          }
+	        },
+	        error: function error(unusedError) {
+	          throwModuleError(moduleName);
+	        },
+	        async: false
+	      });
+	    } else {
+	      console.log('jQuery not available, can\'t load data from ' + url);
+	      throwModuleError(moduleName);
+	    }
+	  }
+	  return newPinfo;
+	};
+	// BINDING STRUCTS ///////////////////////////////////////////////////////
+	function provideBindingId(symbl) {
+	  this.symbl = symbl;
+	}
+	function provideBindingStructId(symbl) {
+	  this.symbl = symbl;
+	}
+	
+	//////////////////////////////////////////////////////////////////////////////
+	// COLLECT PROVIDES //////////////////////////////////////////////////////////
+	
+	// extend the Program class to collect provides
+	// Program.collectProvides: pinfo -> pinfo
+	_structures.Program.prototype.collectProvides = function (pinfo) {
+	  return pinfo;
+	};
+	_structures.provideStatement.prototype.collectProvides = function (pinfo) {
+	
+	  function addProvidedName(id) {
+	    pinfo.providedNames.put(id, new provideBindingId(id));
+	  }
+	
+	  // collectProvidesFromClause : pinfo clause -> pinfo
+	  function collectProvidesFromClause(pinfo, clause) {
+	    // if it's a symbol, make sure it's defined (otherwise error)
+	    if (clause instanceof _structures.symbolExpr) {
+	      if (pinfo.definedNames.containsKey(clause.val)) {
+	        addProvidedName(clause.val);
+	        return pinfo;
+	      } else {
+	        var msg = new types.Message(["The name '", new types.ColoredPart(clause.toString(), clause.location), "', is not defined in the program, and cannot be provided."]);
+	        (0, _structures.throwError)(msg, clause.location);
+	      }
+	      // if it's an array, make sure the struct is defined (otherwise error)
+	      // NOTE: ONLY (struct-out id) IS SUPPORTED AT THIS TIME
+	    } else if (clause instanceof Array) {
+	        if (pinfo.definedNames.containsKey(clause[1].val) && pinfo.definedNames.get(clause[1].val) instanceof _structures.structBinding) {
+	          // add the entire structBinding to the provided binding, so we
+	          // can access fieldnames, predicates, and permissions later
+	          var b = pinfo.definedNames.get(clause[1].val);
+	          var fns = [b.name, b.constructor, b.predicate].concat(b.accessors, b.mutators);
+	          fns.forEach(addProvidedName);
+	          return pinfo;
+	        } else {
+	          (0, _structures.throwError)(new types.Message(["The struct '", new types.ColoredPart(clause[1].toString(), clause[1].location), "', is not defined in the program, and cannot be provided"]), clause.location);
+	        }
+	        // anything with a different format throws an error
+	      } else {
+	          throw "Impossible: all invalid provide clauses should have been filtered out!";
+	        }
+	  }
+	  return this.clauses.reduce(collectProvidesFromClause, pinfo);
+	};
+	
+	//////////////////////////////////////////////////////////////////////////////
+	// ANALYZE USES //////////////////////////////////////////////////////////////
+	
+	// extend the Program class to analyzing uses
+	// Program.analyzeUses: pinfo -> pinfo
+	_structures.Program.prototype.analyzeUses = function (pinfo, unusedEnv) {
+	  return pinfo;
+	};
+	_structures.defVar.prototype.analyzeUses = function (pinfo) {
+	  // extend the environment with the value or function, then analyze the expression
+	  pinfo.env.extend(this.expr instanceof _structures.lambdaExpr ? bf(this.name.val, false, this.expr.args.length, false, this.location) : new _structures.constantBinding(this.name.val, false, [], this.name.location));
+	  return this.expr.analyzeUses(pinfo, pinfo.env);
+	};
+	_structures.defVars.prototype.analyzeUses = function (pinfo) {
+	  this.names.forEach(function (id) {
+	    pinfo.env.extend(new _structures.constantBinding(id.val, false, [], id.location));
+	  });
+	  return this.expr.analyzeUses(pinfo, pinfo.env);
+	};
+	// analyzeClosureUses : expr pinfo -> pinfo
+	// given the body of a lambda, an environment and a pinfo, analyze the body
+	function analyzeClosureUses(funcExpr, pinfo) {
+	  // 1) make a copy of all the bindings
+	  var oldEnv = pinfo.env;
+	  var oldKeys = oldEnv.bindings.keys();
+	  var newBindings = types.makeLowLevelEqHash();
+	  oldKeys.forEach(function (k) {
+	    newBindings.put(k, oldEnv.bindings.get(k));
+	  });
+	
+	  // 2) make a copy of the environment, using the newly-copied bindings, and
+	  //    add the args to this environment
+	  var newEnv = new structures.env(newBindings);
+	  newEnv = funcExpr.args.reduce(function (env, arg) {
+	    return env.extend(new _structures.constantBinding(arg.val, false, [], arg.location));
+	  }, newEnv);
+	  // 3) install the post-arg env into pinfo, analyze the body, and
+	  //    install the original environment
+	  pinfo.env = newEnv;
+	  pinfo = funcExpr.body.analyzeUses(pinfo, newEnv);
+	  pinfo.env = oldEnv;
+	  return pinfo;
+	}
+	_structures.defFunc.prototype.analyzeUses = function (pinfo) {
+	  // extend the env to include the function binding, then analyze the body as if it's a lambda
+	  pinfo.env = pinfo.env.extend(bf(this.name.val, false, this.args.length, false, this.name.location));
+	  return analyzeClosureUses(this, pinfo);
+	};
+	_structures.lambdaExpr.prototype.analyzeUses = function (pinfo, unusedEnv) {
+	  return analyzeClosureUses(this, pinfo);
+	};
+	_structures.beginExpr.prototype.analyzeUses = function (pinfo, env) {
+	  return this.exprs.reduce(function (p, expr) {
+	    return expr.analyzeUses(p, env);
+	  }, pinfo);
+	};
+	_structures.localExpr.prototype.analyzeUses = function (pinfo, env) {
+	  var pinfoAfterDefs = this.defs.reduce(function (pinfo, d) {
+	    return d.analyzeUses(pinfo, env);
+	  }, pinfo);
+	  return this.body.analyzeUses(pinfoAfterDefs, pinfoAfterDefs.env);
+	};
+	_structures.callExpr.prototype.analyzeUses = function (pinfo, env) {
+	  return [this.func].concat(this.args).reduce(function (p, arg) {
+	    return arg instanceof Array ?
+	    // if arg is a subexpression, reduce THAT
+	    arg.reduce(function (pinfo, p) {
+	      return p.analyzeUses(pinfo, pinfo.env);
+	    }, pinfo)
+	    // otherwise analyze and return
+	    : arg.analyzeUses(p, env);
+	  }, pinfo);
+	};
+	_structures.ifExpr.prototype.analyzeUses = function (pinfo, env) {
+	  var exps = [this.predicate, this.consequence, this.alternative];
+	  return exps.reduce(function (p, exp) {
+	    return exp.analyzeUses(p, env);
+	  }, pinfo);
+	};
+	_structures.symbolExpr.prototype.analyzeUses = function (pinfo, env) {
+	  // if this is a keyword without a parent, or if it's not the first child of the parent
+	  if (structures.keywords.indexOf(this.val) > -1 && (!this.parent || this.parent[0] !== this) || this.parent instanceof _structures.couple) {
+	    (0, _structures.throwError)(new types.Message([new types.ColoredPart(this.val, this.location), ": expected an open parenthesis before ", this.val, ", but found none"]), this.location);
+	  }
+	  var binding = env.lookup_context(this.val);
+	  if (binding) {
+	    this.bindingLoc = binding.loc; //  keep track of where this symbol was bound
+	    return pinfo.accumulateBindingUse(binding, pinfo);
+	  } else {
+	    return pinfo.accumulateFreeVariableUse(this.val, pinfo);
+	  }
+	};
+	
+	/////////////////////////////////////////////////////////////
+	function _analyze(programs) {
+	  return programAnalyzeWithPinfo(programs, structures.getBasePinfo("base"));
+	}
+	
+	// programAnalyzerWithPinfo : [listof Programs], pinfo -> pinfo
+	// build up pinfo by looking at definitions, provides and uses
+	function programAnalyzeWithPinfo(programs, pinfo) {
+	  // collectDefinitions: [listof Programs] pinfo -> pinfo
+	  // Collects the definitions either imported or defined by this program.
+	  function collectDefinitions(programs, pinfo) {
+	    return programs.reduce(function (pinfo, p) {
+	      return p.collectDefinitions(pinfo);
+	    }, pinfo);
+	  }
+	  // collectProvides: [listof Programs] pinfo -> pinfo
+	  // Walk through the program and collect all the provide statements.
+	  function collectProvides(programs, pinfo) {
+	    return programs.reduce(function (pinfo, p) {
+	      return p.collectProvides(pinfo);
+	    }, pinfo);
+	  }
+	  // analyzeUses: [listof Programs] pinfo -> pinfo
+	  // Collects the uses of bindings that this program uses.
+	  function analyzeUses(programs, pinfo) {
+	    return programs.reduce(function (pinfo, p) {
+	      return p.analyzeUses(pinfo, pinfo.env);
+	    }, pinfo);
+	  }
+	  var pinfo1 = collectDefinitions(programs, pinfo);
+	  var pinfo2 = collectProvides(programs, pinfo1);
+	  return analyzeUses(programs, pinfo2);
+	}
+	
+	/////////////////////
+	/* Export Bindings */
+	/////////////////////
+	var desugar = exports.desugar = function desugar(p, pinfo, debug) {
+	  var start = new Date().getTime();
+	  try {
+	    var ASTandPinfo = desugarProgram(p, pinfo, true); // do the actual work
+	    var program = ASTandPinfo[0];
+	    pinfo = ASTandPinfo[1];
+	  } catch (e) {
+	    console.log("DESUGARING ERROR");throw e;
+	  }
+	  var end = new Date().getTime();
+	  if (debug) {
+	    console.log("Desugared in " + Math.floor(end - start) + "ms");
+	    console.log(program);
+	    console.log(program.toString());
+	  }
+	  return ASTandPinfo;
+	};
+	var analyze = exports.analyze = function analyze(program, debug) {
+	  var start = new Date().getTime();
+	  try {
+	    var pinfo = _analyze(program);
+	  } // do the actual work
+	  catch (e) {
+	    console.log("ANALYSIS ERROR");throw e;
+	  }
+	  var end = new Date().getTime();
+	  if (debug) {
+	    console.log("Analyzed in " + Math.floor(end - start) + "ms");
+	    //      console.log(pinfo.toString());
+	  }
+	  return pinfo;
+	};
+
+/***/ },
+/* 238 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	// if not defined, declare the compiler object as part of plt
+	window.plt = window.plt || {};
+	plt.compiler = __webpack_require__(231);
+	var types = __webpack_require__(232);
+	
+	/*
+	 
+	 //////////////////////////////////////////////////////////////////////////////
+	 ///////////////////////////////// PARSER OBJECT //////////////////////////////
+	 //////////////////////////////////////////////////////////////////////////////
+	 
+	 Parser for http://docs.racket-lang.org/htdp-langs/intermediate-lam.html
+	 
+	 * Given an Array of SExps, produce an array of Programs or a structured error
+	 * see structures.js for Program Objects and Error throwing
+	 
+	 TODO
+	 - Perf: give location information to all AST nodes as constructor argument
+	 - JSLint
+	 */
+	
+	(function () {
+	  'use strict'
+	
+	  // import frequently-used bindings
+	  ;
+	  var literal = plt.compiler.literal;
+	  var symbolExpr = plt.compiler.symbolExpr;
+	  var Program = plt.compiler.Program;
+	  var couple = plt.compiler.couple;
+	  var ifExpr = plt.compiler.ifExpr;
+	  var beginExpr = plt.compiler.beginExpr;
+	  var letExpr = plt.compiler.letExpr;
+	  var letStarExpr = plt.compiler.letStarExpr;
+	  var letrecExpr = plt.compiler.letrecExpr;
+	  var localExpr = plt.compiler.localExpr;
+	  var andExpr = plt.compiler.andExpr;
+	  var orExpr = plt.compiler.orExpr;
+	  var condExpr = plt.compiler.condExpr;
+	  var caseExpr = plt.compiler.caseExpr;
+	  var lambdaExpr = plt.compiler.lambdaExpr;
+	  var quotedExpr = plt.compiler.quotedExpr;
+	  var unquotedExpr = plt.compiler.unquotedExpr;
+	  var quasiquotedExpr = plt.compiler.quasiquotedExpr;
+	  var unquoteSplice = plt.compiler.unquoteSplice;
+	  var callExpr = plt.compiler.callExpr;
+	  var whenUnlessExpr = plt.compiler.whenUnlessExpr;
+	  var defFunc = plt.compiler.defFunc;
+	  var defVar = plt.compiler.defVar;
+	  var defVars = plt.compiler.defVars;
+	  var defStruct = plt.compiler.defStruct;
+	  var requireExpr = plt.compiler.requireExpr;
+	  var provideStatement = plt.compiler.provideStatement;
+	  var unsupportedExpr = plt.compiler.unsupportedExpr;
+	  var throwError = plt.compiler.throwError;
+	
+	  //////////////////////////////////// UTILITY FUNCTIONS //////////////////////////////
+	  function isVector(x) {
+	    return types.isVector(x.val);
+	  }
+	  function isString(x) {
+	    return types.isString(x.val);
+	  }
+	  function isSymbol(x) {
+	    return x instanceof symbolExpr;
+	  }
+	  function isLiteral(x) {
+	    return x instanceof literal;
+	  }
+	  function isUnsupported(x) {
+	    return x instanceof unsupportedExpr;
+	  }
+	
+	  // isSymbolEqualTo : symbolExpr symbolExpr -> Boolean
+	  // are these all symbols of the same value?
+	  function isSymbolEqualTo(x, y) {
+	    x = x instanceof symbolExpr ? x.val : x;
+	    y = y instanceof symbolExpr ? y.val : y;
+	    return x === y;
+	  }
+	
+	  function isCons(x) {
+	    return x instanceof Array && x.length >= 1;
+	  }
+	  function rest(ls) {
+	    return ls.slice(1);
+	  }
+	
+	  // PARSING ///////////////////////////////////////////
+	
+	  // parse* : sexp list -> Program list
+	  function parseStar(sexps) {
+	    function parseSExp(sexp) {
+	      return isDefinition(sexp) ? parseDefinition(sexp) : isExpr(sexp) ? parseExpr(sexp) : isRequire(sexp) ? parseRequire(sexp) : isProvide(sexp) ? parseProvide(sexp) : throwError(new types.Message(["Not a Definition, Expression, Library Require, or Provide"]), sexp.location);
+	    }
+	    return sexps.map(parseSExp);
+	  }
+	
+	  // parse : sexp list -> Program list
+	  function parse(sexp) {
+	    return sexp.length === 0 ? [] : !isCons(sexp) ? throwError(new types.Message(["The sexp is not a list of definitions or expressions: " + sexp]), sexp.location) : parseStar(sexp);
+	  }
+	
+	  //////////////////////////////////////// DEFINITION PARSING ////////////////////////////////
+	  // (define-struct ...)
+	  function isStructDefinition(sexp) {
+	    return isCons(sexp) && isSymbol(sexp[0]) && isSymbolEqualTo("define-struct", sexp[0]);
+	  }
+	  // (define ...)
+	  function isValueDefinition(sexp) {
+	    return isCons(sexp) && isSymbol(sexp[0]) && isSymbolEqualTo("define", sexp[0]);
+	  }
+	  // (define-values ...)
+	  function isMultiValueDefinition(sexp) {
+	    return isCons(sexp) && isSymbol(sexp[0]) && isSymbolEqualTo("define-values", sexp[0]);
+	  }
+	  // is it any kind of definition?
+	  function isDefinition(sexp) {
+	    return isStructDefinition(sexp) || isValueDefinition(sexp) || isMultiValueDefinition(sexp);
+	  }
+	
+	  // : parseDefinition : SExp -> AST (definition)
+	  function parseDefinition(sexp) {
+	    function parseDefStruct(sexp) {
+	      // is it just (define-struct)?
+	      if (sexp.length < 2) {
+	        throwError(new types.Message([new types.ColoredPart(sexp[0].val, sexp[0].location), ": expected the structure name after define-struct, but nothing's there"]), sexp.location);
+	      }
+	      // is the structure name there?
+	      if (!(sexp[1] instanceof symbolExpr)) {
+	        throwError(new types.Message([new types.ColoredPart(sexp[0].val, sexp[0].location), ": expected the structure name after define-struct, but found ", new types.ColoredPart("something else", sexp[1].location)]), sexp.location);
+	      }
+	      // is it just (define-struct <name>)?
+	      if (sexp.length < 3) {
+	        throwError(new types.Message([new types.ColoredPart(sexp[0].val, sexp[0].location), ": expected at least one field name (in parentheses) after the ", new types.ColoredPart("structure name", sexp[1].location), ", but nothing's there"]), sexp.location);
+	      }
+	      // is the structure name followed by a list?
+	      if (!(sexp[2] instanceof Array)) {
+	        throwError(new types.Message([new types.ColoredPart(sexp[0].val, sexp[0].location), ": expected at least one field name (in parentheses) after the ", new types.ColoredPart("structure name", sexp[1].location), ", but found ", new types.ColoredPart("something else", sexp[2].location)]), sexp.location);
+	      }
+	      // is it a list of not-all-symbols?
+	      sexp[2].forEach(function (arg) {
+	        if (!(arg instanceof symbolExpr)) {
+	          throwError(new types.Message([new types.ColoredPart(sexp[0].val, sexp[0].location), ": expected a field name, but found ", new types.ColoredPart("something else", arg.location)]), sexp.location);
+	        }
+	      });
+	      // too many expressions?
+	      if (sexp.length > 3) {
+	        var extraLocs = sexp.slice(3).map(function (sexp) {
+	          return sexp.location;
+	        }),
+	            wording1 = sexp[2].length === 1 ? "field name" : "field names",
+	            wording2 = extraLocs.length + " extra " + (extraLocs.length === 1 ? "part" : "parts");
+	        throwError(new types.Message([new types.ColoredPart(sexp[0].val, sexp[0].location), ": expected nothing after the ", new types.ColoredPart(wording1, sexp[2].location), ", but found ", new types.MultiPart(wording2, extraLocs, false)]), sexp.location);
+	      }
+	      return new defStruct(parseIdExpr(sexp[1]), sexp[2].map(parseIdExpr), sexp);
+	    }
+	    function parseMultiDef(sexp) {
+	      // is it just (define-values)?
+	      if (sexp.length < 2) {
+	        throwError(new types.Message([new types.ColoredPart(sexp[0].val, sexp[0].location), ": expects a list of variables and a body, but found neither"]), sexp.location);
+	      }
+	      // is it just (define-values ... )?
+	      if (sexp.length < 3) {
+	        throwError(new types.Message([new types.ColoredPart(sexp[0].val, sexp[0].location), ": expects a list of variables and a body, but found only ", new types.ColoredPart("one part", sexp[1].location)]), sexp.location);
+	      }
+	      // is it (define-values <not a list> )?
+	      if (!(sexp[1] instanceof Array)) {
+	        throwError(new types.Message([new types.ColoredPart(sexp[0].val, sexp[0].location), ": expects a list of variables and a body, but found ", new types.ColoredPart("something else", sexp[1].location)]), sexp.location);
+	      }
+	      // too many parts?
+	      if (sexp.length > 3) {
+	        var extraLocs = sexp.slice(3).map(function (sexp) {
+	          return sexp.location;
+	        }),
+	            wording = extraLocs.length + " extra " + (extraLocs.length === 1 ? "part" : "parts"),
+	            msg = new types.Message([new types.ColoredPart(sexp[0].val, sexp[0].location), ": expects a list of variables and a body" + ", but found ", new types.MultiPart(wording, extraLocs, false)]);
+	        throwError(msg, sexp.location);
+	      }
+	      return new defVars(sexp[1].map(parseIdExpr), parseExpr(sexp[2]), sexp);
+	    }
+	    function parseDef(sexp) {
+	      // is it just (define)?
+	      if (sexp.length < 2) {
+	        throwError(new types.Message([new types.ColoredPart(sexp[0].val, sexp[0].location), ": expected a variable, or a function name and its variables " + "(in parentheses), after define, but nothing's there"]), sexp.location);
+	      }
+	      // If it's (define (...)...)
+	      if (sexp[1] instanceof Array) {
+	        // is there at least one element?
+	        if (sexp[1].length === 0) {
+	          throwError(new types.Message([new types.ColoredPart(sexp[0].val, sexp[0].location), ": expected a name for the function within ", new types.ColoredPart("the parentheses", sexp[1].location)]), sexp.location);
+	        }
+	        // is the first element in the list a symbol?
+	        if (!(sexp[1][0] instanceof symbolExpr)) {
+	          throwError(new types.Message([new types.ColoredPart(sexp[0].val, sexp[0].location), ": expected a function name after the open parenthesis but found ", new types.ColoredPart("something else", sexp[1][0].location)]), sexp.location);
+	        }
+	        // is the next element a list of not-all-symbols?
+	        sexp[1].forEach(function (arg) {
+	          if (!(arg instanceof symbolExpr)) {
+	            throwError(new types.Message([new types.ColoredPart(sexp[0].val, sexp[0].location), ": expected a variable but found ", new types.ColoredPart("something else", arg.location)]), sexp.location);
+	          }
+	        });
+	        // is it just (define (<name> <args>))?
+	        if (sexp.length < 3) {
+	          throwError(new types.Message([new types.ColoredPart(sexp[0].val, sexp[0].location), ": expected an expression for the function body, but nothing's there"]), sexp.location);
+	        }
+	        // too many parts?
+	        if (sexp.length > 3) {
+	          var extraLocs = sexp.slice(3).map(function (sexp) {
+	            return sexp.location;
+	          }),
+	              wording = extraLocs.length + " extra " + (extraLocs.length === 1 ? "part" : "parts");
+	          throwError(new types.Message([new types.ColoredPart(sexp[0].val, sexp[0].location), ": expected only one expression for the function body" + ", but found ", new types.MultiPart(wording, extraLocs, false)]), sexp.location);
+	        }
+	        var args = rest(sexp[1]).map(parseIdExpr);
+	        args.location = sexp[1].location;
+	        return new defFunc(parseIdExpr(sexp[1][0]), args, parseExpr(sexp[2]), sexp);
+	      }
+	      // If it's (define x ...)
+	      if (sexp[1] instanceof symbolExpr) {
+	        // is it just (define x)?
+	        if (sexp.length < 3) {
+	          throwError(new types.Message([new types.ColoredPart(sexp[0].val, sexp[0].location), ": expected an expression after the variable ", new types.ColoredPart(sexp[1].val, sexp[1].location), " but nothing's there"]), sexp.location);
+	        }
+	        // too many parts?
+	        if (sexp.length > 3) {
+	          var extraLocs = sexp.slice(3).map(function (sexp) {
+	            return sexp.location;
+	          }),
+	              wording = extraLocs.length + " extra " + (extraLocs.length === 1 ? "part" : "parts");
+	          throwError(new types.Message([new types.ColoredPart(sexp[0].val, sexp[0].location), ": expected only one expression after the variable ", new types.ColoredPart(sexp[1].val, sexp[1].location), ", but found ", new types.MultiPart(wording, extraLocs, false)]), sexp.location);
+	        }
+	        return new defVar(parseIdExpr(sexp[1]), parseExpr(sexp[2]), sexp);
+	      }
+	      // If it's (define <invalid> ...)
+	      throwError(new types.Message([new types.ColoredPart(sexp[0].val, sexp[0].location), ": expected a variable but found ", new types.ColoredPart("something else", sexp[1].location)]), sexp.location);
+	    }
+	    var def = isStructDefinition(sexp) ? parseDefStruct(sexp) : isValueDefinition(sexp) ? parseDef(sexp) : isMultiValueDefinition ? parseMultiDef(sexp) : throwError(new types.Message([": expected to find a definition, but found: " + sexp]), sexp.location);
+	    def.location = sexp.location;
+	    return def;
+	  }
+	
+	  //////////////////////////////////////// EXPRESSION PARSING ////////////////////////////////
+	  function isExpr(sexp) {
+	    return !isDefinition(sexp) && !isRequire(sexp) && !isProvide(sexp);
+	  }
+	
+	  function parseExpr(sexp) {
+	    return isCons(sexp) ? parseExprList(sexp) : parseExprSingleton(sexp);
+	  }
+	
+	  // parseExprList : SExp -> AST
+	  // predicates and parsers for call, lambda, local, letrec, let, let*, if, and, or, quote and quasiquote exprs
+	  function parseExprList(sexp) {
+	    function parseFuncCall(sexp) {
+	      if (isSymbolEqualTo(sexp[0], "unquote")) {
+	        throwError(new types.Message(["misuse of a comma or 'unquote, not under a quasiquoting backquote"]), sexp.location, "Error-GenericSyntacticError");
+	      }
+	      if (isSymbolEqualTo(sexp[0], "unquote-splicing")) {
+	        throwError(new types.Message(["misuse of a ,@ or unquote-splicing, not under a quasiquoting backquote"]), sexp.location, "Error-GenericSyntacticError");
+	      }
+	      if (isSymbolEqualTo(sexp[0], "else")) {
+	        throwError(new types.Message([new types.ColoredPart(sexp[0].val, sexp.location), ": not allowed ", new types.ColoredPart("here", sexp.location), ", because this is not a question in a clause"]), sexp.location);
+	      }
+	      return isCons(sexp) ? new callExpr(parseExpr(sexp[0]), rest(sexp).map(parseExpr), sexp[0]) : throwError(new types.Message(["function call sexp"]), sexp.location);
+	    }
+	    function parseLambdaExpr(sexp) {
+	      // is it just (lambda)?
+	      if (sexp.length === 1) {
+	        throwError(new types.Message([new types.ColoredPart(sexp[0].val, sexp[0].location), ": expected at least one variable (in parentheses) after lambda, but nothing's there"]), sexp.location);
+	      }
+	      // is it just (lambda <not-list>)?
+	      if (!(sexp[1] instanceof Array)) {
+	        throwError(new types.Message([new types.ColoredPart(sexp[0].val, sexp[0].location), ": expected at least one variable (in parentheses) after lambda, but found ", new types.ColoredPart("something else", sexp[1].location)]), sexp.location);
+	      }
+	      // is it a list of not-all-symbols?
+	      sexp[1].forEach(function (arg) {
+	        if (!(arg instanceof symbolExpr)) {
+	          var msg = new types.Message([new types.ColoredPart(sexp[0].val, sexp[0].location), ": expected a list of variables after lambda, but found ", new types.ColoredPart("something else", arg.location)]);
+	          throwError(msg, sexp.location);
+	        }
+	      });
+	      // is it just (lambda (x))?
+	      if (sexp.length === 2) {
+	        throwError(new types.Message([new types.ColoredPart(sexp[0].val, sexp[0].location), ": expected an expression for the function body, but nothing's there"]), sexp.location);
+	      }
+	      // too many expressions?
+	      if (sexp.length > 3) {
+	        var extraLocs = sexp.slice(3).map(function (sexp) {
+	          return sexp.location;
+	        }),
+	            wording = extraLocs.length + " extra " + (extraLocs.length === 1 ? "part" : "parts"),
+	            msg = new types.Message([new types.ColoredPart(sexp[0].val, sexp[0].location), ": expected only one expression for the function body, but found ", new types.MultiPart(wording, extraLocs, false)]);
+	        throwError(msg, sexp.location);
+	      }
+	      var args = sexp[1].map(parseIdExpr);
+	      args.location = sexp[1].location;
+	      return new lambdaExpr(args, parseExpr(sexp[2]), sexp[0]);
+	    }
+	    function parseLocalExpr(sexp) {
+	      // is it just (local)?
+	      if (sexp.length === 1) {
+	        throwError(new types.Message([new types.ColoredPart(sexp[0].val, sexp[0].location), ": expected at least one definition (in square brackets) after local," + " but nothing's there"]), sexp.location);
+	      }
+	      // is it just (local <not-list>)?
+	      if (!(sexp[1] instanceof Array)) {
+	        throwError(new types.Message([new types.ColoredPart(sexp[0].val, sexp[0].location), ": expected a collection of definitions, but given ", new types.ColoredPart("something else", sexp[1].location)]), sexp[1].location);
+	      }
+	      // is it a list of not-all-definitions?
+	      sexp[1].forEach(function (def) {
+	        if (!isDefinition(def)) {
+	          throwError(new types.Message([new types.ColoredPart(sexp[0].val, sexp[0].location), ": expected a definition, but given ", new types.ColoredPart("something else", def.location)]), def.location);
+	        }
+	      });
+	      // is it just (local [...defs...] ))?
+	      if (sexp.length === 2) {
+	        throwError(new types.Message([new types.ColoredPart(sexp[0].val, sexp[0].location), ": expected a single body, but found none"]), sexp.location);
+	      }
+	      // too many expressions?
+	      if (sexp.length > 3) {
+	        var extraLocs = sexp.slice(3).map(function (sexp) {
+	          return sexp.location;
+	        }),
+	            wording = extraLocs.length + " extra " + (extraLocs.length === 1 ? "part" : "parts");
+	        throwError(new types.Message([new types.ColoredPart(sexp[0].val, sexp[0].location), ": expected a single body, but found ", new types.MultiPart(wording, extraLocs, false)]), sexp.location);
+	      }
+	      return new localExpr(sexp[1].map(parseDefinition), parseExpr(sexp[2]), sexp[0]);
+	    }
+	    function parseLetrecExpr(sexp) {
+	      // is it just (letrec)?
+	      if (sexp.length < 3) {
+	        throwError(new types.Message([new types.ColoredPart(sexp[0].val, sexp[0].location), ": expected an expression after the bindings, but nothing's there"]), sexp.location);
+	      }
+	      // is it just (letrec <not-list>)?
+	      if (!(sexp[1] instanceof Array)) {
+	        throwError(new types.Message([new types.ColoredPart(sexp[0].val, sexp[0].location), ": expected a key/value pair, but given ", new types.ColoredPart("something else", sexp[1].location)]), sexp.location);
+	      }
+	      // is it a list of not-all-bindings?
+	      sexp[1].forEach(function (binding) {
+	        if (!sexpIsCouple(binding)) {
+	          throwError(new types.Message([new types.ColoredPart(sexp[0].val, sexp[0].location), ": expected a key/value pair, but given ", new types.ColoredPart("something else", binding.location)]), binding.location);
+	        }
+	      });
+	      // is it just (letrec (...bindings...) ))?
+	      if (sexp.length === 2) {
+	        throwError(new types.Message([new types.ColoredPart(sexp[0].val, sexp[0].location), ": expected an expression after the bindings, but nothing's there"]), sexp.location);
+	      }
+	      // too many expressions?
+	      if (sexp.length > 3) {
+	        var extraLocs = sexp.slice(3).map(function (sexp) {
+	          return sexp.location;
+	        }),
+	            wording = extraLocs.length + " extra " + (extraLocs.length === 1 ? "part" : "parts");
+	        throwError(new types.Message([new types.ColoredPart(sexp[0].val, sexp[0].location), ": expected a single body, but found ", new types.MultiPart(wording, extraLocs, false)]), sexp.location);
+	      }
+	      return new letrecExpr(sexp[1].map(parseBinding), parseExpr(sexp[2]), sexp[0]);
+	    }
+	    function parseLetExpr(sexp) {
+	      // is it just (let)?
+	      if (sexp.length === 1) {
+	        throwError(new types.Message([new types.ColoredPart(sexp[0].val, sexp[0].location), ": expected at least one binding (in parentheses) after let, but nothing's there"]), sexp.location);
+	      }
+	      // is it just (let <not-list>)?
+	      if (!(sexp[1] instanceof Array)) {
+	        throwError(new types.Message([new types.ColoredPart(sexp[0].val, sexp[0].location), ": expected sequence of key value pairs, but given ", new types.ColoredPart("something else", sexp[1].location)]), sexp[1].location);
+	      }
+	      // is it a list of not-all-bindings?
+	      sexp[1].forEach(function (binding) {
+	        if (!sexpIsCouple(binding)) {
+	          throwError(new types.Message([new types.ColoredPart(sexp[0].val, sexp[0].location), ": expected a key/value pair, but given ", new types.ColoredPart("something else", binding.location)]), binding.location);
+	        }
+	      });
+	      // too many expressions?
+	      if (sexp.length > 3) {
+	        var extraLocs = sexp.slice(3).map(function (sexp) {
+	          return sexp.location;
+	        }),
+	            wording = extraLocs.length + " extra " + (extraLocs.length === 1 ? "part" : "parts");
+	        throwError(new types.Message([new types.ColoredPart(sexp[0].val, sexp[0].location), ": expected a single body, but found ", new types.MultiPart(wording, extraLocs, false)]), sexp.location);
+	      }
+	      // is it just (let (...bindings...) ))?
+	      if (sexp.length === 2) {
+	        throwError(new types.Message([new types.ColoredPart(sexp[0].val, sexp[0].location), ": expected a single body, but found none"]), sexp.location);
+	      }
+	      return new letExpr(sexp[1].map(parseBinding), parseExpr(sexp[2]), sexp);
+	    }
+	    function parseLetStarExpr(sexp) {
+	      // is it just (let*)?
+	      if (sexp.length === 1) {
+	        throwError(new types.Message([new types.ColoredPart(sexp[0].val, sexp[0].location), ": expected an expression after the bindings, but nothing's there"]), sexp.location);
+	      }
+	      // is it just (let* <not-list>)?
+	      if (!(sexp[1] instanceof Array)) {
+	        var msg = new types.Message([new types.ColoredPart(sexp[0].val, sexp[0].location), ": expected sequence of key/value pairs, but given ", new types.ColoredPart("something else", sexp[1].location)]);
+	        throwError(msg, sexp.location);
+	      }
+	      // is it a list of not-all-bindings?
+	      sexp[1].forEach(function (binding) {
+	        if (!sexpIsCouple(binding)) {
+	          throwError(new types.Message([new types.ColoredPart(sexp[0].val, sexp[0].location), ": expected a key/value pair, but given ", new types.ColoredPart("something else", binding.location)]), binding.location);
+	        }
+	      });
+	      // is it just (let* (...bindings...) ))?
+	      if (sexp.length === 2) {
+	        throwError(new types.Message([new types.ColoredPart(sexp[0].val, sexp[0].location), ": expected a single body, but found none"]), sexp.location);
+	      }
+	      // too many expressions?
+	      if (sexp.length > 3) {
+	        var extraLocs = sexp.slice(3).map(function (sexp) {
+	          return sexp.location;
+	        }),
+	            wording = extraLocs.length + " extra " + (extraLocs.length === 1 ? "part" : "parts");
+	        throwError(new types.Message([new types.ColoredPart(sexp[0].val, sexp[0].location), ": expected a single body, but found ", new types.MultiPart(wording, extraLocs, false)]), sexp.location);
+	      }
+	      var bindings = sexp[1].map(parseBinding);
+	      bindings.location = sexp[1].location;
+	      return new letStarExpr(bindings, parseExpr(sexp[2]), sexp[0]);
+	    }
+	    function parseIfExpr(sexp) {
+	      // Does it have too few parts?
+	      if (sexp.length < 4) {
+	        throwError(new types.Message([new types.ColoredPart(sexp[0].val, sexp[0].location), ": expected a test, a consequence, and an alternative, but all three were not found"]), sexp.location);
+	      }
+	      // Does it have too many parts?
+	      if (sexp.length > 4) {
+	        var extraLocs = sexp.slice(1).map(function (sexp) {
+	          return sexp.location;
+	        });
+	        throwError(new types.Message([new types.ColoredPart(sexp[0].val, sexp[0].location), ": expected only a test, a consequence, and an alternative, ", "but found ", new types.MultiPart("more than three of these", extraLocs, false)]), sexp.location);
+	      }
+	      return new ifExpr(parseExpr(sexp[1]), parseExpr(sexp[2]), parseExpr(sexp[3]), sexp[0]);
+	    }
+	    function parseBeginExpr(sexp) {
+	      // is it just (begin)?
+	      if (sexp.length < 2) {
+	        var msg = new types.Message([new types.ColoredPart(sexp[0].val, sexp[0].location), ": Inside a begin, expected to find a body, but nothing was found."]);
+	        throwError(msg, sexp.location);
+	      }
+	      return new beginExpr(rest(sexp).map(parseExpr), sexp[0]);
+	    }
+	    function parseAndExpr(sexp) {
+	      // and must have 2+ arguments
+	      if (sexp.length < 3) {
+	        throwError(new types.Message([new types.ColoredPart(sexp[0].val, sexp[0].location), ": expected at least 2 arguments, but given ", sexp.length === 1 ? "0" : new types.ColoredPart((sexp.length - 1).toString(), sexp[1].location)]), sexp.location);
+	      }
+	      return new andExpr(rest(sexp).map(parseExpr), sexp[0]);
+	    }
+	    function parseOrExpr(sexp) {
+	      // or must have 2+ arguments
+	      if (sexp.length < 3) {
+	        throwError(new types.Message([new types.ColoredPart(sexp[0].val, sexp[0].location), ": expected at least 2 arguments, but given ", sexp.length === 1 ? "0" : new types.ColoredPart((sexp.length - 1).toString(), sexp[1].location)]), sexp.location);
+	      }
+	      var orEx = new orExpr(rest(sexp).map(parseExpr), sexp[0]);
+	      return orEx;
+	    }
+	    function parseQuotedExpr(sexp) {
+	
+	      function parseQuotedItem(sexp) {
+	        return isCons(sexp) ? sexp.map(parseQuotedItem) : sexp instanceof Array && sexp.length === 0 ? sexp // the empty list is allowed inside quotes
+	        : /* else */parseExprSingleton(sexp);
+	      }
+	      // quote must have exactly one argument
+	      if (sexp.length < 2) {
+	        throwError(new types.Message([new types.ColoredPart(sexp[0].val, sexp[0].location), ": expected a single argument, but did not find one."]), sexp.location);
+	      }
+	      if (sexp.length > 2) {
+	        var extraLocs = sexp.slice(1).map(function (sexp) {
+	          return sexp.location;
+	        });
+	        throwError(new types.Message([new types.ColoredPart(sexp[0].val, sexp[0].location), ": expected a single argument, but found ", new types.MultiPart("more than one.", extraLocs, false)]), sexp.location);
+	      }
+	      return new quotedExpr(parseQuotedItem(sexp[1]));
+	    }
+	
+	    return (function () {
+	      var peek = sexp[0];
+	      var expr = !isSymbol(peek) ? parseFuncCall(sexp) : isSymbolEqualTo("λ", peek) ? parseLambdaExpr(sexp) : isSymbolEqualTo("lambda", peek) ? parseLambdaExpr(sexp) : isSymbolEqualTo("local", peek) ? parseLocalExpr(sexp) : isSymbolEqualTo("letrec", peek) ? parseLetrecExpr(sexp) : isSymbolEqualTo("let", peek) ? parseLetExpr(sexp) : isSymbolEqualTo("let*", peek) ? parseLetStarExpr(sexp) : isSymbolEqualTo("cond", peek) ? parseCondExpr(sexp) : isSymbolEqualTo("case", peek) ? parseCaseExpr(sexp) : isSymbolEqualTo("if", peek) ? parseIfExpr(sexp) : isSymbolEqualTo("begin", peek) ? parseBeginExpr(sexp) : isSymbolEqualTo("and", peek) ? parseAndExpr(sexp) : isSymbolEqualTo("or", peek) ? parseOrExpr(sexp) : isSymbolEqualTo("when", peek) ? parseWhenUnlessExpr(sexp) : isSymbolEqualTo("unless", peek) ? parseWhenUnlessExpr(sexp) : isSymbolEqualTo("quote", peek) ? parseQuotedExpr(sexp) : isSymbolEqualTo("quasiquote", peek) ? parseQuasiQuotedExpr(sexp) : isSymbolEqualTo("unquote", peek) ? parseUnquoteExpr(sexp) : isSymbolEqualTo("unquote-splicing", peek) ? parseUnquoteSplicingExpr(sexp) : parseFuncCall(sexp);
+	      expr.location = sexp.location;
+	      return expr;
+	    })();
+	  }
+	
+	  function parseWhenUnlessExpr(sexp) {
+	    // is it just (when)?
+	    if (sexp.length < 3) {
+	      throwError(new types.Message([new types.ColoredPart(sexp[0].val, sexp[0].location), ": expected at a test and at least one result after " + sexp[0] + ", but nothing's there"]), sexp.location);
+	    }
+	    var exprs = sexp.slice(2),
+	        result = new whenUnlessExpr(parseExpr(sexp[1]), parse(exprs), sexp[0]);
+	    exprs.location = exprs[0].location; // FIXME: merge the locations
+	    result.location = sexp.location;
+	    return result;
+	  }
+	
+	  function parseCondExpr(sexp) {
+	    // is it just (cond)?
+	    if (sexp.length === 1) {
+	      throwError(new types.Message([new types.ColoredPart(sexp[0].val, sexp[0].location), ": expected at least one clause after cond, but nothing's there"]), sexp.location);
+	    }
+	    var condLocs = [sexp[0].location, sexp.location.start(), sexp.location.end()];
+	
+	    function isElseClause(couple) {
+	      return isSymbol(couple[0]) && isSymbolEqualTo(couple[0], "else");
+	    }
+	
+	    function checkCondCouple(clause) {
+	      var clauseLocations = [clause.location.start(), clause.location.end()];
+	      // is it (cond ...<not-a-clause>..)?
+	      if (!(clause instanceof Array)) {
+	        throwError(new types.Message([new types.MultiPart(sexp[0].val, condLocs, true), ": expected a clause with a question and an answer, but found ", new types.ColoredPart("something else", clause.location)]), clause.location);
+	      }
+	      if (clause.length === 0) {
+	        throwError(new types.Message([new types.MultiPart(sexp[0].val, condLocs, true), ": expected a clause with a question and an answer, but found an ", new types.MultiPart("empty part", clauseLocations, true)]), clause.location);
+	      }
+	      if (clause.length === 1) {
+	        throwError(new types.Message([new types.MultiPart(sexp[0].val, condLocs, true), ": expected a clause with a question and an answer, but found a ", new types.MultiPart("clause", clauseLocations, true), " with only ", new types.MultiPart("one part", [clause[0].location], false)]), clause.location);
+	      }
+	      if (clause.length > 2) {
+	        var extraLocs = clause.map(function (sexp) {
+	          return sexp.location;
+	        }),
+	            wording = extraLocs.length + " parts";
+	        throwError(new types.Message([new types.MultiPart(sexp[0].val, condLocs, true), ": expected a clause with a question and an answer, but found ", new types.MultiPart("a clause", clauseLocations, true), " with ", new types.MultiPart(wording, extraLocs, false)]), clause.location);
+	      }
+	    }
+	
+	    function parseCondCouple(clause) {
+	      var test = parseExpr(clause[0]),
+	          result = parseExpr(clause[1]),
+	          cpl = new couple(test, result);
+	      // the only un-parenthesized keyword allowed in the first slot is 'else'
+	      if (plt.compiler.keywords.indexOf(test.val) > -1 && test.val !== "else") {
+	        throwError(new types.Message([new types.ColoredPart(test.val, test.location), ": expected an open parenthesis before ", test.val, ", but found none"]), test.location);
+	      }
+	      test.isClause = true; // used to determine appropriate "else" use during desugaring
+	      cpl.location = clause.location;
+	      return cpl;
+	    }
+	
+	    // first check the couples, then parse if there's no problem
+	    rest(sexp).forEach(checkCondCouple);
+	    var numClauses = rest(sexp).length,
+	        parsedClauses = rest(sexp).map(parseCondCouple);
+	    // if we see an else and we haven't seen all other clauses first
+	    // throw an error that points to the next clause (rst + the one we're looking at + "cond")
+	    rest(sexp).forEach(function (couple, idx) {
+	      if (isElseClause(couple) && idx < numClauses - 1) {
+	        throwError(new types.Message([new types.MultiPart("cond", condLocs, true), ": ", "found an ", new types.ColoredPart("else clause", couple.location), " that isn't the last clause in its cond expression; there is ", new types.ColoredPart("another clause", sexp[idx + 2].location), " after it"]), couple.location);
+	      }
+	    });
+	    return new condExpr(parsedClauses, sexp[0]);
+	  }
+	
+	  function parseCaseExpr(sexp) {
+	    // is it just (case)?
+	    if (sexp.length === 1) {
+	      var msg = new types.Message([new types.ColoredPart(sexp[0].val, sexp[0].location), ": expected at least one clause after case, but nothing's there"]);
+	      throwError(msg, sexp.location);
+	    }
+	    var caseLocs = [sexp[0].location, sexp.location.start(), sexp.location.end()];
+	    if (sexp.length === 2) {
+	      var msg = new types.Message([new types.MultiPart(sexp[0].val, caseLocs, true), ": expected a clause with at least one choice (in parentheses)" + " and an answer after the expression, but nothing's there"]);
+	      throwError(msg, sexp.location);
+	    }
+	
+	    function checkCaseCouple(clause) {
+	      var clauseLocations = [clause.location.start(), clause.location.end()];
+	      if (!(clause instanceof Array)) {
+	        var msg = new types.Message([new types.MultiPart(sexp[0].val, caseLocs, true), ": expected a clause with at least one choice (in parentheses), but found ", new types.ColoredPart("something else", clause.location)]);
+	        throwError(msg, sexp.location);
+	      }
+	      if (clause.length === 0) {
+	        var msg = new types.Message([new types.MultiPart(sexp[0].val, caseLocs, true), ": expected at least one choice (in parentheses) and an answer, but found an ", new types.ColoredPart("empty part", clause.location)]);
+	        throwError(msg, sexp.location);
+	      }
+	      if (!(clause[0] instanceof Array || clause[0] instanceof symbolExpr && isSymbolEqualTo(clause[0], "else"))) {
+	        var msg = new types.Message([new types.MultiPart(sexp[0].val, caseLocs, true), ": expected 'else', or at least one choice in parentheses, but found ", new types.ColoredPart("something else", clause.location)]);
+	        throwError(msg, sexp.location);
+	      }
+	      if (clause.length === 1) {
+	        var msg = new types.Message([new types.MultiPart(sexp[0].val, caseLocs, true), ": expected a clause with a question and an answer, but found a ", new types.MultiPart("clause", clauseLocations, true), " with only ", new types.ColoredPart("one part", clause[0].location)]);
+	        throwError(msg, sexp.location);
+	      }
+	      if (clause.length > 2) {
+	        var extraLocs = clause.map(function (sexp) {
+	          return sexp.location;
+	        }),
+	            wording = extraLocs.length + " parts",
+	            msg = new types.Message([new types.MultiPart(sexp[0].val, caseLocs, true), ": expected only one expression for the answer in the case clause, but found a ", new types.MultiPart("clause", clauseLocations, true), " with ", new types.MultiPart(wording, extraLocs, false)]);
+	        throwError(msg, sexp.location);
+	      }
+	    }
+	
+	    // is this sexp actually an else clause?
+	    function isElseClause(sexp) {
+	      return isSymbol(sexp[0]) && sexp[0].val === "else";
+	    }
+	
+	    // read the first item in the clause as a quotedExpr, and parse the second
+	    // if it's an else clause, however, leave it alone
+	    function parseCaseCouple(sexp) {
+	      var test = isElseClause(sexp) ? sexp[0] : new quotedExpr(sexp[0]),
+	          result = parseExpr(sexp[1]),
+	          cpl = new couple(test, result);
+	      test.isClause = true; // used to determine appropriate "else" use during desugaring
+	      cpl.location = sexp.location;
+	      return cpl;
+	    }
+	
+	    var clauses = sexp.slice(2);
+	    // first check the couples, then parse if there's no problem
+	    clauses.forEach(checkCaseCouple);
+	    var numClauses = clauses.length,
+	        parsedClauses = clauses.map(parseCaseCouple);
+	
+	    // if we see an else and we haven't seen all other clauses first
+	    // throw an error that points to the next clause (rst + the one we're looking at + "cond")
+	    clauses.forEach(function (couple, idx) {
+	      if (isElseClause(couple) && idx < numClauses - 1) {
+	        var msg = new types.Message([new types.MultiPart("case", caseLocs, true), ": found an ", new types.ColoredPart("else clause", couple.location), "that isn't the last clause in its case expression; there is ", new types.ColoredPart("another clause", sexp[idx + 2].location), " after it"]);
+	        throwError(msg, sexp.location);
+	      }
+	    });
+	    return new caseExpr(parseExpr(sexp[1]), parsedClauses, sexp[0]);
+	  }
+	
+	  function parseBinding(sexp) {
+	    if (sexpIsCouple(sexp)) {
+	      var binding = new couple(parseIdExpr(sexp[0]), parseExpr(sexp[1]));
+	      binding.location = sexp.location;
+	      binding.stx = sexp;
+	      return binding;
+	    } else {
+	      throwError(new types.Message([new types.ColoredPart(sexp[0].val, sexp[0].location), ": expected a sequence of key/value pairs, but given ", new types.ColoredPart("something else", sexp[0].location)]), sexp.location);
+	    }
+	  }
+	
+	  function parseUnquoteExpr(sexp, depth) {
+	    if (typeof depth === 'undefined') {
+	      throwError(new types.Message(["misuse of a comma or 'unquote, not under a quasiquoting backquote"]), sexp.location, "Error-GenericSyntacticError");
+	    } else if (sexp.length !== 2) {
+	      throwError(new types.Message(["Inside an unquote, expected to find a single argument, but found " + (sexp.length - 1)]), sexp.location);
+	    } else if (depth === 1) {
+	      var result = new unquotedExpr(parseExpr(sexp[1]));
+	      result.location = sexp[1].location;
+	      return result;
+	    } else if (depth > 1) {
+	      var result = new unquotedExpr(parseQuasiQuotedItem(sexp[1], depth - 1));
+	      result.location = sexp[1].location;
+	      return result;
+	    } else {
+	      throwError(new types.Message(["ASSERTION FAILURE: depth should have been undefined, or a natural number"]), sexp.location);
+	    }
+	  }
+	
+	  function parseUnquoteSplicingExpr(sexp, depth) {
+	    if (typeof depth === 'undefined') {
+	      throwError(new types.Message(["misuse of a ,@ or unquote-splicing, not under a quasiquoting backquote"]), sexp.location, "Error-GenericSyntacticError");
+	    } else if (sexp.length !== 2) {
+	      throwError(new types.Message(["Inside an unquote-splicing, expected to find a single argument, but found " + (sexp.length - 1)]), sexp.location);
+	    } else if (depth === 1) {
+	      var result = new unquoteSplice(parseExpr(sexp[1]));
+	      result.location = sexp[1].location;
+	      return result;
+	    } else if (depth > 1) {
+	      var result = new unquoteSplice(parseQuasiQuotedItem(sexp[1], depth - 1));
+	      result.location = sexp[1].location;
+	      return result;
+	    } else {
+	      throwError(new types.Message(["ASSERTION FAILURE: depth should have been undefined, or a natural number"]), sexp.location);
+	    }
+	  }
+	
+	  /* This is what we use in place of `parseExpr` when we're in "data-mode",  */
+	  /* i.e. there's an active quasiquote. Active is a bit awkward to describe, */
+	  /* but basically it's an unmatch quasiquote, if we think of unquotes as    */
+	  /* matching quasiquotes, so:                                               */
+	  /*   ``,(+ 1 2)                                                            */
+	  /* has an active quasiquote while reading (+ 1 2), whereas:                */
+	  /*   ``,,(+ 1 2)                                                           */
+	  /* does not.                                                               */
+	  function parseQuasiQuotedItem(sexp, depth) {
+	    if (isCons(sexp) && sexp[0].val === 'unquote') {
+	      return parseUnquoteExpr(sexp, depth);
+	    } else if (isCons(sexp) && sexp[0].val === 'unquote-splicing') {
+	      return parseUnquoteSplicingExpr(sexp, depth);
+	    } else if (isCons(sexp) && sexp[0].val === 'quasiquote') {
+	      return parseQuasiQuotedExpr(sexp, depth);
+	    } else if (isCons(sexp)) {
+	      var res = sexp.map(function (x) {
+	        return parseQuasiQuotedItem(x, depth);
+	      });
+	      res.location = sexp.location;
+	      return res;
+	    } else if (depth === 0) {
+	      return parseExpr(sexp);
+	    } else {
+	      return (function () {
+	        var res = new quotedExpr(sexp);
+	        res.location = sexp.location;
+	        return res;
+	      })();
+	    }
+	  }
+	
+	  function parseQuasiQuotedExpr(sexp, depth) {
+	    depth = typeof depth === 'undefined' ? 0 : depth;
+	    // quasiquote must have exactly one argument
+	    if (sexp.length < 2) {
+	      throwError(new types.Message([new types.ColoredPart(sexp[0].val, sexp[0].location), ": expected a single argument, but did not find one "]), sexp.location);
+	    }
+	    if (sexp.length > 2) {
+	      var extraLocs = sexp.slice(1).map(function (sexp) {
+	        return sexp.location;
+	      });
+	      throwError(new types.Message([new types.ColoredPart(sexp[0].val, sexp[0].location), ": expected a single argument, but found ", new types.MultiPart("more than one.", extraLocs, false)]), sexp.location);
+	    }
+	    // if the argument is (unquote-splicing....), throw an error
+	    if (isCons(sexp[1]) && isSymbolEqualTo(sexp[1][0], "unquote-splicing")) {
+	      throwError(new types.Message(["misuse of ,@ or `unquote-splicing' within a quasiquoting backquote"]), sexp.location);
+	    }
+	
+	    var quoted = parseQuasiQuotedItem(sexp[1], depth + 1);
+	    quoted.location = sexp[1].location;
+	    var result = new quasiquotedExpr(quoted);
+	    result.location = sexp.location;
+	    return result;
+	  }
+	
+	  // replace all undefineds with the last sexp, and convert to a function call
+	  function parseVector(sexp) {
+	    function buildZero() {
+	      var lit = new literal(0);
+	      lit.location = sexp.location;
+	      return lit;
+	    }
+	    var unParsedVector = sexp.val,
+	        vals = parseStar(unParsedVector.elts.filter(function (e) {
+	      return e !== undefined;
+	    })),
+	        last = vals.length === 0 ? buildZero() : vals[vals.length - 1],
+	        // if they're all undefined, use 0
+	    elts = unParsedVector.elts.map(function (v) {
+	      return v === undefined ? last : parseExpr(v);
+	    });
+	    var vectorFunc = new symbolExpr("vector"),
+	        buildVector = new callExpr(vectorFunc, elts);
+	    vectorFunc.location = buildVector.location = sexp.location;
+	    return buildVector;
+	  }
+	
+	  function parseExprSingleton(sexp) {
+	    var singleton = isUnsupported(sexp) ? sexp : isVector(sexp) ? parseVector(sexp) : isSymbol(sexp) ? sexp : isLiteral(sexp) ? sexp : isSymbolEqualTo("quote", sexp) ? new quotedExpr(sexp) : isSymbolEqualTo("empty", sexp) ? new callExpr(new symbolExpr("list"), []) : throwError(new types.Message([new types.ColoredPart("( )", sexp.location), ": expected a function, but nothing's there"]), sexp.location);
+	    singleton.location = sexp.location;
+	    return singleton;
+	  }
+	
+	  function parseIdExpr(sexp) {
+	    return isSymbol(sexp) ? sexp : throwError(new types.Message(["ID"]), sexp.location);
+	  }
+	
+	  function isTupleStartingWithOfLength(sexp, symbol, n) {
+	    return isCons(sexp) && sexp.length === n && isSymbol(sexp[0]) && isSymbolEqualTo(sexp[0], symbol);
+	  }
+	
+	  function sexpIsCouple(sexp) {
+	    return isCons(sexp) && sexp.length === 2;
+	  }
+	
+	  function sexpIsCondListP(sexp) {
+	    return isCons(sexp) && sexp.length >= 2 && isSymbol(sexp[0]) && isSymbolEqualTo(sexp[0], "cond");
+	  }
+	
+	  //////////////////////////////////////// REQUIRE PARSING ////////////////////////////////
+	  function isRequire(sexp) {
+	    return isCons(sexp) && isSymbol(sexp[0]) && isSymbolEqualTo(sexp[0], "require");
+	  }
+	
+	  function parseRequire(sexp) {
+	    // is it (require)?
+	    if (sexp.length < 2) {
+	      var msg = new types.Message([new types.ColoredPart(sexp[0].val, sexp[0].location), ": expected a module name after `require', but found nothing"]);
+	      throwError(msg, sexp.location);
+	    }
+	    // if it's (require (lib...))
+	    if (sexp[1] instanceof Array && isSymbolEqualTo(sexp[1][0], "lib")) {
+	      // is it (require (lib)) or (require (lib <string>))
+	      if (sexp[1].length < 3) {
+	        var partsNum = sexp[1].slice(1).length,
+	            partsStr = partsNum + (partsNum === 1 ? " part" : " parts"),
+	            msg = new types.Message([new types.ColoredPart(sexp[0].val, sexp[0].location), ": expected at least two strings after ", new types.ColoredPart("lib", sexp[1][0].location), " but found only ", partsStr]);
+	        throwError(msg, sexp.location);
+	      }
+	      // is it (require (lib not-strings))?
+	      rest(sexp[1]).forEach(function (lit) {
+	        if (!isString(lit)) {
+	          var msg = new types.Message([new types.ColoredPart(sexp[0].val, sexp[0].location), ": expected a string for a library collection, but found ", new types.ColoredPart("something else", str.location)]);
+	          throwError(msg, sexp.location);
+	        }
+	      });
+	      // if it's (require (planet...))
+	    } else if (sexp[1] instanceof Array && isSymbolEqualTo(sexp[1][0], "planet")) {
+	        var msg = new types.Message([new types.ColoredPart(sexp[0].val, sexp[0].location), ": Importing PLaneT pacakges is not supported at this time"]);
+	        throwError(msg, sexp.location);
+	        // if it's (require <not-a-string-or-symbol>)
+	      } else if (!(sexp[1] instanceof symbolExpr || isString(sexp[1]))) {
+	          var msg = new types.Message([new types.ColoredPart(sexp[0].val, sexp[0].location), ": expected a module name as a string or a `(lib ...)' form, but found ", new types.ColoredPart("something else", sexp[1].location)]);
+	          throwError(msg, sexp.location);
+	        }
+	    var req = new requireExpr(sexp[1], sexp[0]);
+	    req.location = sexp.location;
+	    return req;
+	  }
+	
+	  //////////////////////////////////////// PROVIDE PARSING ////////////////////////////////
+	  function isProvide(sexp) {
+	    return isCons(sexp) && isSymbol(sexp[0]) && isSymbolEqualTo(sexp[0], "provide");
+	  }
+	  function parseProvide(sexp) {
+	    var clauses = rest(sexp).map(function (p) {
+	      // symbols are ok
+	      if (p instanceof symbolExpr) {
+	        return p;
+	      }
+	      // (struct-out sym) is ok
+	      if (p instanceof Array && p.length == 2 && p[0] instanceof symbolExpr && isSymbolEqualTo(p[0], "struct-out") && p[1] instanceof symbolExpr) {
+	        return p;
+	      }
+	      // everything else is NOT okay
+	      var msg = new types.Message([new types.ColoredPart(sexp[0].val, sexp[0].location), ": I don't recognize the syntax of this ", new types.ColoredPart("clause", p.location)]);
+	      throwError(msg, sexp.location);
+	    });
+	    var provide = new provideStatement(clauses, sexp[0]);
+	    provide.location = sexp.location;
+	    return provide;
+	  }
+	
+	  /////////////////////
+	  /* Export Bindings */
+	  /////////////////////
+	  plt.compiler.parse = function (sexp, debug) {
+	    var start = new Date().getTime();
+	    try {
+	      var AST = parse(sexp);AST.location = sexp.location;
+	    } // do the actual work
+	    catch (e) {
+	      console.log("PARSING ERROR");throw e;
+	    }
+	    var end = new Date().getTime();
+	    if (debug) {
+	      console.log("Parsed in " + Math.floor(end - start) + "ms");
+	      console.log(AST);
+	    }
+	    return AST;
+	  };
+	})();
+	
+	module.exports = plt.compiler;
+
 /***/ }
 /******/ ]);
-//# sourceMappingURL=example.js.map
+//# sourceMappingURL=wescheme-example.js.map
