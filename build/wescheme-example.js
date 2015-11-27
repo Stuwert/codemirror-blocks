@@ -60,21 +60,23 @@
 	
 	var _blocks2 = _interopRequireDefault(_blocks);
 	
-	var _weschemeParser = __webpack_require__(229);
+	var _weschemeParser = __webpack_require__(251);
 	
 	var _weschemeParser2 = _interopRequireDefault(_weschemeParser);
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
-	__webpack_require__(225);
-	__webpack_require__(227);
+	__webpack_require__(247);
+	__webpack_require__(249);
 	
 	var cm = _CodeMirror2.default.fromTextArea(document.getElementById("code"), { theme: '3024-day' });
 	
 	var cm2 = _CodeMirror2.default.fromTextArea(document.getElementById('code2'), { theme: '3024-day' });
 	
-	cm.setValue("(sum (+   (- 1 2)  3)\n (*  3  4)\n (/ 5 6))\n(product 5 6 7)");
-	//cm.setValue("(+ 1 2)")
+	var code = __webpack_require__(261);
+	//var code = require('./cow-game.rkt');
+	//var code = "(sum (+   (- 1 2)  3)\n (*  3  4)\n (/ 5 6))\n(product 5 6 7)"
+	cm.setValue(code);
 	cm2.swapDoc(cm.getDoc().linkedDoc({ sharedHist: true }));
 	
 	var blocks = new _blocks2.default(cm2, new _weschemeParser2.default());
@@ -14618,7 +14620,7 @@
 	Object.defineProperty(exports, "__esModule", {
 	  value: true
 	});
-	exports.Literal = exports.Expression = exports.AST = undefined;
+	exports.Literal = exports.FunctionDefinition = exports.Struct = exports.Expression = exports.AST = undefined;
 	
 	var _nodeUuid = __webpack_require__(200);
 	
@@ -14652,7 +14654,9 @@
 	        for (var _iterator2 = rootNode[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
 	          var node = _step2.value;
 	
-	          this.nodeMap.set(node.id, node);
+	          if (node) {
+	            this.nodeMap.set(node.id, node);
+	          }
 	        }
 	      } catch (err) {
 	        _didIteratorError2 = true;
@@ -14844,19 +14848,20 @@
 	  return Expression;
 	})(ASTNode);
 	
-	var Literal = exports.Literal = (function (_ASTNode2) {
-	  _inherits(Literal, _ASTNode2);
+	var Struct = exports.Struct = (function (_ASTNode2) {
+	  _inherits(Struct, _ASTNode2);
 	
-	  function Literal(from, to, value) {
-	    _classCallCheck(this, Literal);
+	  function Struct(from, to, name, fields) {
+	    _classCallCheck(this, Struct);
 	
-	    var _this2 = _possibleConstructorReturn(this, Object.getPrototypeOf(Literal).call(this, from, to, 'literal'));
+	    var _this2 = _possibleConstructorReturn(this, Object.getPrototypeOf(Struct).call(this, from, to, 'struct'));
 	
-	    _this2.value = value;
+	    _this2.name = name;
+	    _this2.fields = fields;
 	    return _this2;
 	  }
 	
-	  _createClass(Literal, [{
+	  _createClass(Struct, [{
 	    key: Symbol.iterator,
 	    value: regeneratorRuntime.mark(function value() {
 	      return regeneratorRuntime.wrap(function value$(_context2) {
@@ -14869,6 +14874,90 @@
 	            case 2:
 	            case 'end':
 	              return _context2.stop();
+	          }
+	        }
+	      }, value, this);
+	    })
+	  }, {
+	    key: 'toString',
+	    value: function toString() {
+	      return '(define-struct ' + this.name + ' ' + this.fields.join(' ') + ')';
+	    }
+	  }]);
+	
+	  return Struct;
+	})(ASTNode);
+	
+	var FunctionDefinition = exports.FunctionDefinition = (function (_ASTNode3) {
+	  _inherits(FunctionDefinition, _ASTNode3);
+	
+	  function FunctionDefinition(from, to, name, args, body) {
+	    _classCallCheck(this, FunctionDefinition);
+	
+	    var _this3 = _possibleConstructorReturn(this, Object.getPrototypeOf(FunctionDefinition).call(this, from, to, 'functionDef'));
+	
+	    _this3.name = name;
+	    _this3.args = args;
+	    _this3.body = body;
+	    return _this3;
+	  }
+	
+	  _createClass(FunctionDefinition, [{
+	    key: Symbol.iterator,
+	    value: regeneratorRuntime.mark(function value() {
+	      return regeneratorRuntime.wrap(function value$(_context3) {
+	        while (1) {
+	          switch (_context3.prev = _context3.next) {
+	            case 0:
+	              _context3.next = 2;
+	              return this;
+	
+	            case 2:
+	              _context3.next = 4;
+	              return this.body;
+	
+	            case 4:
+	            case 'end':
+	              return _context3.stop();
+	          }
+	        }
+	      }, value, this);
+	    })
+	  }, {
+	    key: 'toString',
+	    value: function toString() {
+	      return '(define (' + this.name + ' ' + this.args.join(' ') + ') ' + this.body + ')';
+	    }
+	  }]);
+	
+	  return FunctionDefinition;
+	})(ASTNode);
+	
+	var Literal = exports.Literal = (function (_ASTNode4) {
+	  _inherits(Literal, _ASTNode4);
+	
+	  function Literal(from, to, value) {
+	    _classCallCheck(this, Literal);
+	
+	    var _this4 = _possibleConstructorReturn(this, Object.getPrototypeOf(Literal).call(this, from, to, 'literal'));
+	
+	    _this4.value = value;
+	    return _this4;
+	  }
+	
+	  _createClass(Literal, [{
+	    key: Symbol.iterator,
+	    value: regeneratorRuntime.mark(function value() {
+	      return regeneratorRuntime.wrap(function value$(_context4) {
+	        while (1) {
+	          switch (_context4.prev = _context4.next) {
+	            case 0:
+	              _context4.next = 2;
+	              return this;
+	
+	            case 2:
+	            case 'end':
+	              return _context4.stop();
 	          }
 	        }
 	      }, value, this);
@@ -19330,7 +19419,7 @@
 
 /***/ },
 /* 224 */
-/***/ function(module, exports) {
+/***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
@@ -19338,6 +19427,12 @@
 	  value: true
 	});
 	exports.default = render;
+	function createFragment(htmlStr) {
+	  var temp = document.createElement('div');
+	  temp.innerHTML = htmlStr;
+	  return temp.firstChild;
+	}
+	
 	function makeDropTarget(location) {
 	  var dropEl = document.createElement('span');
 	  dropEl.className = 'blocks-drop-target blocks-white-space';
@@ -19378,6 +19473,18 @@
 	
 	    return expressionEl;
 	  },
+	  functionDef: function functionDef(node, cm, callback) {
+	    var template = __webpack_require__(225);
+	    var functionDefEl = createFragment(template({ node: node, cm: cm, callback: callback }));
+	    cm.markText(node.from, node.to, { replacedWith: functionDefEl });
+	    return functionDefEl;
+	  },
+	  struct: function struct(node, cm, callback) {
+	    var template = __webpack_require__(246);
+	    var structEl = createFragment(template({ node: node, cm: cm, callback: callback }));
+	    cm.markText(node.from, node.to, { replacedWith: structEl });
+	    return structEl;
+	  },
 	  literal: function literal(node, cm) {
 	    var literalEl = document.createElement('span');
 	    literalEl.appendChild(document.createTextNode(node.toString()));
@@ -19389,6 +19496,9 @@
 	};
 	
 	function render(node, cm, callback) {
+	  if (nodes[node.type] === undefined) {
+	    throw "Don't know how to render node: " + node.type;
+	  }
 	  var nodeEl = nodes[node.type](node, cm, callback);
 	  nodeEl.id = 'block-node-' + node.id;
 	  nodeEl.classList.add('blocks-node');
@@ -19400,10 +19510,1247 @@
 /* 225 */
 /***/ function(module, exports, __webpack_require__) {
 
+	var Handlebars = __webpack_require__(226);
+	module.exports = (Handlebars["default"] || Handlebars).template({"1":function(container,depth0,helpers,partials,data) {
+	    return "    <span class=\"blocks-literal\">"
+	    + container.escapeExpression(container.lambda(depth0, depth0))
+	    + "</span>\n";
+	},"compiler":[7,">= 4.0.0"],"main":function(container,depth0,helpers,partials,data) {
+	    var stack1, alias1=depth0 != null ? depth0 : {};
+	
+	  return "<span class=\"blocks-struct\">\n  <span class=\"blocks-operator\">define</span>\n  <span class=\"blocks-args\">\n    <span class=\"blocks-name\">"
+	    + container.escapeExpression(container.lambda(((stack1 = (depth0 != null ? depth0.node : depth0)) != null ? stack1.name : stack1), depth0))
+	    + "</span>\n"
+	    + ((stack1 = helpers.each.call(alias1,((stack1 = (depth0 != null ? depth0.node : depth0)) != null ? stack1.args : stack1),{"name":"each","hash":{},"fn":container.program(1, data, 0),"inverse":container.noop,"data":data})) != null ? stack1 : "")
+	    + "    "
+	    + ((stack1 = __webpack_require__(245).call(alias1,((stack1 = (depth0 != null ? depth0.node : depth0)) != null ? stack1.body : stack1),{"name":"renderNode","hash":{},"data":data})) != null ? stack1 : "")
+	    + "\n  </span>\n</span>\n";
+	},"useData":true});
+
+/***/ },
+/* 226 */
+/***/ function(module, exports, __webpack_require__) {
+
+	// Create a simple path alias to allow browserify to resolve
+	// the runtime on a supported path.
+	module.exports = __webpack_require__(227)['default'];
+
+
+/***/ },
+/* 227 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	exports.__esModule = true;
+	// istanbul ignore next
+	
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
+	
+	// istanbul ignore next
+	
+	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj['default'] = obj; return newObj; } }
+	
+	var _handlebarsBase = __webpack_require__(228);
+	
+	var base = _interopRequireWildcard(_handlebarsBase);
+	
+	// Each of these augment the Handlebars object. No need to setup here.
+	// (This is done to easily share code between commonjs and browse envs)
+	
+	var _handlebarsSafeString = __webpack_require__(242);
+	
+	var _handlebarsSafeString2 = _interopRequireDefault(_handlebarsSafeString);
+	
+	var _handlebarsException = __webpack_require__(230);
+	
+	var _handlebarsException2 = _interopRequireDefault(_handlebarsException);
+	
+	var _handlebarsUtils = __webpack_require__(229);
+	
+	var Utils = _interopRequireWildcard(_handlebarsUtils);
+	
+	var _handlebarsRuntime = __webpack_require__(243);
+	
+	var runtime = _interopRequireWildcard(_handlebarsRuntime);
+	
+	var _handlebarsNoConflict = __webpack_require__(244);
+	
+	var _handlebarsNoConflict2 = _interopRequireDefault(_handlebarsNoConflict);
+	
+	// For compatibility and usage outside of module systems, make the Handlebars object a namespace
+	function create() {
+	  var hb = new base.HandlebarsEnvironment();
+	
+	  Utils.extend(hb, base);
+	  hb.SafeString = _handlebarsSafeString2['default'];
+	  hb.Exception = _handlebarsException2['default'];
+	  hb.Utils = Utils;
+	  hb.escapeExpression = Utils.escapeExpression;
+	
+	  hb.VM = runtime;
+	  hb.template = function (spec) {
+	    return runtime.template(spec, hb);
+	  };
+	
+	  return hb;
+	}
+	
+	var inst = create();
+	inst.create = create;
+	
+	_handlebarsNoConflict2['default'](inst);
+	
+	inst['default'] = inst;
+	
+	exports['default'] = inst;
+	module.exports = exports['default'];
+	//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIi4uLy4uL2xpYi9oYW5kbGViYXJzLnJ1bnRpbWUuanMiXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6Ijs7Ozs7Ozs7Ozs7OEJBQXNCLG1CQUFtQjs7SUFBN0IsSUFBSTs7Ozs7b0NBSU8sMEJBQTBCOzs7O21DQUMzQix3QkFBd0I7Ozs7K0JBQ3ZCLG9CQUFvQjs7SUFBL0IsS0FBSzs7aUNBQ1Esc0JBQXNCOztJQUFuQyxPQUFPOztvQ0FFSSwwQkFBMEI7Ozs7O0FBR2pELFNBQVMsTUFBTSxHQUFHO0FBQ2hCLE1BQUksRUFBRSxHQUFHLElBQUksSUFBSSxDQUFDLHFCQUFxQixFQUFFLENBQUM7O0FBRTFDLE9BQUssQ0FBQyxNQUFNLENBQUMsRUFBRSxFQUFFLElBQUksQ0FBQyxDQUFDO0FBQ3ZCLElBQUUsQ0FBQyxVQUFVLG9DQUFhLENBQUM7QUFDM0IsSUFBRSxDQUFDLFNBQVMsbUNBQVksQ0FBQztBQUN6QixJQUFFLENBQUMsS0FBSyxHQUFHLEtBQUssQ0FBQztBQUNqQixJQUFFLENBQUMsZ0JBQWdCLEdBQUcsS0FBSyxDQUFDLGdCQUFnQixDQUFDOztBQUU3QyxJQUFFLENBQUMsRUFBRSxHQUFHLE9BQU8sQ0FBQztBQUNoQixJQUFFLENBQUMsUUFBUSxHQUFHLFVBQVMsSUFBSSxFQUFFO0FBQzNCLFdBQU8sT0FBTyxDQUFDLFFBQVEsQ0FBQyxJQUFJLEVBQUUsRUFBRSxDQUFDLENBQUM7R0FDbkMsQ0FBQzs7QUFFRixTQUFPLEVBQUUsQ0FBQztDQUNYOztBQUVELElBQUksSUFBSSxHQUFHLE1BQU0sRUFBRSxDQUFDO0FBQ3BCLElBQUksQ0FBQyxNQUFNLEdBQUcsTUFBTSxDQUFDOztBQUVyQixrQ0FBVyxJQUFJLENBQUMsQ0FBQzs7QUFFakIsSUFBSSxDQUFDLFNBQVMsQ0FBQyxHQUFHLElBQUksQ0FBQzs7cUJBRVIsSUFBSSIsImZpbGUiOiJoYW5kbGViYXJzLnJ1bnRpbWUuanMiLCJzb3VyY2VzQ29udGVudCI6WyJpbXBvcnQgKiBhcyBiYXNlIGZyb20gJy4vaGFuZGxlYmFycy9iYXNlJztcblxuLy8gRWFjaCBvZiB0aGVzZSBhdWdtZW50IHRoZSBIYW5kbGViYXJzIG9iamVjdC4gTm8gbmVlZCB0byBzZXR1cCBoZXJlLlxuLy8gKFRoaXMgaXMgZG9uZSB0byBlYXNpbHkgc2hhcmUgY29kZSBiZXR3ZWVuIGNvbW1vbmpzIGFuZCBicm93c2UgZW52cylcbmltcG9ydCBTYWZlU3RyaW5nIGZyb20gJy4vaGFuZGxlYmFycy9zYWZlLXN0cmluZyc7XG5pbXBvcnQgRXhjZXB0aW9uIGZyb20gJy4vaGFuZGxlYmFycy9leGNlcHRpb24nO1xuaW1wb3J0ICogYXMgVXRpbHMgZnJvbSAnLi9oYW5kbGViYXJzL3V0aWxzJztcbmltcG9ydCAqIGFzIHJ1bnRpbWUgZnJvbSAnLi9oYW5kbGViYXJzL3J1bnRpbWUnO1xuXG5pbXBvcnQgbm9Db25mbGljdCBmcm9tICcuL2hhbmRsZWJhcnMvbm8tY29uZmxpY3QnO1xuXG4vLyBGb3IgY29tcGF0aWJpbGl0eSBhbmQgdXNhZ2Ugb3V0c2lkZSBvZiBtb2R1bGUgc3lzdGVtcywgbWFrZSB0aGUgSGFuZGxlYmFycyBvYmplY3QgYSBuYW1lc3BhY2VcbmZ1bmN0aW9uIGNyZWF0ZSgpIHtcbiAgbGV0IGhiID0gbmV3IGJhc2UuSGFuZGxlYmFyc0Vudmlyb25tZW50KCk7XG5cbiAgVXRpbHMuZXh0ZW5kKGhiLCBiYXNlKTtcbiAgaGIuU2FmZVN0cmluZyA9IFNhZmVTdHJpbmc7XG4gIGhiLkV4Y2VwdGlvbiA9IEV4Y2VwdGlvbjtcbiAgaGIuVXRpbHMgPSBVdGlscztcbiAgaGIuZXNjYXBlRXhwcmVzc2lvbiA9IFV0aWxzLmVzY2FwZUV4cHJlc3Npb247XG5cbiAgaGIuVk0gPSBydW50aW1lO1xuICBoYi50ZW1wbGF0ZSA9IGZ1bmN0aW9uKHNwZWMpIHtcbiAgICByZXR1cm4gcnVudGltZS50ZW1wbGF0ZShzcGVjLCBoYik7XG4gIH07XG5cbiAgcmV0dXJuIGhiO1xufVxuXG5sZXQgaW5zdCA9IGNyZWF0ZSgpO1xuaW5zdC5jcmVhdGUgPSBjcmVhdGU7XG5cbm5vQ29uZmxpY3QoaW5zdCk7XG5cbmluc3RbJ2RlZmF1bHQnXSA9IGluc3Q7XG5cbmV4cG9ydCBkZWZhdWx0IGluc3Q7XG4iXX0=
+
+
+/***/ },
+/* 228 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	exports.__esModule = true;
+	exports.HandlebarsEnvironment = HandlebarsEnvironment;
+	// istanbul ignore next
+	
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
+	
+	var _utils = __webpack_require__(229);
+	
+	var _exception = __webpack_require__(230);
+	
+	var _exception2 = _interopRequireDefault(_exception);
+	
+	var _helpers = __webpack_require__(231);
+	
+	var _decorators = __webpack_require__(239);
+	
+	var _logger = __webpack_require__(241);
+	
+	var _logger2 = _interopRequireDefault(_logger);
+	
+	var VERSION = '4.0.5';
+	exports.VERSION = VERSION;
+	var COMPILER_REVISION = 7;
+	
+	exports.COMPILER_REVISION = COMPILER_REVISION;
+	var REVISION_CHANGES = {
+	  1: '<= 1.0.rc.2', // 1.0.rc.2 is actually rev2 but doesn't report it
+	  2: '== 1.0.0-rc.3',
+	  3: '== 1.0.0-rc.4',
+	  4: '== 1.x.x',
+	  5: '== 2.0.0-alpha.x',
+	  6: '>= 2.0.0-beta.1',
+	  7: '>= 4.0.0'
+	};
+	
+	exports.REVISION_CHANGES = REVISION_CHANGES;
+	var objectType = '[object Object]';
+	
+	function HandlebarsEnvironment(helpers, partials, decorators) {
+	  this.helpers = helpers || {};
+	  this.partials = partials || {};
+	  this.decorators = decorators || {};
+	
+	  _helpers.registerDefaultHelpers(this);
+	  _decorators.registerDefaultDecorators(this);
+	}
+	
+	HandlebarsEnvironment.prototype = {
+	  constructor: HandlebarsEnvironment,
+	
+	  logger: _logger2['default'],
+	  log: _logger2['default'].log,
+	
+	  registerHelper: function registerHelper(name, fn) {
+	    if (_utils.toString.call(name) === objectType) {
+	      if (fn) {
+	        throw new _exception2['default']('Arg not supported with multiple helpers');
+	      }
+	      _utils.extend(this.helpers, name);
+	    } else {
+	      this.helpers[name] = fn;
+	    }
+	  },
+	  unregisterHelper: function unregisterHelper(name) {
+	    delete this.helpers[name];
+	  },
+	
+	  registerPartial: function registerPartial(name, partial) {
+	    if (_utils.toString.call(name) === objectType) {
+	      _utils.extend(this.partials, name);
+	    } else {
+	      if (typeof partial === 'undefined') {
+	        throw new _exception2['default']('Attempting to register a partial called "' + name + '" as undefined');
+	      }
+	      this.partials[name] = partial;
+	    }
+	  },
+	  unregisterPartial: function unregisterPartial(name) {
+	    delete this.partials[name];
+	  },
+	
+	  registerDecorator: function registerDecorator(name, fn) {
+	    if (_utils.toString.call(name) === objectType) {
+	      if (fn) {
+	        throw new _exception2['default']('Arg not supported with multiple decorators');
+	      }
+	      _utils.extend(this.decorators, name);
+	    } else {
+	      this.decorators[name] = fn;
+	    }
+	  },
+	  unregisterDecorator: function unregisterDecorator(name) {
+	    delete this.decorators[name];
+	  }
+	};
+	
+	var log = _logger2['default'].log;
+	
+	exports.log = log;
+	exports.createFrame = _utils.createFrame;
+	exports.logger = _logger2['default'];
+	//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIi4uLy4uLy4uL2xpYi9oYW5kbGViYXJzL2Jhc2UuanMiXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6Ijs7Ozs7Ozs7cUJBQTRDLFNBQVM7O3lCQUMvQixhQUFhOzs7O3VCQUNFLFdBQVc7OzBCQUNSLGNBQWM7O3NCQUNuQyxVQUFVOzs7O0FBRXRCLElBQU0sT0FBTyxHQUFHLE9BQU8sQ0FBQzs7QUFDeEIsSUFBTSxpQkFBaUIsR0FBRyxDQUFDLENBQUM7OztBQUU1QixJQUFNLGdCQUFnQixHQUFHO0FBQzlCLEdBQUMsRUFBRSxhQUFhO0FBQ2hCLEdBQUMsRUFBRSxlQUFlO0FBQ2xCLEdBQUMsRUFBRSxlQUFlO0FBQ2xCLEdBQUMsRUFBRSxVQUFVO0FBQ2IsR0FBQyxFQUFFLGtCQUFrQjtBQUNyQixHQUFDLEVBQUUsaUJBQWlCO0FBQ3BCLEdBQUMsRUFBRSxVQUFVO0NBQ2QsQ0FBQzs7O0FBRUYsSUFBTSxVQUFVLEdBQUcsaUJBQWlCLENBQUM7O0FBRTlCLFNBQVMscUJBQXFCLENBQUMsT0FBTyxFQUFFLFFBQVEsRUFBRSxVQUFVLEVBQUU7QUFDbkUsTUFBSSxDQUFDLE9BQU8sR0FBRyxPQUFPLElBQUksRUFBRSxDQUFDO0FBQzdCLE1BQUksQ0FBQyxRQUFRLEdBQUcsUUFBUSxJQUFJLEVBQUUsQ0FBQztBQUMvQixNQUFJLENBQUMsVUFBVSxHQUFHLFVBQVUsSUFBSSxFQUFFLENBQUM7O0FBRW5DLGtDQUF1QixJQUFJLENBQUMsQ0FBQztBQUM3Qix3Q0FBMEIsSUFBSSxDQUFDLENBQUM7Q0FDakM7O0FBRUQscUJBQXFCLENBQUMsU0FBUyxHQUFHO0FBQ2hDLGFBQVcsRUFBRSxxQkFBcUI7O0FBRWxDLFFBQU0scUJBQVE7QUFDZCxLQUFHLEVBQUUsb0JBQU8sR0FBRzs7QUFFZixnQkFBYyxFQUFFLHdCQUFTLElBQUksRUFBRSxFQUFFLEVBQUU7QUFDakMsUUFBSSxnQkFBUyxJQUFJLENBQUMsSUFBSSxDQUFDLEtBQUssVUFBVSxFQUFFO0FBQ3RDLFVBQUksRUFBRSxFQUFFO0FBQUUsY0FBTSwyQkFBYyx5Q0FBeUMsQ0FBQyxDQUFDO09BQUU7QUFDM0Usb0JBQU8sSUFBSSxDQUFDLE9BQU8sRUFBRSxJQUFJLENBQUMsQ0FBQztLQUM1QixNQUFNO0FBQ0wsVUFBSSxDQUFDLE9BQU8sQ0FBQyxJQUFJLENBQUMsR0FBRyxFQUFFLENBQUM7S0FDekI7R0FDRjtBQUNELGtCQUFnQixFQUFFLDBCQUFTLElBQUksRUFBRTtBQUMvQixXQUFPLElBQUksQ0FBQyxPQUFPLENBQUMsSUFBSSxDQUFDLENBQUM7R0FDM0I7O0FBRUQsaUJBQWUsRUFBRSx5QkFBUyxJQUFJLEVBQUUsT0FBTyxFQUFFO0FBQ3ZDLFFBQUksZ0JBQVMsSUFBSSxDQUFDLElBQUksQ0FBQyxLQUFLLFVBQVUsRUFBRTtBQUN0QyxvQkFBTyxJQUFJLENBQUMsUUFBUSxFQUFFLElBQUksQ0FBQyxDQUFDO0tBQzdCLE1BQU07QUFDTCxVQUFJLE9BQU8sT0FBTyxLQUFLLFdBQVcsRUFBRTtBQUNsQyxjQUFNLHlFQUEwRCxJQUFJLG9CQUFpQixDQUFDO09BQ3ZGO0FBQ0QsVUFBSSxDQUFDLFFBQVEsQ0FBQyxJQUFJLENBQUMsR0FBRyxPQUFPLENBQUM7S0FDL0I7R0FDRjtBQUNELG1CQUFpQixFQUFFLDJCQUFTLElBQUksRUFBRTtBQUNoQyxXQUFPLElBQUksQ0FBQyxRQUFRLENBQUMsSUFBSSxDQUFDLENBQUM7R0FDNUI7O0FBRUQsbUJBQWlCLEVBQUUsMkJBQVMsSUFBSSxFQUFFLEVBQUUsRUFBRTtBQUNwQyxRQUFJLGdCQUFTLElBQUksQ0FBQyxJQUFJLENBQUMsS0FBSyxVQUFVLEVBQUU7QUFDdEMsVUFBSSxFQUFFLEVBQUU7QUFBRSxjQUFNLDJCQUFjLDRDQUE0QyxDQUFDLENBQUM7T0FBRTtBQUM5RSxvQkFBTyxJQUFJLENBQUMsVUFBVSxFQUFFLElBQUksQ0FBQyxDQUFDO0tBQy9CLE1BQU07QUFDTCxVQUFJLENBQUMsVUFBVSxDQUFDLElBQUksQ0FBQyxHQUFHLEVBQUUsQ0FBQztLQUM1QjtHQUNGO0FBQ0QscUJBQW1CLEVBQUUsNkJBQVMsSUFBSSxFQUFFO0FBQ2xDLFdBQU8sSUFBSSxDQUFDLFVBQVUsQ0FBQyxJQUFJLENBQUMsQ0FBQztHQUM5QjtDQUNGLENBQUM7O0FBRUssSUFBSSxHQUFHLEdBQUcsb0JBQU8sR0FBRyxDQUFDOzs7UUFFcEIsV0FBVztRQUFFLE1BQU0iLCJmaWxlIjoiYmFzZS5qcyIsInNvdXJjZXNDb250ZW50IjpbImltcG9ydCB7Y3JlYXRlRnJhbWUsIGV4dGVuZCwgdG9TdHJpbmd9IGZyb20gJy4vdXRpbHMnO1xuaW1wb3J0IEV4Y2VwdGlvbiBmcm9tICcuL2V4Y2VwdGlvbic7XG5pbXBvcnQge3JlZ2lzdGVyRGVmYXVsdEhlbHBlcnN9IGZyb20gJy4vaGVscGVycyc7XG5pbXBvcnQge3JlZ2lzdGVyRGVmYXVsdERlY29yYXRvcnN9IGZyb20gJy4vZGVjb3JhdG9ycyc7XG5pbXBvcnQgbG9nZ2VyIGZyb20gJy4vbG9nZ2VyJztcblxuZXhwb3J0IGNvbnN0IFZFUlNJT04gPSAnNC4wLjUnO1xuZXhwb3J0IGNvbnN0IENPTVBJTEVSX1JFVklTSU9OID0gNztcblxuZXhwb3J0IGNvbnN0IFJFVklTSU9OX0NIQU5HRVMgPSB7XG4gIDE6ICc8PSAxLjAucmMuMicsIC8vIDEuMC5yYy4yIGlzIGFjdHVhbGx5IHJldjIgYnV0IGRvZXNuJ3QgcmVwb3J0IGl0XG4gIDI6ICc9PSAxLjAuMC1yYy4zJyxcbiAgMzogJz09IDEuMC4wLXJjLjQnLFxuICA0OiAnPT0gMS54LngnLFxuICA1OiAnPT0gMi4wLjAtYWxwaGEueCcsXG4gIDY6ICc+PSAyLjAuMC1iZXRhLjEnLFxuICA3OiAnPj0gNC4wLjAnXG59O1xuXG5jb25zdCBvYmplY3RUeXBlID0gJ1tvYmplY3QgT2JqZWN0XSc7XG5cbmV4cG9ydCBmdW5jdGlvbiBIYW5kbGViYXJzRW52aXJvbm1lbnQoaGVscGVycywgcGFydGlhbHMsIGRlY29yYXRvcnMpIHtcbiAgdGhpcy5oZWxwZXJzID0gaGVscGVycyB8fCB7fTtcbiAgdGhpcy5wYXJ0aWFscyA9IHBhcnRpYWxzIHx8IHt9O1xuICB0aGlzLmRlY29yYXRvcnMgPSBkZWNvcmF0b3JzIHx8IHt9O1xuXG4gIHJlZ2lzdGVyRGVmYXVsdEhlbHBlcnModGhpcyk7XG4gIHJlZ2lzdGVyRGVmYXVsdERlY29yYXRvcnModGhpcyk7XG59XG5cbkhhbmRsZWJhcnNFbnZpcm9ubWVudC5wcm90b3R5cGUgPSB7XG4gIGNvbnN0cnVjdG9yOiBIYW5kbGViYXJzRW52aXJvbm1lbnQsXG5cbiAgbG9nZ2VyOiBsb2dnZXIsXG4gIGxvZzogbG9nZ2VyLmxvZyxcblxuICByZWdpc3RlckhlbHBlcjogZnVuY3Rpb24obmFtZSwgZm4pIHtcbiAgICBpZiAodG9TdHJpbmcuY2FsbChuYW1lKSA9PT0gb2JqZWN0VHlwZSkge1xuICAgICAgaWYgKGZuKSB7IHRocm93IG5ldyBFeGNlcHRpb24oJ0FyZyBub3Qgc3VwcG9ydGVkIHdpdGggbXVsdGlwbGUgaGVscGVycycpOyB9XG4gICAgICBleHRlbmQodGhpcy5oZWxwZXJzLCBuYW1lKTtcbiAgICB9IGVsc2Uge1xuICAgICAgdGhpcy5oZWxwZXJzW25hbWVdID0gZm47XG4gICAgfVxuICB9LFxuICB1bnJlZ2lzdGVySGVscGVyOiBmdW5jdGlvbihuYW1lKSB7XG4gICAgZGVsZXRlIHRoaXMuaGVscGVyc1tuYW1lXTtcbiAgfSxcblxuICByZWdpc3RlclBhcnRpYWw6IGZ1bmN0aW9uKG5hbWUsIHBhcnRpYWwpIHtcbiAgICBpZiAodG9TdHJpbmcuY2FsbChuYW1lKSA9PT0gb2JqZWN0VHlwZSkge1xuICAgICAgZXh0ZW5kKHRoaXMucGFydGlhbHMsIG5hbWUpO1xuICAgIH0gZWxzZSB7XG4gICAgICBpZiAodHlwZW9mIHBhcnRpYWwgPT09ICd1bmRlZmluZWQnKSB7XG4gICAgICAgIHRocm93IG5ldyBFeGNlcHRpb24oYEF0dGVtcHRpbmcgdG8gcmVnaXN0ZXIgYSBwYXJ0aWFsIGNhbGxlZCBcIiR7bmFtZX1cIiBhcyB1bmRlZmluZWRgKTtcbiAgICAgIH1cbiAgICAgIHRoaXMucGFydGlhbHNbbmFtZV0gPSBwYXJ0aWFsO1xuICAgIH1cbiAgfSxcbiAgdW5yZWdpc3RlclBhcnRpYWw6IGZ1bmN0aW9uKG5hbWUpIHtcbiAgICBkZWxldGUgdGhpcy5wYXJ0aWFsc1tuYW1lXTtcbiAgfSxcblxuICByZWdpc3RlckRlY29yYXRvcjogZnVuY3Rpb24obmFtZSwgZm4pIHtcbiAgICBpZiAodG9TdHJpbmcuY2FsbChuYW1lKSA9PT0gb2JqZWN0VHlwZSkge1xuICAgICAgaWYgKGZuKSB7IHRocm93IG5ldyBFeGNlcHRpb24oJ0FyZyBub3Qgc3VwcG9ydGVkIHdpdGggbXVsdGlwbGUgZGVjb3JhdG9ycycpOyB9XG4gICAgICBleHRlbmQodGhpcy5kZWNvcmF0b3JzLCBuYW1lKTtcbiAgICB9IGVsc2Uge1xuICAgICAgdGhpcy5kZWNvcmF0b3JzW25hbWVdID0gZm47XG4gICAgfVxuICB9LFxuICB1bnJlZ2lzdGVyRGVjb3JhdG9yOiBmdW5jdGlvbihuYW1lKSB7XG4gICAgZGVsZXRlIHRoaXMuZGVjb3JhdG9yc1tuYW1lXTtcbiAgfVxufTtcblxuZXhwb3J0IGxldCBsb2cgPSBsb2dnZXIubG9nO1xuXG5leHBvcnQge2NyZWF0ZUZyYW1lLCBsb2dnZXJ9O1xuIl19
+
+
+/***/ },
+/* 229 */
+/***/ function(module, exports) {
+
+	'use strict';
+	
+	exports.__esModule = true;
+	exports.extend = extend;
+	exports.indexOf = indexOf;
+	exports.escapeExpression = escapeExpression;
+	exports.isEmpty = isEmpty;
+	exports.createFrame = createFrame;
+	exports.blockParams = blockParams;
+	exports.appendContextPath = appendContextPath;
+	var escape = {
+	  '&': '&amp;',
+	  '<': '&lt;',
+	  '>': '&gt;',
+	  '"': '&quot;',
+	  "'": '&#x27;',
+	  '`': '&#x60;',
+	  '=': '&#x3D;'
+	};
+	
+	var badChars = /[&<>"'`=]/g,
+	    possible = /[&<>"'`=]/;
+	
+	function escapeChar(chr) {
+	  return escape[chr];
+	}
+	
+	function extend(obj /* , ...source */) {
+	  for (var i = 1; i < arguments.length; i++) {
+	    for (var key in arguments[i]) {
+	      if (Object.prototype.hasOwnProperty.call(arguments[i], key)) {
+	        obj[key] = arguments[i][key];
+	      }
+	    }
+	  }
+	
+	  return obj;
+	}
+	
+	var toString = Object.prototype.toString;
+	
+	exports.toString = toString;
+	// Sourced from lodash
+	// https://github.com/bestiejs/lodash/blob/master/LICENSE.txt
+	/* eslint-disable func-style */
+	var isFunction = function isFunction(value) {
+	  return typeof value === 'function';
+	};
+	// fallback for older versions of Chrome and Safari
+	/* istanbul ignore next */
+	if (isFunction(/x/)) {
+	  exports.isFunction = isFunction = function (value) {
+	    return typeof value === 'function' && toString.call(value) === '[object Function]';
+	  };
+	}
+	exports.isFunction = isFunction;
+	
+	/* eslint-enable func-style */
+	
+	/* istanbul ignore next */
+	var isArray = Array.isArray || function (value) {
+	  return value && typeof value === 'object' ? toString.call(value) === '[object Array]' : false;
+	};
+	
+	exports.isArray = isArray;
+	// Older IE versions do not directly support indexOf so we must implement our own, sadly.
+	
+	function indexOf(array, value) {
+	  for (var i = 0, len = array.length; i < len; i++) {
+	    if (array[i] === value) {
+	      return i;
+	    }
+	  }
+	  return -1;
+	}
+	
+	function escapeExpression(string) {
+	  if (typeof string !== 'string') {
+	    // don't escape SafeStrings, since they're already safe
+	    if (string && string.toHTML) {
+	      return string.toHTML();
+	    } else if (string == null) {
+	      return '';
+	    } else if (!string) {
+	      return string + '';
+	    }
+	
+	    // Force a string conversion as this will be done by the append regardless and
+	    // the regex test will do this transparently behind the scenes, causing issues if
+	    // an object's to string has escaped characters in it.
+	    string = '' + string;
+	  }
+	
+	  if (!possible.test(string)) {
+	    return string;
+	  }
+	  return string.replace(badChars, escapeChar);
+	}
+	
+	function isEmpty(value) {
+	  if (!value && value !== 0) {
+	    return true;
+	  } else if (isArray(value) && value.length === 0) {
+	    return true;
+	  } else {
+	    return false;
+	  }
+	}
+	
+	function createFrame(object) {
+	  var frame = extend({}, object);
+	  frame._parent = object;
+	  return frame;
+	}
+	
+	function blockParams(params, ids) {
+	  params.path = ids;
+	  return params;
+	}
+	
+	function appendContextPath(contextPath, id) {
+	  return (contextPath ? contextPath + '.' : '') + id;
+	}
+	//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIi4uLy4uLy4uL2xpYi9oYW5kbGViYXJzL3V0aWxzLmpzIl0sIm5hbWVzIjpbXSwibWFwcGluZ3MiOiI7Ozs7Ozs7Ozs7QUFBQSxJQUFNLE1BQU0sR0FBRztBQUNiLEtBQUcsRUFBRSxPQUFPO0FBQ1osS0FBRyxFQUFFLE1BQU07QUFDWCxLQUFHLEVBQUUsTUFBTTtBQUNYLEtBQUcsRUFBRSxRQUFRO0FBQ2IsS0FBRyxFQUFFLFFBQVE7QUFDYixLQUFHLEVBQUUsUUFBUTtBQUNiLEtBQUcsRUFBRSxRQUFRO0NBQ2QsQ0FBQzs7QUFFRixJQUFNLFFBQVEsR0FBRyxZQUFZO0lBQ3ZCLFFBQVEsR0FBRyxXQUFXLENBQUM7O0FBRTdCLFNBQVMsVUFBVSxDQUFDLEdBQUcsRUFBRTtBQUN2QixTQUFPLE1BQU0sQ0FBQyxHQUFHLENBQUMsQ0FBQztDQUNwQjs7QUFFTSxTQUFTLE1BQU0sQ0FBQyxHQUFHLG9CQUFtQjtBQUMzQyxPQUFLLElBQUksQ0FBQyxHQUFHLENBQUMsRUFBRSxDQUFDLEdBQUcsU0FBUyxDQUFDLE1BQU0sRUFBRSxDQUFDLEVBQUUsRUFBRTtBQUN6QyxTQUFLLElBQUksR0FBRyxJQUFJLFNBQVMsQ0FBQyxDQUFDLENBQUMsRUFBRTtBQUM1QixVQUFJLE1BQU0sQ0FBQyxTQUFTLENBQUMsY0FBYyxDQUFDLElBQUksQ0FBQyxTQUFTLENBQUMsQ0FBQyxDQUFDLEVBQUUsR0FBRyxDQUFDLEVBQUU7QUFDM0QsV0FBRyxDQUFDLEdBQUcsQ0FBQyxHQUFHLFNBQVMsQ0FBQyxDQUFDLENBQUMsQ0FBQyxHQUFHLENBQUMsQ0FBQztPQUM5QjtLQUNGO0dBQ0Y7O0FBRUQsU0FBTyxHQUFHLENBQUM7Q0FDWjs7QUFFTSxJQUFJLFFBQVEsR0FBRyxNQUFNLENBQUMsU0FBUyxDQUFDLFFBQVEsQ0FBQzs7Ozs7O0FBS2hELElBQUksVUFBVSxHQUFHLG9CQUFTLEtBQUssRUFBRTtBQUMvQixTQUFPLE9BQU8sS0FBSyxLQUFLLFVBQVUsQ0FBQztDQUNwQyxDQUFDOzs7QUFHRixJQUFJLFVBQVUsQ0FBQyxHQUFHLENBQUMsRUFBRTtBQUNuQixVQUlNLFVBQVUsR0FKaEIsVUFBVSxHQUFHLFVBQVMsS0FBSyxFQUFFO0FBQzNCLFdBQU8sT0FBTyxLQUFLLEtBQUssVUFBVSxJQUFJLFFBQVEsQ0FBQyxJQUFJLENBQUMsS0FBSyxDQUFDLEtBQUssbUJBQW1CLENBQUM7R0FDcEYsQ0FBQztDQUNIO1FBQ08sVUFBVSxHQUFWLFVBQVU7Ozs7O0FBSVgsSUFBTSxPQUFPLEdBQUcsS0FBSyxDQUFDLE9BQU8sSUFBSSxVQUFTLEtBQUssRUFBRTtBQUN0RCxTQUFPLEFBQUMsS0FBSyxJQUFJLE9BQU8sS0FBSyxLQUFLLFFBQVEsR0FBSSxRQUFRLENBQUMsSUFBSSxDQUFDLEtBQUssQ0FBQyxLQUFLLGdCQUFnQixHQUFHLEtBQUssQ0FBQztDQUNqRyxDQUFDOzs7OztBQUdLLFNBQVMsT0FBTyxDQUFDLEtBQUssRUFBRSxLQUFLLEVBQUU7QUFDcEMsT0FBSyxJQUFJLENBQUMsR0FBRyxDQUFDLEVBQUUsR0FBRyxHQUFHLEtBQUssQ0FBQyxNQUFNLEVBQUUsQ0FBQyxHQUFHLEdBQUcsRUFBRSxDQUFDLEVBQUUsRUFBRTtBQUNoRCxRQUFJLEtBQUssQ0FBQyxDQUFDLENBQUMsS0FBSyxLQUFLLEVBQUU7QUFDdEIsYUFBTyxDQUFDLENBQUM7S0FDVjtHQUNGO0FBQ0QsU0FBTyxDQUFDLENBQUMsQ0FBQztDQUNYOztBQUdNLFNBQVMsZ0JBQWdCLENBQUMsTUFBTSxFQUFFO0FBQ3ZDLE1BQUksT0FBTyxNQUFNLEtBQUssUUFBUSxFQUFFOztBQUU5QixRQUFJLE1BQU0sSUFBSSxNQUFNLENBQUMsTUFBTSxFQUFFO0FBQzNCLGFBQU8sTUFBTSxDQUFDLE1BQU0sRUFBRSxDQUFDO0tBQ3hCLE1BQU0sSUFBSSxNQUFNLElBQUksSUFBSSxFQUFFO0FBQ3pCLGFBQU8sRUFBRSxDQUFDO0tBQ1gsTUFBTSxJQUFJLENBQUMsTUFBTSxFQUFFO0FBQ2xCLGFBQU8sTUFBTSxHQUFHLEVBQUUsQ0FBQztLQUNwQjs7Ozs7QUFLRCxVQUFNLEdBQUcsRUFBRSxHQUFHLE1BQU0sQ0FBQztHQUN0Qjs7QUFFRCxNQUFJLENBQUMsUUFBUSxDQUFDLElBQUksQ0FBQyxNQUFNLENBQUMsRUFBRTtBQUFFLFdBQU8sTUFBTSxDQUFDO0dBQUU7QUFDOUMsU0FBTyxNQUFNLENBQUMsT0FBTyxDQUFDLFFBQVEsRUFBRSxVQUFVLENBQUMsQ0FBQztDQUM3Qzs7QUFFTSxTQUFTLE9BQU8sQ0FBQyxLQUFLLEVBQUU7QUFDN0IsTUFBSSxDQUFDLEtBQUssSUFBSSxLQUFLLEtBQUssQ0FBQyxFQUFFO0FBQ3pCLFdBQU8sSUFBSSxDQUFDO0dBQ2IsTUFBTSxJQUFJLE9BQU8sQ0FBQyxLQUFLLENBQUMsSUFBSSxLQUFLLENBQUMsTUFBTSxLQUFLLENBQUMsRUFBRTtBQUMvQyxXQUFPLElBQUksQ0FBQztHQUNiLE1BQU07QUFDTCxXQUFPLEtBQUssQ0FBQztHQUNkO0NBQ0Y7O0FBRU0sU0FBUyxXQUFXLENBQUMsTUFBTSxFQUFFO0FBQ2xDLE1BQUksS0FBSyxHQUFHLE1BQU0sQ0FBQyxFQUFFLEVBQUUsTUFBTSxDQUFDLENBQUM7QUFDL0IsT0FBSyxDQUFDLE9BQU8sR0FBRyxNQUFNLENBQUM7QUFDdkIsU0FBTyxLQUFLLENBQUM7Q0FDZDs7QUFFTSxTQUFTLFdBQVcsQ0FBQyxNQUFNLEVBQUUsR0FBRyxFQUFFO0FBQ3ZDLFFBQU0sQ0FBQyxJQUFJLEdBQUcsR0FBRyxDQUFDO0FBQ2xCLFNBQU8sTUFBTSxDQUFDO0NBQ2Y7O0FBRU0sU0FBUyxpQkFBaUIsQ0FBQyxXQUFXLEVBQUUsRUFBRSxFQUFFO0FBQ2pELFNBQU8sQ0FBQyxXQUFXLEdBQUcsV0FBVyxHQUFHLEdBQUcsR0FBRyxFQUFFLENBQUEsR0FBSSxFQUFFLENBQUM7Q0FDcEQiLCJmaWxlIjoidXRpbHMuanMiLCJzb3VyY2VzQ29udGVudCI6WyJjb25zdCBlc2NhcGUgPSB7XG4gICcmJzogJyZhbXA7JyxcbiAgJzwnOiAnJmx0OycsXG4gICc+JzogJyZndDsnLFxuICAnXCInOiAnJnF1b3Q7JyxcbiAgXCInXCI6ICcmI3gyNzsnLFxuICAnYCc6ICcmI3g2MDsnLFxuICAnPSc6ICcmI3gzRDsnXG59O1xuXG5jb25zdCBiYWRDaGFycyA9IC9bJjw+XCInYD1dL2csXG4gICAgICBwb3NzaWJsZSA9IC9bJjw+XCInYD1dLztcblxuZnVuY3Rpb24gZXNjYXBlQ2hhcihjaHIpIHtcbiAgcmV0dXJuIGVzY2FwZVtjaHJdO1xufVxuXG5leHBvcnQgZnVuY3Rpb24gZXh0ZW5kKG9iai8qICwgLi4uc291cmNlICovKSB7XG4gIGZvciAobGV0IGkgPSAxOyBpIDwgYXJndW1lbnRzLmxlbmd0aDsgaSsrKSB7XG4gICAgZm9yIChsZXQga2V5IGluIGFyZ3VtZW50c1tpXSkge1xuICAgICAgaWYgKE9iamVjdC5wcm90b3R5cGUuaGFzT3duUHJvcGVydHkuY2FsbChhcmd1bWVudHNbaV0sIGtleSkpIHtcbiAgICAgICAgb2JqW2tleV0gPSBhcmd1bWVudHNbaV1ba2V5XTtcbiAgICAgIH1cbiAgICB9XG4gIH1cblxuICByZXR1cm4gb2JqO1xufVxuXG5leHBvcnQgbGV0IHRvU3RyaW5nID0gT2JqZWN0LnByb3RvdHlwZS50b1N0cmluZztcblxuLy8gU291cmNlZCBmcm9tIGxvZGFzaFxuLy8gaHR0cHM6Ly9naXRodWIuY29tL2Jlc3RpZWpzL2xvZGFzaC9ibG9iL21hc3Rlci9MSUNFTlNFLnR4dFxuLyogZXNsaW50LWRpc2FibGUgZnVuYy1zdHlsZSAqL1xubGV0IGlzRnVuY3Rpb24gPSBmdW5jdGlvbih2YWx1ZSkge1xuICByZXR1cm4gdHlwZW9mIHZhbHVlID09PSAnZnVuY3Rpb24nO1xufTtcbi8vIGZhbGxiYWNrIGZvciBvbGRlciB2ZXJzaW9ucyBvZiBDaHJvbWUgYW5kIFNhZmFyaVxuLyogaXN0YW5idWwgaWdub3JlIG5leHQgKi9cbmlmIChpc0Z1bmN0aW9uKC94LykpIHtcbiAgaXNGdW5jdGlvbiA9IGZ1bmN0aW9uKHZhbHVlKSB7XG4gICAgcmV0dXJuIHR5cGVvZiB2YWx1ZSA9PT0gJ2Z1bmN0aW9uJyAmJiB0b1N0cmluZy5jYWxsKHZhbHVlKSA9PT0gJ1tvYmplY3QgRnVuY3Rpb25dJztcbiAgfTtcbn1cbmV4cG9ydCB7aXNGdW5jdGlvbn07XG4vKiBlc2xpbnQtZW5hYmxlIGZ1bmMtc3R5bGUgKi9cblxuLyogaXN0YW5idWwgaWdub3JlIG5leHQgKi9cbmV4cG9ydCBjb25zdCBpc0FycmF5ID0gQXJyYXkuaXNBcnJheSB8fCBmdW5jdGlvbih2YWx1ZSkge1xuICByZXR1cm4gKHZhbHVlICYmIHR5cGVvZiB2YWx1ZSA9PT0gJ29iamVjdCcpID8gdG9TdHJpbmcuY2FsbCh2YWx1ZSkgPT09ICdbb2JqZWN0IEFycmF5XScgOiBmYWxzZTtcbn07XG5cbi8vIE9sZGVyIElFIHZlcnNpb25zIGRvIG5vdCBkaXJlY3RseSBzdXBwb3J0IGluZGV4T2Ygc28gd2UgbXVzdCBpbXBsZW1lbnQgb3VyIG93biwgc2FkbHkuXG5leHBvcnQgZnVuY3Rpb24gaW5kZXhPZihhcnJheSwgdmFsdWUpIHtcbiAgZm9yIChsZXQgaSA9IDAsIGxlbiA9IGFycmF5Lmxlbmd0aDsgaSA8IGxlbjsgaSsrKSB7XG4gICAgaWYgKGFycmF5W2ldID09PSB2YWx1ZSkge1xuICAgICAgcmV0dXJuIGk7XG4gICAgfVxuICB9XG4gIHJldHVybiAtMTtcbn1cblxuXG5leHBvcnQgZnVuY3Rpb24gZXNjYXBlRXhwcmVzc2lvbihzdHJpbmcpIHtcbiAgaWYgKHR5cGVvZiBzdHJpbmcgIT09ICdzdHJpbmcnKSB7XG4gICAgLy8gZG9uJ3QgZXNjYXBlIFNhZmVTdHJpbmdzLCBzaW5jZSB0aGV5J3JlIGFscmVhZHkgc2FmZVxuICAgIGlmIChzdHJpbmcgJiYgc3RyaW5nLnRvSFRNTCkge1xuICAgICAgcmV0dXJuIHN0cmluZy50b0hUTUwoKTtcbiAgICB9IGVsc2UgaWYgKHN0cmluZyA9PSBudWxsKSB7XG4gICAgICByZXR1cm4gJyc7XG4gICAgfSBlbHNlIGlmICghc3RyaW5nKSB7XG4gICAgICByZXR1cm4gc3RyaW5nICsgJyc7XG4gICAgfVxuXG4gICAgLy8gRm9yY2UgYSBzdHJpbmcgY29udmVyc2lvbiBhcyB0aGlzIHdpbGwgYmUgZG9uZSBieSB0aGUgYXBwZW5kIHJlZ2FyZGxlc3MgYW5kXG4gICAgLy8gdGhlIHJlZ2V4IHRlc3Qgd2lsbCBkbyB0aGlzIHRyYW5zcGFyZW50bHkgYmVoaW5kIHRoZSBzY2VuZXMsIGNhdXNpbmcgaXNzdWVzIGlmXG4gICAgLy8gYW4gb2JqZWN0J3MgdG8gc3RyaW5nIGhhcyBlc2NhcGVkIGNoYXJhY3RlcnMgaW4gaXQuXG4gICAgc3RyaW5nID0gJycgKyBzdHJpbmc7XG4gIH1cblxuICBpZiAoIXBvc3NpYmxlLnRlc3Qoc3RyaW5nKSkgeyByZXR1cm4gc3RyaW5nOyB9XG4gIHJldHVybiBzdHJpbmcucmVwbGFjZShiYWRDaGFycywgZXNjYXBlQ2hhcik7XG59XG5cbmV4cG9ydCBmdW5jdGlvbiBpc0VtcHR5KHZhbHVlKSB7XG4gIGlmICghdmFsdWUgJiYgdmFsdWUgIT09IDApIHtcbiAgICByZXR1cm4gdHJ1ZTtcbiAgfSBlbHNlIGlmIChpc0FycmF5KHZhbHVlKSAmJiB2YWx1ZS5sZW5ndGggPT09IDApIHtcbiAgICByZXR1cm4gdHJ1ZTtcbiAgfSBlbHNlIHtcbiAgICByZXR1cm4gZmFsc2U7XG4gIH1cbn1cblxuZXhwb3J0IGZ1bmN0aW9uIGNyZWF0ZUZyYW1lKG9iamVjdCkge1xuICBsZXQgZnJhbWUgPSBleHRlbmQoe30sIG9iamVjdCk7XG4gIGZyYW1lLl9wYXJlbnQgPSBvYmplY3Q7XG4gIHJldHVybiBmcmFtZTtcbn1cblxuZXhwb3J0IGZ1bmN0aW9uIGJsb2NrUGFyYW1zKHBhcmFtcywgaWRzKSB7XG4gIHBhcmFtcy5wYXRoID0gaWRzO1xuICByZXR1cm4gcGFyYW1zO1xufVxuXG5leHBvcnQgZnVuY3Rpb24gYXBwZW5kQ29udGV4dFBhdGgoY29udGV4dFBhdGgsIGlkKSB7XG4gIHJldHVybiAoY29udGV4dFBhdGggPyBjb250ZXh0UGF0aCArICcuJyA6ICcnKSArIGlkO1xufVxuIl19
+
+
+/***/ },
+/* 230 */
+/***/ function(module, exports) {
+
+	'use strict';
+	
+	exports.__esModule = true;
+	
+	var errorProps = ['description', 'fileName', 'lineNumber', 'message', 'name', 'number', 'stack'];
+	
+	function Exception(message, node) {
+	  var loc = node && node.loc,
+	      line = undefined,
+	      column = undefined;
+	  if (loc) {
+	    line = loc.start.line;
+	    column = loc.start.column;
+	
+	    message += ' - ' + line + ':' + column;
+	  }
+	
+	  var tmp = Error.prototype.constructor.call(this, message);
+	
+	  // Unfortunately errors are not enumerable in Chrome (at least), so `for prop in tmp` doesn't work.
+	  for (var idx = 0; idx < errorProps.length; idx++) {
+	    this[errorProps[idx]] = tmp[errorProps[idx]];
+	  }
+	
+	  /* istanbul ignore else */
+	  if (Error.captureStackTrace) {
+	    Error.captureStackTrace(this, Exception);
+	  }
+	
+	  if (loc) {
+	    this.lineNumber = line;
+	    this.column = column;
+	  }
+	}
+	
+	Exception.prototype = new Error();
+	
+	exports['default'] = Exception;
+	module.exports = exports['default'];
+	//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIi4uLy4uLy4uL2xpYi9oYW5kbGViYXJzL2V4Y2VwdGlvbi5qcyJdLCJuYW1lcyI6W10sIm1hcHBpbmdzIjoiOzs7O0FBQ0EsSUFBTSxVQUFVLEdBQUcsQ0FBQyxhQUFhLEVBQUUsVUFBVSxFQUFFLFlBQVksRUFBRSxTQUFTLEVBQUUsTUFBTSxFQUFFLFFBQVEsRUFBRSxPQUFPLENBQUMsQ0FBQzs7QUFFbkcsU0FBUyxTQUFTLENBQUMsT0FBTyxFQUFFLElBQUksRUFBRTtBQUNoQyxNQUFJLEdBQUcsR0FBRyxJQUFJLElBQUksSUFBSSxDQUFDLEdBQUc7TUFDdEIsSUFBSSxZQUFBO01BQ0osTUFBTSxZQUFBLENBQUM7QUFDWCxNQUFJLEdBQUcsRUFBRTtBQUNQLFFBQUksR0FBRyxHQUFHLENBQUMsS0FBSyxDQUFDLElBQUksQ0FBQztBQUN0QixVQUFNLEdBQUcsR0FBRyxDQUFDLEtBQUssQ0FBQyxNQUFNLENBQUM7O0FBRTFCLFdBQU8sSUFBSSxLQUFLLEdBQUcsSUFBSSxHQUFHLEdBQUcsR0FBRyxNQUFNLENBQUM7R0FDeEM7O0FBRUQsTUFBSSxHQUFHLEdBQUcsS0FBSyxDQUFDLFNBQVMsQ0FBQyxXQUFXLENBQUMsSUFBSSxDQUFDLElBQUksRUFBRSxPQUFPLENBQUMsQ0FBQzs7O0FBRzFELE9BQUssSUFBSSxHQUFHLEdBQUcsQ0FBQyxFQUFFLEdBQUcsR0FBRyxVQUFVLENBQUMsTUFBTSxFQUFFLEdBQUcsRUFBRSxFQUFFO0FBQ2hELFFBQUksQ0FBQyxVQUFVLENBQUMsR0FBRyxDQUFDLENBQUMsR0FBRyxHQUFHLENBQUMsVUFBVSxDQUFDLEdBQUcsQ0FBQyxDQUFDLENBQUM7R0FDOUM7OztBQUdELE1BQUksS0FBSyxDQUFDLGlCQUFpQixFQUFFO0FBQzNCLFNBQUssQ0FBQyxpQkFBaUIsQ0FBQyxJQUFJLEVBQUUsU0FBUyxDQUFDLENBQUM7R0FDMUM7O0FBRUQsTUFBSSxHQUFHLEVBQUU7QUFDUCxRQUFJLENBQUMsVUFBVSxHQUFHLElBQUksQ0FBQztBQUN2QixRQUFJLENBQUMsTUFBTSxHQUFHLE1BQU0sQ0FBQztHQUN0QjtDQUNGOztBQUVELFNBQVMsQ0FBQyxTQUFTLEdBQUcsSUFBSSxLQUFLLEVBQUUsQ0FBQzs7cUJBRW5CLFNBQVMiLCJmaWxlIjoiZXhjZXB0aW9uLmpzIiwic291cmNlc0NvbnRlbnQiOlsiXG5jb25zdCBlcnJvclByb3BzID0gWydkZXNjcmlwdGlvbicsICdmaWxlTmFtZScsICdsaW5lTnVtYmVyJywgJ21lc3NhZ2UnLCAnbmFtZScsICdudW1iZXInLCAnc3RhY2snXTtcblxuZnVuY3Rpb24gRXhjZXB0aW9uKG1lc3NhZ2UsIG5vZGUpIHtcbiAgbGV0IGxvYyA9IG5vZGUgJiYgbm9kZS5sb2MsXG4gICAgICBsaW5lLFxuICAgICAgY29sdW1uO1xuICBpZiAobG9jKSB7XG4gICAgbGluZSA9IGxvYy5zdGFydC5saW5lO1xuICAgIGNvbHVtbiA9IGxvYy5zdGFydC5jb2x1bW47XG5cbiAgICBtZXNzYWdlICs9ICcgLSAnICsgbGluZSArICc6JyArIGNvbHVtbjtcbiAgfVxuXG4gIGxldCB0bXAgPSBFcnJvci5wcm90b3R5cGUuY29uc3RydWN0b3IuY2FsbCh0aGlzLCBtZXNzYWdlKTtcblxuICAvLyBVbmZvcnR1bmF0ZWx5IGVycm9ycyBhcmUgbm90IGVudW1lcmFibGUgaW4gQ2hyb21lIChhdCBsZWFzdCksIHNvIGBmb3IgcHJvcCBpbiB0bXBgIGRvZXNuJ3Qgd29yay5cbiAgZm9yIChsZXQgaWR4ID0gMDsgaWR4IDwgZXJyb3JQcm9wcy5sZW5ndGg7IGlkeCsrKSB7XG4gICAgdGhpc1tlcnJvclByb3BzW2lkeF1dID0gdG1wW2Vycm9yUHJvcHNbaWR4XV07XG4gIH1cblxuICAvKiBpc3RhbmJ1bCBpZ25vcmUgZWxzZSAqL1xuICBpZiAoRXJyb3IuY2FwdHVyZVN0YWNrVHJhY2UpIHtcbiAgICBFcnJvci5jYXB0dXJlU3RhY2tUcmFjZSh0aGlzLCBFeGNlcHRpb24pO1xuICB9XG5cbiAgaWYgKGxvYykge1xuICAgIHRoaXMubGluZU51bWJlciA9IGxpbmU7XG4gICAgdGhpcy5jb2x1bW4gPSBjb2x1bW47XG4gIH1cbn1cblxuRXhjZXB0aW9uLnByb3RvdHlwZSA9IG5ldyBFcnJvcigpO1xuXG5leHBvcnQgZGVmYXVsdCBFeGNlcHRpb247XG4iXX0=
+
+
+/***/ },
+/* 231 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	exports.__esModule = true;
+	exports.registerDefaultHelpers = registerDefaultHelpers;
+	// istanbul ignore next
+	
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
+	
+	var _helpersBlockHelperMissing = __webpack_require__(232);
+	
+	var _helpersBlockHelperMissing2 = _interopRequireDefault(_helpersBlockHelperMissing);
+	
+	var _helpersEach = __webpack_require__(233);
+	
+	var _helpersEach2 = _interopRequireDefault(_helpersEach);
+	
+	var _helpersHelperMissing = __webpack_require__(234);
+	
+	var _helpersHelperMissing2 = _interopRequireDefault(_helpersHelperMissing);
+	
+	var _helpersIf = __webpack_require__(235);
+	
+	var _helpersIf2 = _interopRequireDefault(_helpersIf);
+	
+	var _helpersLog = __webpack_require__(236);
+	
+	var _helpersLog2 = _interopRequireDefault(_helpersLog);
+	
+	var _helpersLookup = __webpack_require__(237);
+	
+	var _helpersLookup2 = _interopRequireDefault(_helpersLookup);
+	
+	var _helpersWith = __webpack_require__(238);
+	
+	var _helpersWith2 = _interopRequireDefault(_helpersWith);
+	
+	function registerDefaultHelpers(instance) {
+	  _helpersBlockHelperMissing2['default'](instance);
+	  _helpersEach2['default'](instance);
+	  _helpersHelperMissing2['default'](instance);
+	  _helpersIf2['default'](instance);
+	  _helpersLog2['default'](instance);
+	  _helpersLookup2['default'](instance);
+	  _helpersWith2['default'](instance);
+	}
+	//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIi4uLy4uLy4uL2xpYi9oYW5kbGViYXJzL2hlbHBlcnMuanMiXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6Ijs7Ozs7Ozs7eUNBQXVDLGdDQUFnQzs7OzsyQkFDOUMsZ0JBQWdCOzs7O29DQUNQLDBCQUEwQjs7Ozt5QkFDckMsY0FBYzs7OzswQkFDYixlQUFlOzs7OzZCQUNaLGtCQUFrQjs7OzsyQkFDcEIsZ0JBQWdCOzs7O0FBRWxDLFNBQVMsc0JBQXNCLENBQUMsUUFBUSxFQUFFO0FBQy9DLHlDQUEyQixRQUFRLENBQUMsQ0FBQztBQUNyQywyQkFBYSxRQUFRLENBQUMsQ0FBQztBQUN2QixvQ0FBc0IsUUFBUSxDQUFDLENBQUM7QUFDaEMseUJBQVcsUUFBUSxDQUFDLENBQUM7QUFDckIsMEJBQVksUUFBUSxDQUFDLENBQUM7QUFDdEIsNkJBQWUsUUFBUSxDQUFDLENBQUM7QUFDekIsMkJBQWEsUUFBUSxDQUFDLENBQUM7Q0FDeEIiLCJmaWxlIjoiaGVscGVycy5qcyIsInNvdXJjZXNDb250ZW50IjpbImltcG9ydCByZWdpc3RlckJsb2NrSGVscGVyTWlzc2luZyBmcm9tICcuL2hlbHBlcnMvYmxvY2staGVscGVyLW1pc3NpbmcnO1xuaW1wb3J0IHJlZ2lzdGVyRWFjaCBmcm9tICcuL2hlbHBlcnMvZWFjaCc7XG5pbXBvcnQgcmVnaXN0ZXJIZWxwZXJNaXNzaW5nIGZyb20gJy4vaGVscGVycy9oZWxwZXItbWlzc2luZyc7XG5pbXBvcnQgcmVnaXN0ZXJJZiBmcm9tICcuL2hlbHBlcnMvaWYnO1xuaW1wb3J0IHJlZ2lzdGVyTG9nIGZyb20gJy4vaGVscGVycy9sb2cnO1xuaW1wb3J0IHJlZ2lzdGVyTG9va3VwIGZyb20gJy4vaGVscGVycy9sb29rdXAnO1xuaW1wb3J0IHJlZ2lzdGVyV2l0aCBmcm9tICcuL2hlbHBlcnMvd2l0aCc7XG5cbmV4cG9ydCBmdW5jdGlvbiByZWdpc3RlckRlZmF1bHRIZWxwZXJzKGluc3RhbmNlKSB7XG4gIHJlZ2lzdGVyQmxvY2tIZWxwZXJNaXNzaW5nKGluc3RhbmNlKTtcbiAgcmVnaXN0ZXJFYWNoKGluc3RhbmNlKTtcbiAgcmVnaXN0ZXJIZWxwZXJNaXNzaW5nKGluc3RhbmNlKTtcbiAgcmVnaXN0ZXJJZihpbnN0YW5jZSk7XG4gIHJlZ2lzdGVyTG9nKGluc3RhbmNlKTtcbiAgcmVnaXN0ZXJMb29rdXAoaW5zdGFuY2UpO1xuICByZWdpc3RlcldpdGgoaW5zdGFuY2UpO1xufVxuIl19
+
+
+/***/ },
+/* 232 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	exports.__esModule = true;
+	
+	var _utils = __webpack_require__(229);
+	
+	exports['default'] = function (instance) {
+	  instance.registerHelper('blockHelperMissing', function (context, options) {
+	    var inverse = options.inverse,
+	        fn = options.fn;
+	
+	    if (context === true) {
+	      return fn(this);
+	    } else if (context === false || context == null) {
+	      return inverse(this);
+	    } else if (_utils.isArray(context)) {
+	      if (context.length > 0) {
+	        if (options.ids) {
+	          options.ids = [options.name];
+	        }
+	
+	        return instance.helpers.each(context, options);
+	      } else {
+	        return inverse(this);
+	      }
+	    } else {
+	      if (options.data && options.ids) {
+	        var data = _utils.createFrame(options.data);
+	        data.contextPath = _utils.appendContextPath(options.data.contextPath, options.name);
+	        options = { data: data };
+	      }
+	
+	      return fn(context, options);
+	    }
+	  });
+	};
+	
+	module.exports = exports['default'];
+	//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIi4uLy4uLy4uLy4uL2xpYi9oYW5kbGViYXJzL2hlbHBlcnMvYmxvY2staGVscGVyLW1pc3NpbmcuanMiXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6Ijs7OztxQkFBc0QsVUFBVTs7cUJBRWpELFVBQVMsUUFBUSxFQUFFO0FBQ2hDLFVBQVEsQ0FBQyxjQUFjLENBQUMsb0JBQW9CLEVBQUUsVUFBUyxPQUFPLEVBQUUsT0FBTyxFQUFFO0FBQ3ZFLFFBQUksT0FBTyxHQUFHLE9BQU8sQ0FBQyxPQUFPO1FBQ3pCLEVBQUUsR0FBRyxPQUFPLENBQUMsRUFBRSxDQUFDOztBQUVwQixRQUFJLE9BQU8sS0FBSyxJQUFJLEVBQUU7QUFDcEIsYUFBTyxFQUFFLENBQUMsSUFBSSxDQUFDLENBQUM7S0FDakIsTUFBTSxJQUFJLE9BQU8sS0FBSyxLQUFLLElBQUksT0FBTyxJQUFJLElBQUksRUFBRTtBQUMvQyxhQUFPLE9BQU8sQ0FBQyxJQUFJLENBQUMsQ0FBQztLQUN0QixNQUFNLElBQUksZUFBUSxPQUFPLENBQUMsRUFBRTtBQUMzQixVQUFJLE9BQU8sQ0FBQyxNQUFNLEdBQUcsQ0FBQyxFQUFFO0FBQ3RCLFlBQUksT0FBTyxDQUFDLEdBQUcsRUFBRTtBQUNmLGlCQUFPLENBQUMsR0FBRyxHQUFHLENBQUMsT0FBTyxDQUFDLElBQUksQ0FBQyxDQUFDO1NBQzlCOztBQUVELGVBQU8sUUFBUSxDQUFDLE9BQU8sQ0FBQyxJQUFJLENBQUMsT0FBTyxFQUFFLE9BQU8sQ0FBQyxDQUFDO09BQ2hELE1BQU07QUFDTCxlQUFPLE9BQU8sQ0FBQyxJQUFJLENBQUMsQ0FBQztPQUN0QjtLQUNGLE1BQU07QUFDTCxVQUFJLE9BQU8sQ0FBQyxJQUFJLElBQUksT0FBTyxDQUFDLEdBQUcsRUFBRTtBQUMvQixZQUFJLElBQUksR0FBRyxtQkFBWSxPQUFPLENBQUMsSUFBSSxDQUFDLENBQUM7QUFDckMsWUFBSSxDQUFDLFdBQVcsR0FBRyx5QkFBa0IsT0FBTyxDQUFDLElBQUksQ0FBQyxXQUFXLEVBQUUsT0FBTyxDQUFDLElBQUksQ0FBQyxDQUFDO0FBQzdFLGVBQU8sR0FBRyxFQUFDLElBQUksRUFBRSxJQUFJLEVBQUMsQ0FBQztPQUN4Qjs7QUFFRCxhQUFPLEVBQUUsQ0FBQyxPQUFPLEVBQUUsT0FBTyxDQUFDLENBQUM7S0FDN0I7R0FDRixDQUFDLENBQUM7Q0FDSiIsImZpbGUiOiJibG9jay1oZWxwZXItbWlzc2luZy5qcyIsInNvdXJjZXNDb250ZW50IjpbImltcG9ydCB7YXBwZW5kQ29udGV4dFBhdGgsIGNyZWF0ZUZyYW1lLCBpc0FycmF5fSBmcm9tICcuLi91dGlscyc7XG5cbmV4cG9ydCBkZWZhdWx0IGZ1bmN0aW9uKGluc3RhbmNlKSB7XG4gIGluc3RhbmNlLnJlZ2lzdGVySGVscGVyKCdibG9ja0hlbHBlck1pc3NpbmcnLCBmdW5jdGlvbihjb250ZXh0LCBvcHRpb25zKSB7XG4gICAgbGV0IGludmVyc2UgPSBvcHRpb25zLmludmVyc2UsXG4gICAgICAgIGZuID0gb3B0aW9ucy5mbjtcblxuICAgIGlmIChjb250ZXh0ID09PSB0cnVlKSB7XG4gICAgICByZXR1cm4gZm4odGhpcyk7XG4gICAgfSBlbHNlIGlmIChjb250ZXh0ID09PSBmYWxzZSB8fCBjb250ZXh0ID09IG51bGwpIHtcbiAgICAgIHJldHVybiBpbnZlcnNlKHRoaXMpO1xuICAgIH0gZWxzZSBpZiAoaXNBcnJheShjb250ZXh0KSkge1xuICAgICAgaWYgKGNvbnRleHQubGVuZ3RoID4gMCkge1xuICAgICAgICBpZiAob3B0aW9ucy5pZHMpIHtcbiAgICAgICAgICBvcHRpb25zLmlkcyA9IFtvcHRpb25zLm5hbWVdO1xuICAgICAgICB9XG5cbiAgICAgICAgcmV0dXJuIGluc3RhbmNlLmhlbHBlcnMuZWFjaChjb250ZXh0LCBvcHRpb25zKTtcbiAgICAgIH0gZWxzZSB7XG4gICAgICAgIHJldHVybiBpbnZlcnNlKHRoaXMpO1xuICAgICAgfVxuICAgIH0gZWxzZSB7XG4gICAgICBpZiAob3B0aW9ucy5kYXRhICYmIG9wdGlvbnMuaWRzKSB7XG4gICAgICAgIGxldCBkYXRhID0gY3JlYXRlRnJhbWUob3B0aW9ucy5kYXRhKTtcbiAgICAgICAgZGF0YS5jb250ZXh0UGF0aCA9IGFwcGVuZENvbnRleHRQYXRoKG9wdGlvbnMuZGF0YS5jb250ZXh0UGF0aCwgb3B0aW9ucy5uYW1lKTtcbiAgICAgICAgb3B0aW9ucyA9IHtkYXRhOiBkYXRhfTtcbiAgICAgIH1cblxuICAgICAgcmV0dXJuIGZuKGNvbnRleHQsIG9wdGlvbnMpO1xuICAgIH1cbiAgfSk7XG59XG4iXX0=
+
+
+/***/ },
+/* 233 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	exports.__esModule = true;
+	// istanbul ignore next
+	
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
+	
+	var _utils = __webpack_require__(229);
+	
+	var _exception = __webpack_require__(230);
+	
+	var _exception2 = _interopRequireDefault(_exception);
+	
+	exports['default'] = function (instance) {
+	  instance.registerHelper('each', function (context, options) {
+	    if (!options) {
+	      throw new _exception2['default']('Must pass iterator to #each');
+	    }
+	
+	    var fn = options.fn,
+	        inverse = options.inverse,
+	        i = 0,
+	        ret = '',
+	        data = undefined,
+	        contextPath = undefined;
+	
+	    if (options.data && options.ids) {
+	      contextPath = _utils.appendContextPath(options.data.contextPath, options.ids[0]) + '.';
+	    }
+	
+	    if (_utils.isFunction(context)) {
+	      context = context.call(this);
+	    }
+	
+	    if (options.data) {
+	      data = _utils.createFrame(options.data);
+	    }
+	
+	    function execIteration(field, index, last) {
+	      if (data) {
+	        data.key = field;
+	        data.index = index;
+	        data.first = index === 0;
+	        data.last = !!last;
+	
+	        if (contextPath) {
+	          data.contextPath = contextPath + field;
+	        }
+	      }
+	
+	      ret = ret + fn(context[field], {
+	        data: data,
+	        blockParams: _utils.blockParams([context[field], field], [contextPath + field, null])
+	      });
+	    }
+	
+	    if (context && typeof context === 'object') {
+	      if (_utils.isArray(context)) {
+	        for (var j = context.length; i < j; i++) {
+	          if (i in context) {
+	            execIteration(i, i, i === context.length - 1);
+	          }
+	        }
+	      } else {
+	        var priorKey = undefined;
+	
+	        for (var key in context) {
+	          if (context.hasOwnProperty(key)) {
+	            // We're running the iterations one step out of sync so we can detect
+	            // the last iteration without have to scan the object twice and create
+	            // an itermediate keys array.
+	            if (priorKey !== undefined) {
+	              execIteration(priorKey, i - 1);
+	            }
+	            priorKey = key;
+	            i++;
+	          }
+	        }
+	        if (priorKey !== undefined) {
+	          execIteration(priorKey, i - 1, true);
+	        }
+	      }
+	    }
+	
+	    if (i === 0) {
+	      ret = inverse(this);
+	    }
+	
+	    return ret;
+	  });
+	};
+	
+	module.exports = exports['default'];
+	//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIi4uLy4uLy4uLy4uL2xpYi9oYW5kbGViYXJzL2hlbHBlcnMvZWFjaC5qcyJdLCJuYW1lcyI6W10sIm1hcHBpbmdzIjoiOzs7Ozs7O3FCQUErRSxVQUFVOzt5QkFDbkUsY0FBYzs7OztxQkFFckIsVUFBUyxRQUFRLEVBQUU7QUFDaEMsVUFBUSxDQUFDLGNBQWMsQ0FBQyxNQUFNLEVBQUUsVUFBUyxPQUFPLEVBQUUsT0FBTyxFQUFFO0FBQ3pELFFBQUksQ0FBQyxPQUFPLEVBQUU7QUFDWixZQUFNLDJCQUFjLDZCQUE2QixDQUFDLENBQUM7S0FDcEQ7O0FBRUQsUUFBSSxFQUFFLEdBQUcsT0FBTyxDQUFDLEVBQUU7UUFDZixPQUFPLEdBQUcsT0FBTyxDQUFDLE9BQU87UUFDekIsQ0FBQyxHQUFHLENBQUM7UUFDTCxHQUFHLEdBQUcsRUFBRTtRQUNSLElBQUksWUFBQTtRQUNKLFdBQVcsWUFBQSxDQUFDOztBQUVoQixRQUFJLE9BQU8sQ0FBQyxJQUFJLElBQUksT0FBTyxDQUFDLEdBQUcsRUFBRTtBQUMvQixpQkFBVyxHQUFHLHlCQUFrQixPQUFPLENBQUMsSUFBSSxDQUFDLFdBQVcsRUFBRSxPQUFPLENBQUMsR0FBRyxDQUFDLENBQUMsQ0FBQyxDQUFDLEdBQUcsR0FBRyxDQUFDO0tBQ2pGOztBQUVELFFBQUksa0JBQVcsT0FBTyxDQUFDLEVBQUU7QUFBRSxhQUFPLEdBQUcsT0FBTyxDQUFDLElBQUksQ0FBQyxJQUFJLENBQUMsQ0FBQztLQUFFOztBQUUxRCxRQUFJLE9BQU8sQ0FBQyxJQUFJLEVBQUU7QUFDaEIsVUFBSSxHQUFHLG1CQUFZLE9BQU8sQ0FBQyxJQUFJLENBQUMsQ0FBQztLQUNsQzs7QUFFRCxhQUFTLGFBQWEsQ0FBQyxLQUFLLEVBQUUsS0FBSyxFQUFFLElBQUksRUFBRTtBQUN6QyxVQUFJLElBQUksRUFBRTtBQUNSLFlBQUksQ0FBQyxHQUFHLEdBQUcsS0FBSyxDQUFDO0FBQ2pCLFlBQUksQ0FBQyxLQUFLLEdBQUcsS0FBSyxDQUFDO0FBQ25CLFlBQUksQ0FBQyxLQUFLLEdBQUcsS0FBSyxLQUFLLENBQUMsQ0FBQztBQUN6QixZQUFJLENBQUMsSUFBSSxHQUFHLENBQUMsQ0FBQyxJQUFJLENBQUM7O0FBRW5CLFlBQUksV0FBVyxFQUFFO0FBQ2YsY0FBSSxDQUFDLFdBQVcsR0FBRyxXQUFXLEdBQUcsS0FBSyxDQUFDO1NBQ3hDO09BQ0Y7O0FBRUQsU0FBRyxHQUFHLEdBQUcsR0FBRyxFQUFFLENBQUMsT0FBTyxDQUFDLEtBQUssQ0FBQyxFQUFFO0FBQzdCLFlBQUksRUFBRSxJQUFJO0FBQ1YsbUJBQVcsRUFBRSxtQkFBWSxDQUFDLE9BQU8sQ0FBQyxLQUFLLENBQUMsRUFBRSxLQUFLLENBQUMsRUFBRSxDQUFDLFdBQVcsR0FBRyxLQUFLLEVBQUUsSUFBSSxDQUFDLENBQUM7T0FDL0UsQ0FBQyxDQUFDO0tBQ0o7O0FBRUQsUUFBSSxPQUFPLElBQUksT0FBTyxPQUFPLEtBQUssUUFBUSxFQUFFO0FBQzFDLFVBQUksZUFBUSxPQUFPLENBQUMsRUFBRTtBQUNwQixhQUFLLElBQUksQ0FBQyxHQUFHLE9BQU8sQ0FBQyxNQUFNLEVBQUUsQ0FBQyxHQUFHLENBQUMsRUFBRSxDQUFDLEVBQUUsRUFBRTtBQUN2QyxjQUFJLENBQUMsSUFBSSxPQUFPLEVBQUU7QUFDaEIseUJBQWEsQ0FBQyxDQUFDLEVBQUUsQ0FBQyxFQUFFLENBQUMsS0FBSyxPQUFPLENBQUMsTUFBTSxHQUFHLENBQUMsQ0FBQyxDQUFDO1dBQy9DO1NBQ0Y7T0FDRixNQUFNO0FBQ0wsWUFBSSxRQUFRLFlBQUEsQ0FBQzs7QUFFYixhQUFLLElBQUksR0FBRyxJQUFJLE9BQU8sRUFBRTtBQUN2QixjQUFJLE9BQU8sQ0FBQyxjQUFjLENBQUMsR0FBRyxDQUFDLEVBQUU7Ozs7QUFJL0IsZ0JBQUksUUFBUSxLQUFLLFNBQVMsRUFBRTtBQUMxQiwyQkFBYSxDQUFDLFFBQVEsRUFBRSxDQUFDLEdBQUcsQ0FBQyxDQUFDLENBQUM7YUFDaEM7QUFDRCxvQkFBUSxHQUFHLEdBQUcsQ0FBQztBQUNmLGFBQUMsRUFBRSxDQUFDO1dBQ0w7U0FDRjtBQUNELFlBQUksUUFBUSxLQUFLLFNBQVMsRUFBRTtBQUMxQix1QkFBYSxDQUFDLFFBQVEsRUFBRSxDQUFDLEdBQUcsQ0FBQyxFQUFFLElBQUksQ0FBQyxDQUFDO1NBQ3RDO09BQ0Y7S0FDRjs7QUFFRCxRQUFJLENBQUMsS0FBSyxDQUFDLEVBQUU7QUFDWCxTQUFHLEdBQUcsT0FBTyxDQUFDLElBQUksQ0FBQyxDQUFDO0tBQ3JCOztBQUVELFdBQU8sR0FBRyxDQUFDO0dBQ1osQ0FBQyxDQUFDO0NBQ0oiLCJmaWxlIjoiZWFjaC5qcyIsInNvdXJjZXNDb250ZW50IjpbImltcG9ydCB7YXBwZW5kQ29udGV4dFBhdGgsIGJsb2NrUGFyYW1zLCBjcmVhdGVGcmFtZSwgaXNBcnJheSwgaXNGdW5jdGlvbn0gZnJvbSAnLi4vdXRpbHMnO1xuaW1wb3J0IEV4Y2VwdGlvbiBmcm9tICcuLi9leGNlcHRpb24nO1xuXG5leHBvcnQgZGVmYXVsdCBmdW5jdGlvbihpbnN0YW5jZSkge1xuICBpbnN0YW5jZS5yZWdpc3RlckhlbHBlcignZWFjaCcsIGZ1bmN0aW9uKGNvbnRleHQsIG9wdGlvbnMpIHtcbiAgICBpZiAoIW9wdGlvbnMpIHtcbiAgICAgIHRocm93IG5ldyBFeGNlcHRpb24oJ011c3QgcGFzcyBpdGVyYXRvciB0byAjZWFjaCcpO1xuICAgIH1cblxuICAgIGxldCBmbiA9IG9wdGlvbnMuZm4sXG4gICAgICAgIGludmVyc2UgPSBvcHRpb25zLmludmVyc2UsXG4gICAgICAgIGkgPSAwLFxuICAgICAgICByZXQgPSAnJyxcbiAgICAgICAgZGF0YSxcbiAgICAgICAgY29udGV4dFBhdGg7XG5cbiAgICBpZiAob3B0aW9ucy5kYXRhICYmIG9wdGlvbnMuaWRzKSB7XG4gICAgICBjb250ZXh0UGF0aCA9IGFwcGVuZENvbnRleHRQYXRoKG9wdGlvbnMuZGF0YS5jb250ZXh0UGF0aCwgb3B0aW9ucy5pZHNbMF0pICsgJy4nO1xuICAgIH1cblxuICAgIGlmIChpc0Z1bmN0aW9uKGNvbnRleHQpKSB7IGNvbnRleHQgPSBjb250ZXh0LmNhbGwodGhpcyk7IH1cblxuICAgIGlmIChvcHRpb25zLmRhdGEpIHtcbiAgICAgIGRhdGEgPSBjcmVhdGVGcmFtZShvcHRpb25zLmRhdGEpO1xuICAgIH1cblxuICAgIGZ1bmN0aW9uIGV4ZWNJdGVyYXRpb24oZmllbGQsIGluZGV4LCBsYXN0KSB7XG4gICAgICBpZiAoZGF0YSkge1xuICAgICAgICBkYXRhLmtleSA9IGZpZWxkO1xuICAgICAgICBkYXRhLmluZGV4ID0gaW5kZXg7XG4gICAgICAgIGRhdGEuZmlyc3QgPSBpbmRleCA9PT0gMDtcbiAgICAgICAgZGF0YS5sYXN0ID0gISFsYXN0O1xuXG4gICAgICAgIGlmIChjb250ZXh0UGF0aCkge1xuICAgICAgICAgIGRhdGEuY29udGV4dFBhdGggPSBjb250ZXh0UGF0aCArIGZpZWxkO1xuICAgICAgICB9XG4gICAgICB9XG5cbiAgICAgIHJldCA9IHJldCArIGZuKGNvbnRleHRbZmllbGRdLCB7XG4gICAgICAgIGRhdGE6IGRhdGEsXG4gICAgICAgIGJsb2NrUGFyYW1zOiBibG9ja1BhcmFtcyhbY29udGV4dFtmaWVsZF0sIGZpZWxkXSwgW2NvbnRleHRQYXRoICsgZmllbGQsIG51bGxdKVxuICAgICAgfSk7XG4gICAgfVxuXG4gICAgaWYgKGNvbnRleHQgJiYgdHlwZW9mIGNvbnRleHQgPT09ICdvYmplY3QnKSB7XG4gICAgICBpZiAoaXNBcnJheShjb250ZXh0KSkge1xuICAgICAgICBmb3IgKGxldCBqID0gY29udGV4dC5sZW5ndGg7IGkgPCBqOyBpKyspIHtcbiAgICAgICAgICBpZiAoaSBpbiBjb250ZXh0KSB7XG4gICAgICAgICAgICBleGVjSXRlcmF0aW9uKGksIGksIGkgPT09IGNvbnRleHQubGVuZ3RoIC0gMSk7XG4gICAgICAgICAgfVxuICAgICAgICB9XG4gICAgICB9IGVsc2Uge1xuICAgICAgICBsZXQgcHJpb3JLZXk7XG5cbiAgICAgICAgZm9yIChsZXQga2V5IGluIGNvbnRleHQpIHtcbiAgICAgICAgICBpZiAoY29udGV4dC5oYXNPd25Qcm9wZXJ0eShrZXkpKSB7XG4gICAgICAgICAgICAvLyBXZSdyZSBydW5uaW5nIHRoZSBpdGVyYXRpb25zIG9uZSBzdGVwIG91dCBvZiBzeW5jIHNvIHdlIGNhbiBkZXRlY3RcbiAgICAgICAgICAgIC8vIHRoZSBsYXN0IGl0ZXJhdGlvbiB3aXRob3V0IGhhdmUgdG8gc2NhbiB0aGUgb2JqZWN0IHR3aWNlIGFuZCBjcmVhdGVcbiAgICAgICAgICAgIC8vIGFuIGl0ZXJtZWRpYXRlIGtleXMgYXJyYXkuXG4gICAgICAgICAgICBpZiAocHJpb3JLZXkgIT09IHVuZGVmaW5lZCkge1xuICAgICAgICAgICAgICBleGVjSXRlcmF0aW9uKHByaW9yS2V5LCBpIC0gMSk7XG4gICAgICAgICAgICB9XG4gICAgICAgICAgICBwcmlvcktleSA9IGtleTtcbiAgICAgICAgICAgIGkrKztcbiAgICAgICAgICB9XG4gICAgICAgIH1cbiAgICAgICAgaWYgKHByaW9yS2V5ICE9PSB1bmRlZmluZWQpIHtcbiAgICAgICAgICBleGVjSXRlcmF0aW9uKHByaW9yS2V5LCBpIC0gMSwgdHJ1ZSk7XG4gICAgICAgIH1cbiAgICAgIH1cbiAgICB9XG5cbiAgICBpZiAoaSA9PT0gMCkge1xuICAgICAgcmV0ID0gaW52ZXJzZSh0aGlzKTtcbiAgICB9XG5cbiAgICByZXR1cm4gcmV0O1xuICB9KTtcbn1cbiJdfQ==
+
+
+/***/ },
+/* 234 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	exports.__esModule = true;
+	// istanbul ignore next
+	
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
+	
+	var _exception = __webpack_require__(230);
+	
+	var _exception2 = _interopRequireDefault(_exception);
+	
+	exports['default'] = function (instance) {
+	  instance.registerHelper('helperMissing', function () /* [args, ]options */{
+	    if (arguments.length === 1) {
+	      // A missing field in a {{foo}} construct.
+	      return undefined;
+	    } else {
+	      // Someone is actually trying to call something, blow up.
+	      throw new _exception2['default']('Missing helper: "' + arguments[arguments.length - 1].name + '"');
+	    }
+	  });
+	};
+	
+	module.exports = exports['default'];
+	//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIi4uLy4uLy4uLy4uL2xpYi9oYW5kbGViYXJzL2hlbHBlcnMvaGVscGVyLW1pc3NpbmcuanMiXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6Ijs7Ozs7Ozt5QkFBc0IsY0FBYzs7OztxQkFFckIsVUFBUyxRQUFRLEVBQUU7QUFDaEMsVUFBUSxDQUFDLGNBQWMsQ0FBQyxlQUFlLEVBQUUsaUNBQWdDO0FBQ3ZFLFFBQUksU0FBUyxDQUFDLE1BQU0sS0FBSyxDQUFDLEVBQUU7O0FBRTFCLGFBQU8sU0FBUyxDQUFDO0tBQ2xCLE1BQU07O0FBRUwsWUFBTSwyQkFBYyxtQkFBbUIsR0FBRyxTQUFTLENBQUMsU0FBUyxDQUFDLE1BQU0sR0FBRyxDQUFDLENBQUMsQ0FBQyxJQUFJLEdBQUcsR0FBRyxDQUFDLENBQUM7S0FDdkY7R0FDRixDQUFDLENBQUM7Q0FDSiIsImZpbGUiOiJoZWxwZXItbWlzc2luZy5qcyIsInNvdXJjZXNDb250ZW50IjpbImltcG9ydCBFeGNlcHRpb24gZnJvbSAnLi4vZXhjZXB0aW9uJztcblxuZXhwb3J0IGRlZmF1bHQgZnVuY3Rpb24oaW5zdGFuY2UpIHtcbiAgaW5zdGFuY2UucmVnaXN0ZXJIZWxwZXIoJ2hlbHBlck1pc3NpbmcnLCBmdW5jdGlvbigvKiBbYXJncywgXW9wdGlvbnMgKi8pIHtcbiAgICBpZiAoYXJndW1lbnRzLmxlbmd0aCA9PT0gMSkge1xuICAgICAgLy8gQSBtaXNzaW5nIGZpZWxkIGluIGEge3tmb299fSBjb25zdHJ1Y3QuXG4gICAgICByZXR1cm4gdW5kZWZpbmVkO1xuICAgIH0gZWxzZSB7XG4gICAgICAvLyBTb21lb25lIGlzIGFjdHVhbGx5IHRyeWluZyB0byBjYWxsIHNvbWV0aGluZywgYmxvdyB1cC5cbiAgICAgIHRocm93IG5ldyBFeGNlcHRpb24oJ01pc3NpbmcgaGVscGVyOiBcIicgKyBhcmd1bWVudHNbYXJndW1lbnRzLmxlbmd0aCAtIDFdLm5hbWUgKyAnXCInKTtcbiAgICB9XG4gIH0pO1xufVxuIl19
+
+
+/***/ },
+/* 235 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	exports.__esModule = true;
+	
+	var _utils = __webpack_require__(229);
+	
+	exports['default'] = function (instance) {
+	  instance.registerHelper('if', function (conditional, options) {
+	    if (_utils.isFunction(conditional)) {
+	      conditional = conditional.call(this);
+	    }
+	
+	    // Default behavior is to render the positive path if the value is truthy and not empty.
+	    // The `includeZero` option may be set to treat the condtional as purely not empty based on the
+	    // behavior of isEmpty. Effectively this determines if 0 is handled by the positive path or negative.
+	    if (!options.hash.includeZero && !conditional || _utils.isEmpty(conditional)) {
+	      return options.inverse(this);
+	    } else {
+	      return options.fn(this);
+	    }
+	  });
+	
+	  instance.registerHelper('unless', function (conditional, options) {
+	    return instance.helpers['if'].call(this, conditional, { fn: options.inverse, inverse: options.fn, hash: options.hash });
+	  });
+	};
+	
+	module.exports = exports['default'];
+	//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIi4uLy4uLy4uLy4uL2xpYi9oYW5kbGViYXJzL2hlbHBlcnMvaWYuanMiXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6Ijs7OztxQkFBa0MsVUFBVTs7cUJBRTdCLFVBQVMsUUFBUSxFQUFFO0FBQ2hDLFVBQVEsQ0FBQyxjQUFjLENBQUMsSUFBSSxFQUFFLFVBQVMsV0FBVyxFQUFFLE9BQU8sRUFBRTtBQUMzRCxRQUFJLGtCQUFXLFdBQVcsQ0FBQyxFQUFFO0FBQUUsaUJBQVcsR0FBRyxXQUFXLENBQUMsSUFBSSxDQUFDLElBQUksQ0FBQyxDQUFDO0tBQUU7Ozs7O0FBS3RFLFFBQUksQUFBQyxDQUFDLE9BQU8sQ0FBQyxJQUFJLENBQUMsV0FBVyxJQUFJLENBQUMsV0FBVyxJQUFLLGVBQVEsV0FBVyxDQUFDLEVBQUU7QUFDdkUsYUFBTyxPQUFPLENBQUMsT0FBTyxDQUFDLElBQUksQ0FBQyxDQUFDO0tBQzlCLE1BQU07QUFDTCxhQUFPLE9BQU8sQ0FBQyxFQUFFLENBQUMsSUFBSSxDQUFDLENBQUM7S0FDekI7R0FDRixDQUFDLENBQUM7O0FBRUgsVUFBUSxDQUFDLGNBQWMsQ0FBQyxRQUFRLEVBQUUsVUFBUyxXQUFXLEVBQUUsT0FBTyxFQUFFO0FBQy9ELFdBQU8sUUFBUSxDQUFDLE9BQU8sQ0FBQyxJQUFJLENBQUMsQ0FBQyxJQUFJLENBQUMsSUFBSSxFQUFFLFdBQVcsRUFBRSxFQUFDLEVBQUUsRUFBRSxPQUFPLENBQUMsT0FBTyxFQUFFLE9BQU8sRUFBRSxPQUFPLENBQUMsRUFBRSxFQUFFLElBQUksRUFBRSxPQUFPLENBQUMsSUFBSSxFQUFDLENBQUMsQ0FBQztHQUN2SCxDQUFDLENBQUM7Q0FDSiIsImZpbGUiOiJpZi5qcyIsInNvdXJjZXNDb250ZW50IjpbImltcG9ydCB7aXNFbXB0eSwgaXNGdW5jdGlvbn0gZnJvbSAnLi4vdXRpbHMnO1xuXG5leHBvcnQgZGVmYXVsdCBmdW5jdGlvbihpbnN0YW5jZSkge1xuICBpbnN0YW5jZS5yZWdpc3RlckhlbHBlcignaWYnLCBmdW5jdGlvbihjb25kaXRpb25hbCwgb3B0aW9ucykge1xuICAgIGlmIChpc0Z1bmN0aW9uKGNvbmRpdGlvbmFsKSkgeyBjb25kaXRpb25hbCA9IGNvbmRpdGlvbmFsLmNhbGwodGhpcyk7IH1cblxuICAgIC8vIERlZmF1bHQgYmVoYXZpb3IgaXMgdG8gcmVuZGVyIHRoZSBwb3NpdGl2ZSBwYXRoIGlmIHRoZSB2YWx1ZSBpcyB0cnV0aHkgYW5kIG5vdCBlbXB0eS5cbiAgICAvLyBUaGUgYGluY2x1ZGVaZXJvYCBvcHRpb24gbWF5IGJlIHNldCB0byB0cmVhdCB0aGUgY29uZHRpb25hbCBhcyBwdXJlbHkgbm90IGVtcHR5IGJhc2VkIG9uIHRoZVxuICAgIC8vIGJlaGF2aW9yIG9mIGlzRW1wdHkuIEVmZmVjdGl2ZWx5IHRoaXMgZGV0ZXJtaW5lcyBpZiAwIGlzIGhhbmRsZWQgYnkgdGhlIHBvc2l0aXZlIHBhdGggb3IgbmVnYXRpdmUuXG4gICAgaWYgKCghb3B0aW9ucy5oYXNoLmluY2x1ZGVaZXJvICYmICFjb25kaXRpb25hbCkgfHwgaXNFbXB0eShjb25kaXRpb25hbCkpIHtcbiAgICAgIHJldHVybiBvcHRpb25zLmludmVyc2UodGhpcyk7XG4gICAgfSBlbHNlIHtcbiAgICAgIHJldHVybiBvcHRpb25zLmZuKHRoaXMpO1xuICAgIH1cbiAgfSk7XG5cbiAgaW5zdGFuY2UucmVnaXN0ZXJIZWxwZXIoJ3VubGVzcycsIGZ1bmN0aW9uKGNvbmRpdGlvbmFsLCBvcHRpb25zKSB7XG4gICAgcmV0dXJuIGluc3RhbmNlLmhlbHBlcnNbJ2lmJ10uY2FsbCh0aGlzLCBjb25kaXRpb25hbCwge2ZuOiBvcHRpb25zLmludmVyc2UsIGludmVyc2U6IG9wdGlvbnMuZm4sIGhhc2g6IG9wdGlvbnMuaGFzaH0pO1xuICB9KTtcbn1cbiJdfQ==
+
+
+/***/ },
+/* 236 */
+/***/ function(module, exports) {
+
+	'use strict';
+	
+	exports.__esModule = true;
+	
+	exports['default'] = function (instance) {
+	  instance.registerHelper('log', function () /* message, options */{
+	    var args = [undefined],
+	        options = arguments[arguments.length - 1];
+	    for (var i = 0; i < arguments.length - 1; i++) {
+	      args.push(arguments[i]);
+	    }
+	
+	    var level = 1;
+	    if (options.hash.level != null) {
+	      level = options.hash.level;
+	    } else if (options.data && options.data.level != null) {
+	      level = options.data.level;
+	    }
+	    args[0] = level;
+	
+	    instance.log.apply(instance, args);
+	  });
+	};
+	
+	module.exports = exports['default'];
+	//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIi4uLy4uLy4uLy4uL2xpYi9oYW5kbGViYXJzL2hlbHBlcnMvbG9nLmpzIl0sIm5hbWVzIjpbXSwibWFwcGluZ3MiOiI7Ozs7cUJBQWUsVUFBUyxRQUFRLEVBQUU7QUFDaEMsVUFBUSxDQUFDLGNBQWMsQ0FBQyxLQUFLLEVBQUUsa0NBQWlDO0FBQzlELFFBQUksSUFBSSxHQUFHLENBQUMsU0FBUyxDQUFDO1FBQ2xCLE9BQU8sR0FBRyxTQUFTLENBQUMsU0FBUyxDQUFDLE1BQU0sR0FBRyxDQUFDLENBQUMsQ0FBQztBQUM5QyxTQUFLLElBQUksQ0FBQyxHQUFHLENBQUMsRUFBRSxDQUFDLEdBQUcsU0FBUyxDQUFDLE1BQU0sR0FBRyxDQUFDLEVBQUUsQ0FBQyxFQUFFLEVBQUU7QUFDN0MsVUFBSSxDQUFDLElBQUksQ0FBQyxTQUFTLENBQUMsQ0FBQyxDQUFDLENBQUMsQ0FBQztLQUN6Qjs7QUFFRCxRQUFJLEtBQUssR0FBRyxDQUFDLENBQUM7QUFDZCxRQUFJLE9BQU8sQ0FBQyxJQUFJLENBQUMsS0FBSyxJQUFJLElBQUksRUFBRTtBQUM5QixXQUFLLEdBQUcsT0FBTyxDQUFDLElBQUksQ0FBQyxLQUFLLENBQUM7S0FDNUIsTUFBTSxJQUFJLE9BQU8sQ0FBQyxJQUFJLElBQUksT0FBTyxDQUFDLElBQUksQ0FBQyxLQUFLLElBQUksSUFBSSxFQUFFO0FBQ3JELFdBQUssR0FBRyxPQUFPLENBQUMsSUFBSSxDQUFDLEtBQUssQ0FBQztLQUM1QjtBQUNELFFBQUksQ0FBQyxDQUFDLENBQUMsR0FBRyxLQUFLLENBQUM7O0FBRWhCLFlBQVEsQ0FBQyxHQUFHLE1BQUEsQ0FBWixRQUFRLEVBQVMsSUFBSSxDQUFDLENBQUM7R0FDeEIsQ0FBQyxDQUFDO0NBQ0oiLCJmaWxlIjoibG9nLmpzIiwic291cmNlc0NvbnRlbnQiOlsiZXhwb3J0IGRlZmF1bHQgZnVuY3Rpb24oaW5zdGFuY2UpIHtcbiAgaW5zdGFuY2UucmVnaXN0ZXJIZWxwZXIoJ2xvZycsIGZ1bmN0aW9uKC8qIG1lc3NhZ2UsIG9wdGlvbnMgKi8pIHtcbiAgICBsZXQgYXJncyA9IFt1bmRlZmluZWRdLFxuICAgICAgICBvcHRpb25zID0gYXJndW1lbnRzW2FyZ3VtZW50cy5sZW5ndGggLSAxXTtcbiAgICBmb3IgKGxldCBpID0gMDsgaSA8IGFyZ3VtZW50cy5sZW5ndGggLSAxOyBpKyspIHtcbiAgICAgIGFyZ3MucHVzaChhcmd1bWVudHNbaV0pO1xuICAgIH1cblxuICAgIGxldCBsZXZlbCA9IDE7XG4gICAgaWYgKG9wdGlvbnMuaGFzaC5sZXZlbCAhPSBudWxsKSB7XG4gICAgICBsZXZlbCA9IG9wdGlvbnMuaGFzaC5sZXZlbDtcbiAgICB9IGVsc2UgaWYgKG9wdGlvbnMuZGF0YSAmJiBvcHRpb25zLmRhdGEubGV2ZWwgIT0gbnVsbCkge1xuICAgICAgbGV2ZWwgPSBvcHRpb25zLmRhdGEubGV2ZWw7XG4gICAgfVxuICAgIGFyZ3NbMF0gPSBsZXZlbDtcblxuICAgIGluc3RhbmNlLmxvZyguLi4gYXJncyk7XG4gIH0pO1xufVxuIl19
+
+
+/***/ },
+/* 237 */
+/***/ function(module, exports) {
+
+	'use strict';
+	
+	exports.__esModule = true;
+	
+	exports['default'] = function (instance) {
+	  instance.registerHelper('lookup', function (obj, field) {
+	    return obj && obj[field];
+	  });
+	};
+	
+	module.exports = exports['default'];
+	//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIi4uLy4uLy4uLy4uL2xpYi9oYW5kbGViYXJzL2hlbHBlcnMvbG9va3VwLmpzIl0sIm5hbWVzIjpbXSwibWFwcGluZ3MiOiI7Ozs7cUJBQWUsVUFBUyxRQUFRLEVBQUU7QUFDaEMsVUFBUSxDQUFDLGNBQWMsQ0FBQyxRQUFRLEVBQUUsVUFBUyxHQUFHLEVBQUUsS0FBSyxFQUFFO0FBQ3JELFdBQU8sR0FBRyxJQUFJLEdBQUcsQ0FBQyxLQUFLLENBQUMsQ0FBQztHQUMxQixDQUFDLENBQUM7Q0FDSiIsImZpbGUiOiJsb29rdXAuanMiLCJzb3VyY2VzQ29udGVudCI6WyJleHBvcnQgZGVmYXVsdCBmdW5jdGlvbihpbnN0YW5jZSkge1xuICBpbnN0YW5jZS5yZWdpc3RlckhlbHBlcignbG9va3VwJywgZnVuY3Rpb24ob2JqLCBmaWVsZCkge1xuICAgIHJldHVybiBvYmogJiYgb2JqW2ZpZWxkXTtcbiAgfSk7XG59XG4iXX0=
+
+
+/***/ },
+/* 238 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	exports.__esModule = true;
+	
+	var _utils = __webpack_require__(229);
+	
+	exports['default'] = function (instance) {
+	  instance.registerHelper('with', function (context, options) {
+	    if (_utils.isFunction(context)) {
+	      context = context.call(this);
+	    }
+	
+	    var fn = options.fn;
+	
+	    if (!_utils.isEmpty(context)) {
+	      var data = options.data;
+	      if (options.data && options.ids) {
+	        data = _utils.createFrame(options.data);
+	        data.contextPath = _utils.appendContextPath(options.data.contextPath, options.ids[0]);
+	      }
+	
+	      return fn(context, {
+	        data: data,
+	        blockParams: _utils.blockParams([context], [data && data.contextPath])
+	      });
+	    } else {
+	      return options.inverse(this);
+	    }
+	  });
+	};
+	
+	module.exports = exports['default'];
+	//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIi4uLy4uLy4uLy4uL2xpYi9oYW5kbGViYXJzL2hlbHBlcnMvd2l0aC5qcyJdLCJuYW1lcyI6W10sIm1hcHBpbmdzIjoiOzs7O3FCQUErRSxVQUFVOztxQkFFMUUsVUFBUyxRQUFRLEVBQUU7QUFDaEMsVUFBUSxDQUFDLGNBQWMsQ0FBQyxNQUFNLEVBQUUsVUFBUyxPQUFPLEVBQUUsT0FBTyxFQUFFO0FBQ3pELFFBQUksa0JBQVcsT0FBTyxDQUFDLEVBQUU7QUFBRSxhQUFPLEdBQUcsT0FBTyxDQUFDLElBQUksQ0FBQyxJQUFJLENBQUMsQ0FBQztLQUFFOztBQUUxRCxRQUFJLEVBQUUsR0FBRyxPQUFPLENBQUMsRUFBRSxDQUFDOztBQUVwQixRQUFJLENBQUMsZUFBUSxPQUFPLENBQUMsRUFBRTtBQUNyQixVQUFJLElBQUksR0FBRyxPQUFPLENBQUMsSUFBSSxDQUFDO0FBQ3hCLFVBQUksT0FBTyxDQUFDLElBQUksSUFBSSxPQUFPLENBQUMsR0FBRyxFQUFFO0FBQy9CLFlBQUksR0FBRyxtQkFBWSxPQUFPLENBQUMsSUFBSSxDQUFDLENBQUM7QUFDakMsWUFBSSxDQUFDLFdBQVcsR0FBRyx5QkFBa0IsT0FBTyxDQUFDLElBQUksQ0FBQyxXQUFXLEVBQUUsT0FBTyxDQUFDLEdBQUcsQ0FBQyxDQUFDLENBQUMsQ0FBQyxDQUFDO09BQ2hGOztBQUVELGFBQU8sRUFBRSxDQUFDLE9BQU8sRUFBRTtBQUNqQixZQUFJLEVBQUUsSUFBSTtBQUNWLG1CQUFXLEVBQUUsbUJBQVksQ0FBQyxPQUFPLENBQUMsRUFBRSxDQUFDLElBQUksSUFBSSxJQUFJLENBQUMsV0FBVyxDQUFDLENBQUM7T0FDaEUsQ0FBQyxDQUFDO0tBQ0osTUFBTTtBQUNMLGFBQU8sT0FBTyxDQUFDLE9BQU8sQ0FBQyxJQUFJLENBQUMsQ0FBQztLQUM5QjtHQUNGLENBQUMsQ0FBQztDQUNKIiwiZmlsZSI6IndpdGguanMiLCJzb3VyY2VzQ29udGVudCI6WyJpbXBvcnQge2FwcGVuZENvbnRleHRQYXRoLCBibG9ja1BhcmFtcywgY3JlYXRlRnJhbWUsIGlzRW1wdHksIGlzRnVuY3Rpb259IGZyb20gJy4uL3V0aWxzJztcblxuZXhwb3J0IGRlZmF1bHQgZnVuY3Rpb24oaW5zdGFuY2UpIHtcbiAgaW5zdGFuY2UucmVnaXN0ZXJIZWxwZXIoJ3dpdGgnLCBmdW5jdGlvbihjb250ZXh0LCBvcHRpb25zKSB7XG4gICAgaWYgKGlzRnVuY3Rpb24oY29udGV4dCkpIHsgY29udGV4dCA9IGNvbnRleHQuY2FsbCh0aGlzKTsgfVxuXG4gICAgbGV0IGZuID0gb3B0aW9ucy5mbjtcblxuICAgIGlmICghaXNFbXB0eShjb250ZXh0KSkge1xuICAgICAgbGV0IGRhdGEgPSBvcHRpb25zLmRhdGE7XG4gICAgICBpZiAob3B0aW9ucy5kYXRhICYmIG9wdGlvbnMuaWRzKSB7XG4gICAgICAgIGRhdGEgPSBjcmVhdGVGcmFtZShvcHRpb25zLmRhdGEpO1xuICAgICAgICBkYXRhLmNvbnRleHRQYXRoID0gYXBwZW5kQ29udGV4dFBhdGgob3B0aW9ucy5kYXRhLmNvbnRleHRQYXRoLCBvcHRpb25zLmlkc1swXSk7XG4gICAgICB9XG5cbiAgICAgIHJldHVybiBmbihjb250ZXh0LCB7XG4gICAgICAgIGRhdGE6IGRhdGEsXG4gICAgICAgIGJsb2NrUGFyYW1zOiBibG9ja1BhcmFtcyhbY29udGV4dF0sIFtkYXRhICYmIGRhdGEuY29udGV4dFBhdGhdKVxuICAgICAgfSk7XG4gICAgfSBlbHNlIHtcbiAgICAgIHJldHVybiBvcHRpb25zLmludmVyc2UodGhpcyk7XG4gICAgfVxuICB9KTtcbn1cbiJdfQ==
+
+
+/***/ },
+/* 239 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	exports.__esModule = true;
+	exports.registerDefaultDecorators = registerDefaultDecorators;
+	// istanbul ignore next
+	
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
+	
+	var _decoratorsInline = __webpack_require__(240);
+	
+	var _decoratorsInline2 = _interopRequireDefault(_decoratorsInline);
+	
+	function registerDefaultDecorators(instance) {
+	  _decoratorsInline2['default'](instance);
+	}
+	//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIi4uLy4uLy4uL2xpYi9oYW5kbGViYXJzL2RlY29yYXRvcnMuanMiXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6Ijs7Ozs7Ozs7Z0NBQTJCLHFCQUFxQjs7OztBQUV6QyxTQUFTLHlCQUF5QixDQUFDLFFBQVEsRUFBRTtBQUNsRCxnQ0FBZSxRQUFRLENBQUMsQ0FBQztDQUMxQiIsImZpbGUiOiJkZWNvcmF0b3JzLmpzIiwic291cmNlc0NvbnRlbnQiOlsiaW1wb3J0IHJlZ2lzdGVySW5saW5lIGZyb20gJy4vZGVjb3JhdG9ycy9pbmxpbmUnO1xuXG5leHBvcnQgZnVuY3Rpb24gcmVnaXN0ZXJEZWZhdWx0RGVjb3JhdG9ycyhpbnN0YW5jZSkge1xuICByZWdpc3RlcklubGluZShpbnN0YW5jZSk7XG59XG5cbiJdfQ==
+
+
+/***/ },
+/* 240 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	exports.__esModule = true;
+	
+	var _utils = __webpack_require__(229);
+	
+	exports['default'] = function (instance) {
+	  instance.registerDecorator('inline', function (fn, props, container, options) {
+	    var ret = fn;
+	    if (!props.partials) {
+	      props.partials = {};
+	      ret = function (context, options) {
+	        // Create a new partials stack frame prior to exec.
+	        var original = container.partials;
+	        container.partials = _utils.extend({}, original, props.partials);
+	        var ret = fn(context, options);
+	        container.partials = original;
+	        return ret;
+	      };
+	    }
+	
+	    props.partials[options.args[0]] = options.fn;
+	
+	    return ret;
+	  });
+	};
+	
+	module.exports = exports['default'];
+	//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIi4uLy4uLy4uLy4uL2xpYi9oYW5kbGViYXJzL2RlY29yYXRvcnMvaW5saW5lLmpzIl0sIm5hbWVzIjpbXSwibWFwcGluZ3MiOiI7Ozs7cUJBQXFCLFVBQVU7O3FCQUVoQixVQUFTLFFBQVEsRUFBRTtBQUNoQyxVQUFRLENBQUMsaUJBQWlCLENBQUMsUUFBUSxFQUFFLFVBQVMsRUFBRSxFQUFFLEtBQUssRUFBRSxTQUFTLEVBQUUsT0FBTyxFQUFFO0FBQzNFLFFBQUksR0FBRyxHQUFHLEVBQUUsQ0FBQztBQUNiLFFBQUksQ0FBQyxLQUFLLENBQUMsUUFBUSxFQUFFO0FBQ25CLFdBQUssQ0FBQyxRQUFRLEdBQUcsRUFBRSxDQUFDO0FBQ3BCLFNBQUcsR0FBRyxVQUFTLE9BQU8sRUFBRSxPQUFPLEVBQUU7O0FBRS9CLFlBQUksUUFBUSxHQUFHLFNBQVMsQ0FBQyxRQUFRLENBQUM7QUFDbEMsaUJBQVMsQ0FBQyxRQUFRLEdBQUcsY0FBTyxFQUFFLEVBQUUsUUFBUSxFQUFFLEtBQUssQ0FBQyxRQUFRLENBQUMsQ0FBQztBQUMxRCxZQUFJLEdBQUcsR0FBRyxFQUFFLENBQUMsT0FBTyxFQUFFLE9BQU8sQ0FBQyxDQUFDO0FBQy9CLGlCQUFTLENBQUMsUUFBUSxHQUFHLFFBQVEsQ0FBQztBQUM5QixlQUFPLEdBQUcsQ0FBQztPQUNaLENBQUM7S0FDSDs7QUFFRCxTQUFLLENBQUMsUUFBUSxDQUFDLE9BQU8sQ0FBQyxJQUFJLENBQUMsQ0FBQyxDQUFDLENBQUMsR0FBRyxPQUFPLENBQUMsRUFBRSxDQUFDOztBQUU3QyxXQUFPLEdBQUcsQ0FBQztHQUNaLENBQUMsQ0FBQztDQUNKIiwiZmlsZSI6ImlubGluZS5qcyIsInNvdXJjZXNDb250ZW50IjpbImltcG9ydCB7ZXh0ZW5kfSBmcm9tICcuLi91dGlscyc7XG5cbmV4cG9ydCBkZWZhdWx0IGZ1bmN0aW9uKGluc3RhbmNlKSB7XG4gIGluc3RhbmNlLnJlZ2lzdGVyRGVjb3JhdG9yKCdpbmxpbmUnLCBmdW5jdGlvbihmbiwgcHJvcHMsIGNvbnRhaW5lciwgb3B0aW9ucykge1xuICAgIGxldCByZXQgPSBmbjtcbiAgICBpZiAoIXByb3BzLnBhcnRpYWxzKSB7XG4gICAgICBwcm9wcy5wYXJ0aWFscyA9IHt9O1xuICAgICAgcmV0ID0gZnVuY3Rpb24oY29udGV4dCwgb3B0aW9ucykge1xuICAgICAgICAvLyBDcmVhdGUgYSBuZXcgcGFydGlhbHMgc3RhY2sgZnJhbWUgcHJpb3IgdG8gZXhlYy5cbiAgICAgICAgbGV0IG9yaWdpbmFsID0gY29udGFpbmVyLnBhcnRpYWxzO1xuICAgICAgICBjb250YWluZXIucGFydGlhbHMgPSBleHRlbmQoe30sIG9yaWdpbmFsLCBwcm9wcy5wYXJ0aWFscyk7XG4gICAgICAgIGxldCByZXQgPSBmbihjb250ZXh0LCBvcHRpb25zKTtcbiAgICAgICAgY29udGFpbmVyLnBhcnRpYWxzID0gb3JpZ2luYWw7XG4gICAgICAgIHJldHVybiByZXQ7XG4gICAgICB9O1xuICAgIH1cblxuICAgIHByb3BzLnBhcnRpYWxzW29wdGlvbnMuYXJnc1swXV0gPSBvcHRpb25zLmZuO1xuXG4gICAgcmV0dXJuIHJldDtcbiAgfSk7XG59XG4iXX0=
+
+
+/***/ },
+/* 241 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	exports.__esModule = true;
+	
+	var _utils = __webpack_require__(229);
+	
+	var logger = {
+	  methodMap: ['debug', 'info', 'warn', 'error'],
+	  level: 'info',
+	
+	  // Maps a given level value to the `methodMap` indexes above.
+	  lookupLevel: function lookupLevel(level) {
+	    if (typeof level === 'string') {
+	      var levelMap = _utils.indexOf(logger.methodMap, level.toLowerCase());
+	      if (levelMap >= 0) {
+	        level = levelMap;
+	      } else {
+	        level = parseInt(level, 10);
+	      }
+	    }
+	
+	    return level;
+	  },
+	
+	  // Can be overridden in the host environment
+	  log: function log(level) {
+	    level = logger.lookupLevel(level);
+	
+	    if (typeof console !== 'undefined' && logger.lookupLevel(logger.level) <= level) {
+	      var method = logger.methodMap[level];
+	      if (!console[method]) {
+	        // eslint-disable-line no-console
+	        method = 'log';
+	      }
+	
+	      for (var _len = arguments.length, message = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
+	        message[_key - 1] = arguments[_key];
+	      }
+	
+	      console[method].apply(console, message); // eslint-disable-line no-console
+	    }
+	  }
+	};
+	
+	exports['default'] = logger;
+	module.exports = exports['default'];
+	//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIi4uLy4uLy4uL2xpYi9oYW5kbGViYXJzL2xvZ2dlci5qcyJdLCJuYW1lcyI6W10sIm1hcHBpbmdzIjoiOzs7O3FCQUFzQixTQUFTOztBQUUvQixJQUFJLE1BQU0sR0FBRztBQUNYLFdBQVMsRUFBRSxDQUFDLE9BQU8sRUFBRSxNQUFNLEVBQUUsTUFBTSxFQUFFLE9BQU8sQ0FBQztBQUM3QyxPQUFLLEVBQUUsTUFBTTs7O0FBR2IsYUFBVyxFQUFFLHFCQUFTLEtBQUssRUFBRTtBQUMzQixRQUFJLE9BQU8sS0FBSyxLQUFLLFFBQVEsRUFBRTtBQUM3QixVQUFJLFFBQVEsR0FBRyxlQUFRLE1BQU0sQ0FBQyxTQUFTLEVBQUUsS0FBSyxDQUFDLFdBQVcsRUFBRSxDQUFDLENBQUM7QUFDOUQsVUFBSSxRQUFRLElBQUksQ0FBQyxFQUFFO0FBQ2pCLGFBQUssR0FBRyxRQUFRLENBQUM7T0FDbEIsTUFBTTtBQUNMLGFBQUssR0FBRyxRQUFRLENBQUMsS0FBSyxFQUFFLEVBQUUsQ0FBQyxDQUFDO09BQzdCO0tBQ0Y7O0FBRUQsV0FBTyxLQUFLLENBQUM7R0FDZDs7O0FBR0QsS0FBRyxFQUFFLGFBQVMsS0FBSyxFQUFjO0FBQy9CLFNBQUssR0FBRyxNQUFNLENBQUMsV0FBVyxDQUFDLEtBQUssQ0FBQyxDQUFDOztBQUVsQyxRQUFJLE9BQU8sT0FBTyxLQUFLLFdBQVcsSUFBSSxNQUFNLENBQUMsV0FBVyxDQUFDLE1BQU0sQ0FBQyxLQUFLLENBQUMsSUFBSSxLQUFLLEVBQUU7QUFDL0UsVUFBSSxNQUFNLEdBQUcsTUFBTSxDQUFDLFNBQVMsQ0FBQyxLQUFLLENBQUMsQ0FBQztBQUNyQyxVQUFJLENBQUMsT0FBTyxDQUFDLE1BQU0sQ0FBQyxFQUFFOztBQUNwQixjQUFNLEdBQUcsS0FBSyxDQUFDO09BQ2hCOzt3Q0FQbUIsT0FBTztBQUFQLGVBQU87OztBQVEzQixhQUFPLENBQUMsTUFBTSxPQUFDLENBQWYsT0FBTyxFQUFZLE9BQU8sQ0FBQyxDQUFDO0tBQzdCO0dBQ0Y7Q0FDRixDQUFDOztxQkFFYSxNQUFNIiwiZmlsZSI6ImxvZ2dlci5qcyIsInNvdXJjZXNDb250ZW50IjpbImltcG9ydCB7aW5kZXhPZn0gZnJvbSAnLi91dGlscyc7XG5cbmxldCBsb2dnZXIgPSB7XG4gIG1ldGhvZE1hcDogWydkZWJ1ZycsICdpbmZvJywgJ3dhcm4nLCAnZXJyb3InXSxcbiAgbGV2ZWw6ICdpbmZvJyxcblxuICAvLyBNYXBzIGEgZ2l2ZW4gbGV2ZWwgdmFsdWUgdG8gdGhlIGBtZXRob2RNYXBgIGluZGV4ZXMgYWJvdmUuXG4gIGxvb2t1cExldmVsOiBmdW5jdGlvbihsZXZlbCkge1xuICAgIGlmICh0eXBlb2YgbGV2ZWwgPT09ICdzdHJpbmcnKSB7XG4gICAgICBsZXQgbGV2ZWxNYXAgPSBpbmRleE9mKGxvZ2dlci5tZXRob2RNYXAsIGxldmVsLnRvTG93ZXJDYXNlKCkpO1xuICAgICAgaWYgKGxldmVsTWFwID49IDApIHtcbiAgICAgICAgbGV2ZWwgPSBsZXZlbE1hcDtcbiAgICAgIH0gZWxzZSB7XG4gICAgICAgIGxldmVsID0gcGFyc2VJbnQobGV2ZWwsIDEwKTtcbiAgICAgIH1cbiAgICB9XG5cbiAgICByZXR1cm4gbGV2ZWw7XG4gIH0sXG5cbiAgLy8gQ2FuIGJlIG92ZXJyaWRkZW4gaW4gdGhlIGhvc3QgZW52aXJvbm1lbnRcbiAgbG9nOiBmdW5jdGlvbihsZXZlbCwgLi4ubWVzc2FnZSkge1xuICAgIGxldmVsID0gbG9nZ2VyLmxvb2t1cExldmVsKGxldmVsKTtcblxuICAgIGlmICh0eXBlb2YgY29uc29sZSAhPT0gJ3VuZGVmaW5lZCcgJiYgbG9nZ2VyLmxvb2t1cExldmVsKGxvZ2dlci5sZXZlbCkgPD0gbGV2ZWwpIHtcbiAgICAgIGxldCBtZXRob2QgPSBsb2dnZXIubWV0aG9kTWFwW2xldmVsXTtcbiAgICAgIGlmICghY29uc29sZVttZXRob2RdKSB7ICAgLy8gZXNsaW50LWRpc2FibGUtbGluZSBuby1jb25zb2xlXG4gICAgICAgIG1ldGhvZCA9ICdsb2cnO1xuICAgICAgfVxuICAgICAgY29uc29sZVttZXRob2RdKC4uLm1lc3NhZ2UpOyAgICAvLyBlc2xpbnQtZGlzYWJsZS1saW5lIG5vLWNvbnNvbGVcbiAgICB9XG4gIH1cbn07XG5cbmV4cG9ydCBkZWZhdWx0IGxvZ2dlcjtcbiJdfQ==
+
+
+/***/ },
+/* 242 */
+/***/ function(module, exports) {
+
+	// Build out our basic SafeString type
+	'use strict';
+	
+	exports.__esModule = true;
+	function SafeString(string) {
+	  this.string = string;
+	}
+	
+	SafeString.prototype.toString = SafeString.prototype.toHTML = function () {
+	  return '' + this.string;
+	};
+	
+	exports['default'] = SafeString;
+	module.exports = exports['default'];
+	//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIi4uLy4uLy4uL2xpYi9oYW5kbGViYXJzL3NhZmUtc3RyaW5nLmpzIl0sIm5hbWVzIjpbXSwibWFwcGluZ3MiOiI7Ozs7QUFDQSxTQUFTLFVBQVUsQ0FBQyxNQUFNLEVBQUU7QUFDMUIsTUFBSSxDQUFDLE1BQU0sR0FBRyxNQUFNLENBQUM7Q0FDdEI7O0FBRUQsVUFBVSxDQUFDLFNBQVMsQ0FBQyxRQUFRLEdBQUcsVUFBVSxDQUFDLFNBQVMsQ0FBQyxNQUFNLEdBQUcsWUFBVztBQUN2RSxTQUFPLEVBQUUsR0FBRyxJQUFJLENBQUMsTUFBTSxDQUFDO0NBQ3pCLENBQUM7O3FCQUVhLFVBQVUiLCJmaWxlIjoic2FmZS1zdHJpbmcuanMiLCJzb3VyY2VzQ29udGVudCI6WyIvLyBCdWlsZCBvdXQgb3VyIGJhc2ljIFNhZmVTdHJpbmcgdHlwZVxuZnVuY3Rpb24gU2FmZVN0cmluZyhzdHJpbmcpIHtcbiAgdGhpcy5zdHJpbmcgPSBzdHJpbmc7XG59XG5cblNhZmVTdHJpbmcucHJvdG90eXBlLnRvU3RyaW5nID0gU2FmZVN0cmluZy5wcm90b3R5cGUudG9IVE1MID0gZnVuY3Rpb24oKSB7XG4gIHJldHVybiAnJyArIHRoaXMuc3RyaW5nO1xufTtcblxuZXhwb3J0IGRlZmF1bHQgU2FmZVN0cmluZztcbiJdfQ==
+
+
+/***/ },
+/* 243 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	exports.__esModule = true;
+	exports.checkRevision = checkRevision;
+	exports.template = template;
+	exports.wrapProgram = wrapProgram;
+	exports.resolvePartial = resolvePartial;
+	exports.invokePartial = invokePartial;
+	exports.noop = noop;
+	// istanbul ignore next
+	
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
+	
+	// istanbul ignore next
+	
+	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj['default'] = obj; return newObj; } }
+	
+	var _utils = __webpack_require__(229);
+	
+	var Utils = _interopRequireWildcard(_utils);
+	
+	var _exception = __webpack_require__(230);
+	
+	var _exception2 = _interopRequireDefault(_exception);
+	
+	var _base = __webpack_require__(228);
+	
+	function checkRevision(compilerInfo) {
+	  var compilerRevision = compilerInfo && compilerInfo[0] || 1,
+	      currentRevision = _base.COMPILER_REVISION;
+	
+	  if (compilerRevision !== currentRevision) {
+	    if (compilerRevision < currentRevision) {
+	      var runtimeVersions = _base.REVISION_CHANGES[currentRevision],
+	          compilerVersions = _base.REVISION_CHANGES[compilerRevision];
+	      throw new _exception2['default']('Template was precompiled with an older version of Handlebars than the current runtime. ' + 'Please update your precompiler to a newer version (' + runtimeVersions + ') or downgrade your runtime to an older version (' + compilerVersions + ').');
+	    } else {
+	      // Use the embedded version info since the runtime doesn't know about this revision yet
+	      throw new _exception2['default']('Template was precompiled with a newer version of Handlebars than the current runtime. ' + 'Please update your runtime to a newer version (' + compilerInfo[1] + ').');
+	    }
+	  }
+	}
+	
+	function template(templateSpec, env) {
+	  /* istanbul ignore next */
+	  if (!env) {
+	    throw new _exception2['default']('No environment passed to template');
+	  }
+	  if (!templateSpec || !templateSpec.main) {
+	    throw new _exception2['default']('Unknown template object: ' + typeof templateSpec);
+	  }
+	
+	  templateSpec.main.decorator = templateSpec.main_d;
+	
+	  // Note: Using env.VM references rather than local var references throughout this section to allow
+	  // for external users to override these as psuedo-supported APIs.
+	  env.VM.checkRevision(templateSpec.compiler);
+	
+	  function invokePartialWrapper(partial, context, options) {
+	    if (options.hash) {
+	      context = Utils.extend({}, context, options.hash);
+	      if (options.ids) {
+	        options.ids[0] = true;
+	      }
+	    }
+	
+	    partial = env.VM.resolvePartial.call(this, partial, context, options);
+	    var result = env.VM.invokePartial.call(this, partial, context, options);
+	
+	    if (result == null && env.compile) {
+	      options.partials[options.name] = env.compile(partial, templateSpec.compilerOptions, env);
+	      result = options.partials[options.name](context, options);
+	    }
+	    if (result != null) {
+	      if (options.indent) {
+	        var lines = result.split('\n');
+	        for (var i = 0, l = lines.length; i < l; i++) {
+	          if (!lines[i] && i + 1 === l) {
+	            break;
+	          }
+	
+	          lines[i] = options.indent + lines[i];
+	        }
+	        result = lines.join('\n');
+	      }
+	      return result;
+	    } else {
+	      throw new _exception2['default']('The partial ' + options.name + ' could not be compiled when running in runtime-only mode');
+	    }
+	  }
+	
+	  // Just add water
+	  var container = {
+	    strict: function strict(obj, name) {
+	      if (!(name in obj)) {
+	        throw new _exception2['default']('"' + name + '" not defined in ' + obj);
+	      }
+	      return obj[name];
+	    },
+	    lookup: function lookup(depths, name) {
+	      var len = depths.length;
+	      for (var i = 0; i < len; i++) {
+	        if (depths[i] && depths[i][name] != null) {
+	          return depths[i][name];
+	        }
+	      }
+	    },
+	    lambda: function lambda(current, context) {
+	      return typeof current === 'function' ? current.call(context) : current;
+	    },
+	
+	    escapeExpression: Utils.escapeExpression,
+	    invokePartial: invokePartialWrapper,
+	
+	    fn: function fn(i) {
+	      var ret = templateSpec[i];
+	      ret.decorator = templateSpec[i + '_d'];
+	      return ret;
+	    },
+	
+	    programs: [],
+	    program: function program(i, data, declaredBlockParams, blockParams, depths) {
+	      var programWrapper = this.programs[i],
+	          fn = this.fn(i);
+	      if (data || depths || blockParams || declaredBlockParams) {
+	        programWrapper = wrapProgram(this, i, fn, data, declaredBlockParams, blockParams, depths);
+	      } else if (!programWrapper) {
+	        programWrapper = this.programs[i] = wrapProgram(this, i, fn);
+	      }
+	      return programWrapper;
+	    },
+	
+	    data: function data(value, depth) {
+	      while (value && depth--) {
+	        value = value._parent;
+	      }
+	      return value;
+	    },
+	    merge: function merge(param, common) {
+	      var obj = param || common;
+	
+	      if (param && common && param !== common) {
+	        obj = Utils.extend({}, common, param);
+	      }
+	
+	      return obj;
+	    },
+	
+	    noop: env.VM.noop,
+	    compilerInfo: templateSpec.compiler
+	  };
+	
+	  function ret(context) {
+	    var options = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
+	
+	    var data = options.data;
+	
+	    ret._setup(options);
+	    if (!options.partial && templateSpec.useData) {
+	      data = initData(context, data);
+	    }
+	    var depths = undefined,
+	        blockParams = templateSpec.useBlockParams ? [] : undefined;
+	    if (templateSpec.useDepths) {
+	      if (options.depths) {
+	        depths = context !== options.depths[0] ? [context].concat(options.depths) : options.depths;
+	      } else {
+	        depths = [context];
+	      }
+	    }
+	
+	    function main(context /*, options*/) {
+	      return '' + templateSpec.main(container, context, container.helpers, container.partials, data, blockParams, depths);
+	    }
+	    main = executeDecorators(templateSpec.main, main, container, options.depths || [], data, blockParams);
+	    return main(context, options);
+	  }
+	  ret.isTop = true;
+	
+	  ret._setup = function (options) {
+	    if (!options.partial) {
+	      container.helpers = container.merge(options.helpers, env.helpers);
+	
+	      if (templateSpec.usePartial) {
+	        container.partials = container.merge(options.partials, env.partials);
+	      }
+	      if (templateSpec.usePartial || templateSpec.useDecorators) {
+	        container.decorators = container.merge(options.decorators, env.decorators);
+	      }
+	    } else {
+	      container.helpers = options.helpers;
+	      container.partials = options.partials;
+	      container.decorators = options.decorators;
+	    }
+	  };
+	
+	  ret._child = function (i, data, blockParams, depths) {
+	    if (templateSpec.useBlockParams && !blockParams) {
+	      throw new _exception2['default']('must pass block params');
+	    }
+	    if (templateSpec.useDepths && !depths) {
+	      throw new _exception2['default']('must pass parent depths');
+	    }
+	
+	    return wrapProgram(container, i, templateSpec[i], data, 0, blockParams, depths);
+	  };
+	  return ret;
+	}
+	
+	function wrapProgram(container, i, fn, data, declaredBlockParams, blockParams, depths) {
+	  function prog(context) {
+	    var options = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
+	
+	    var currentDepths = depths;
+	    if (depths && context !== depths[0]) {
+	      currentDepths = [context].concat(depths);
+	    }
+	
+	    return fn(container, context, container.helpers, container.partials, options.data || data, blockParams && [options.blockParams].concat(blockParams), currentDepths);
+	  }
+	
+	  prog = executeDecorators(fn, prog, container, depths, data, blockParams);
+	
+	  prog.program = i;
+	  prog.depth = depths ? depths.length : 0;
+	  prog.blockParams = declaredBlockParams || 0;
+	  return prog;
+	}
+	
+	function resolvePartial(partial, context, options) {
+	  if (!partial) {
+	    if (options.name === '@partial-block') {
+	      partial = options.data['partial-block'];
+	    } else {
+	      partial = options.partials[options.name];
+	    }
+	  } else if (!partial.call && !options.name) {
+	    // This is a dynamic partial that returned a string
+	    options.name = partial;
+	    partial = options.partials[partial];
+	  }
+	  return partial;
+	}
+	
+	function invokePartial(partial, context, options) {
+	  options.partial = true;
+	  if (options.ids) {
+	    options.data.contextPath = options.ids[0] || options.data.contextPath;
+	  }
+	
+	  var partialBlock = undefined;
+	  if (options.fn && options.fn !== noop) {
+	    options.data = _base.createFrame(options.data);
+	    partialBlock = options.data['partial-block'] = options.fn;
+	
+	    if (partialBlock.partials) {
+	      options.partials = Utils.extend({}, options.partials, partialBlock.partials);
+	    }
+	  }
+	
+	  if (partial === undefined && partialBlock) {
+	    partial = partialBlock;
+	  }
+	
+	  if (partial === undefined) {
+	    throw new _exception2['default']('The partial ' + options.name + ' could not be found');
+	  } else if (partial instanceof Function) {
+	    return partial(context, options);
+	  }
+	}
+	
+	function noop() {
+	  return '';
+	}
+	
+	function initData(context, data) {
+	  if (!data || !('root' in data)) {
+	    data = data ? _base.createFrame(data) : {};
+	    data.root = context;
+	  }
+	  return data;
+	}
+	
+	function executeDecorators(fn, prog, container, depths, data, blockParams) {
+	  if (fn.decorator) {
+	    var props = {};
+	    prog = fn.decorator(prog, props, container, depths && depths[0], data, blockParams, depths);
+	    Utils.extend(prog, props);
+	  }
+	  return prog;
+	}
+	//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIi4uLy4uLy4uL2xpYi9oYW5kbGViYXJzL3J1bnRpbWUuanMiXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6Ijs7Ozs7Ozs7Ozs7Ozs7Ozs7cUJBQXVCLFNBQVM7O0lBQXBCLEtBQUs7O3lCQUNLLGFBQWE7Ozs7b0JBQzhCLFFBQVE7O0FBRWxFLFNBQVMsYUFBYSxDQUFDLFlBQVksRUFBRTtBQUMxQyxNQUFNLGdCQUFnQixHQUFHLFlBQVksSUFBSSxZQUFZLENBQUMsQ0FBQyxDQUFDLElBQUksQ0FBQztNQUN2RCxlQUFlLDBCQUFvQixDQUFDOztBQUUxQyxNQUFJLGdCQUFnQixLQUFLLGVBQWUsRUFBRTtBQUN4QyxRQUFJLGdCQUFnQixHQUFHLGVBQWUsRUFBRTtBQUN0QyxVQUFNLGVBQWUsR0FBRyx1QkFBaUIsZUFBZSxDQUFDO1VBQ25ELGdCQUFnQixHQUFHLHVCQUFpQixnQkFBZ0IsQ0FBQyxDQUFDO0FBQzVELFlBQU0sMkJBQWMseUZBQXlGLEdBQ3ZHLHFEQUFxRCxHQUFHLGVBQWUsR0FBRyxtREFBbUQsR0FBRyxnQkFBZ0IsR0FBRyxJQUFJLENBQUMsQ0FBQztLQUNoSyxNQUFNOztBQUVMLFlBQU0sMkJBQWMsd0ZBQXdGLEdBQ3RHLGlEQUFpRCxHQUFHLFlBQVksQ0FBQyxDQUFDLENBQUMsR0FBRyxJQUFJLENBQUMsQ0FBQztLQUNuRjtHQUNGO0NBQ0Y7O0FBRU0sU0FBUyxRQUFRLENBQUMsWUFBWSxFQUFFLEdBQUcsRUFBRTs7QUFFMUMsTUFBSSxDQUFDLEdBQUcsRUFBRTtBQUNSLFVBQU0sMkJBQWMsbUNBQW1DLENBQUMsQ0FBQztHQUMxRDtBQUNELE1BQUksQ0FBQyxZQUFZLElBQUksQ0FBQyxZQUFZLENBQUMsSUFBSSxFQUFFO0FBQ3ZDLFVBQU0sMkJBQWMsMkJBQTJCLEdBQUcsT0FBTyxZQUFZLENBQUMsQ0FBQztHQUN4RTs7QUFFRCxjQUFZLENBQUMsSUFBSSxDQUFDLFNBQVMsR0FBRyxZQUFZLENBQUMsTUFBTSxDQUFDOzs7O0FBSWxELEtBQUcsQ0FBQyxFQUFFLENBQUMsYUFBYSxDQUFDLFlBQVksQ0FBQyxRQUFRLENBQUMsQ0FBQzs7QUFFNUMsV0FBUyxvQkFBb0IsQ0FBQyxPQUFPLEVBQUUsT0FBTyxFQUFFLE9BQU8sRUFBRTtBQUN2RCxRQUFJLE9BQU8sQ0FBQyxJQUFJLEVBQUU7QUFDaEIsYUFBTyxHQUFHLEtBQUssQ0FBQyxNQUFNLENBQUMsRUFBRSxFQUFFLE9BQU8sRUFBRSxPQUFPLENBQUMsSUFBSSxDQUFDLENBQUM7QUFDbEQsVUFBSSxPQUFPLENBQUMsR0FBRyxFQUFFO0FBQ2YsZUFBTyxDQUFDLEdBQUcsQ0FBQyxDQUFDLENBQUMsR0FBRyxJQUFJLENBQUM7T0FDdkI7S0FDRjs7QUFFRCxXQUFPLEdBQUcsR0FBRyxDQUFDLEVBQUUsQ0FBQyxjQUFjLENBQUMsSUFBSSxDQUFDLElBQUksRUFBRSxPQUFPLEVBQUUsT0FBTyxFQUFFLE9BQU8sQ0FBQyxDQUFDO0FBQ3RFLFFBQUksTUFBTSxHQUFHLEdBQUcsQ0FBQyxFQUFFLENBQUMsYUFBYSxDQUFDLElBQUksQ0FBQyxJQUFJLEVBQUUsT0FBTyxFQUFFLE9BQU8sRUFBRSxPQUFPLENBQUMsQ0FBQzs7QUFFeEUsUUFBSSxNQUFNLElBQUksSUFBSSxJQUFJLEdBQUcsQ0FBQyxPQUFPLEVBQUU7QUFDakMsYUFBTyxDQUFDLFFBQVEsQ0FBQyxPQUFPLENBQUMsSUFBSSxDQUFDLEdBQUcsR0FBRyxDQUFDLE9BQU8sQ0FBQyxPQUFPLEVBQUUsWUFBWSxDQUFDLGVBQWUsRUFBRSxHQUFHLENBQUMsQ0FBQztBQUN6RixZQUFNLEdBQUcsT0FBTyxDQUFDLFFBQVEsQ0FBQyxPQUFPLENBQUMsSUFBSSxDQUFDLENBQUMsT0FBTyxFQUFFLE9BQU8sQ0FBQyxDQUFDO0tBQzNEO0FBQ0QsUUFBSSxNQUFNLElBQUksSUFBSSxFQUFFO0FBQ2xCLFVBQUksT0FBTyxDQUFDLE1BQU0sRUFBRTtBQUNsQixZQUFJLEtBQUssR0FBRyxNQUFNLENBQUMsS0FBSyxDQUFDLElBQUksQ0FBQyxDQUFDO0FBQy9CLGFBQUssSUFBSSxDQUFDLEdBQUcsQ0FBQyxFQUFFLENBQUMsR0FBRyxLQUFLLENBQUMsTUFBTSxFQUFFLENBQUMsR0FBRyxDQUFDLEVBQUUsQ0FBQyxFQUFFLEVBQUU7QUFDNUMsY0FBSSxDQUFDLEtBQUssQ0FBQyxDQUFDLENBQUMsSUFBSSxDQUFDLEdBQUcsQ0FBQyxLQUFLLENBQUMsRUFBRTtBQUM1QixrQkFBTTtXQUNQOztBQUVELGVBQUssQ0FBQyxDQUFDLENBQUMsR0FBRyxPQUFPLENBQUMsTUFBTSxHQUFHLEtBQUssQ0FBQyxDQUFDLENBQUMsQ0FBQztTQUN0QztBQUNELGNBQU0sR0FBRyxLQUFLLENBQUMsSUFBSSxDQUFDLElBQUksQ0FBQyxDQUFDO09BQzNCO0FBQ0QsYUFBTyxNQUFNLENBQUM7S0FDZixNQUFNO0FBQ0wsWUFBTSwyQkFBYyxjQUFjLEdBQUcsT0FBTyxDQUFDLElBQUksR0FBRywwREFBMEQsQ0FBQyxDQUFDO0tBQ2pIO0dBQ0Y7OztBQUdELE1BQUksU0FBUyxHQUFHO0FBQ2QsVUFBTSxFQUFFLGdCQUFTLEdBQUcsRUFBRSxJQUFJLEVBQUU7QUFDMUIsVUFBSSxFQUFFLElBQUksSUFBSSxHQUFHLENBQUEsQUFBQyxFQUFFO0FBQ2xCLGNBQU0sMkJBQWMsR0FBRyxHQUFHLElBQUksR0FBRyxtQkFBbUIsR0FBRyxHQUFHLENBQUMsQ0FBQztPQUM3RDtBQUNELGFBQU8sR0FBRyxDQUFDLElBQUksQ0FBQyxDQUFDO0tBQ2xCO0FBQ0QsVUFBTSxFQUFFLGdCQUFTLE1BQU0sRUFBRSxJQUFJLEVBQUU7QUFDN0IsVUFBTSxHQUFHLEdBQUcsTUFBTSxDQUFDLE1BQU0sQ0FBQztBQUMxQixXQUFLLElBQUksQ0FBQyxHQUFHLENBQUMsRUFBRSxDQUFDLEdBQUcsR0FBRyxFQUFFLENBQUMsRUFBRSxFQUFFO0FBQzVCLFlBQUksTUFBTSxDQUFDLENBQUMsQ0FBQyxJQUFJLE1BQU0sQ0FBQyxDQUFDLENBQUMsQ0FBQyxJQUFJLENBQUMsSUFBSSxJQUFJLEVBQUU7QUFDeEMsaUJBQU8sTUFBTSxDQUFDLENBQUMsQ0FBQyxDQUFDLElBQUksQ0FBQyxDQUFDO1NBQ3hCO09BQ0Y7S0FDRjtBQUNELFVBQU0sRUFBRSxnQkFBUyxPQUFPLEVBQUUsT0FBTyxFQUFFO0FBQ2pDLGFBQU8sT0FBTyxPQUFPLEtBQUssVUFBVSxHQUFHLE9BQU8sQ0FBQyxJQUFJLENBQUMsT0FBTyxDQUFDLEdBQUcsT0FBTyxDQUFDO0tBQ3hFOztBQUVELG9CQUFnQixFQUFFLEtBQUssQ0FBQyxnQkFBZ0I7QUFDeEMsaUJBQWEsRUFBRSxvQkFBb0I7O0FBRW5DLE1BQUUsRUFBRSxZQUFTLENBQUMsRUFBRTtBQUNkLFVBQUksR0FBRyxHQUFHLFlBQVksQ0FBQyxDQUFDLENBQUMsQ0FBQztBQUMxQixTQUFHLENBQUMsU0FBUyxHQUFHLFlBQVksQ0FBQyxDQUFDLEdBQUcsSUFBSSxDQUFDLENBQUM7QUFDdkMsYUFBTyxHQUFHLENBQUM7S0FDWjs7QUFFRCxZQUFRLEVBQUUsRUFBRTtBQUNaLFdBQU8sRUFBRSxpQkFBUyxDQUFDLEVBQUUsSUFBSSxFQUFFLG1CQUFtQixFQUFFLFdBQVcsRUFBRSxNQUFNLEVBQUU7QUFDbkUsVUFBSSxjQUFjLEdBQUcsSUFBSSxDQUFDLFFBQVEsQ0FBQyxDQUFDLENBQUM7VUFDakMsRUFBRSxHQUFHLElBQUksQ0FBQyxFQUFFLENBQUMsQ0FBQyxDQUFDLENBQUM7QUFDcEIsVUFBSSxJQUFJLElBQUksTUFBTSxJQUFJLFdBQVcsSUFBSSxtQkFBbUIsRUFBRTtBQUN4RCxzQkFBYyxHQUFHLFdBQVcsQ0FBQyxJQUFJLEVBQUUsQ0FBQyxFQUFFLEVBQUUsRUFBRSxJQUFJLEVBQUUsbUJBQW1CLEVBQUUsV0FBVyxFQUFFLE1BQU0sQ0FBQyxDQUFDO09BQzNGLE1BQU0sSUFBSSxDQUFDLGNBQWMsRUFBRTtBQUMxQixzQkFBYyxHQUFHLElBQUksQ0FBQyxRQUFRLENBQUMsQ0FBQyxDQUFDLEdBQUcsV0FBVyxDQUFDLElBQUksRUFBRSxDQUFDLEVBQUUsRUFBRSxDQUFDLENBQUM7T0FDOUQ7QUFDRCxhQUFPLGNBQWMsQ0FBQztLQUN2Qjs7QUFFRCxRQUFJLEVBQUUsY0FBUyxLQUFLLEVBQUUsS0FBSyxFQUFFO0FBQzNCLGFBQU8sS0FBSyxJQUFJLEtBQUssRUFBRSxFQUFFO0FBQ3ZCLGFBQUssR0FBRyxLQUFLLENBQUMsT0FBTyxDQUFDO09BQ3ZCO0FBQ0QsYUFBTyxLQUFLLENBQUM7S0FDZDtBQUNELFNBQUssRUFBRSxlQUFTLEtBQUssRUFBRSxNQUFNLEVBQUU7QUFDN0IsVUFBSSxHQUFHLEdBQUcsS0FBSyxJQUFJLE1BQU0sQ0FBQzs7QUFFMUIsVUFBSSxLQUFLLElBQUksTUFBTSxJQUFLLEtBQUssS0FBSyxNQUFNLEFBQUMsRUFBRTtBQUN6QyxXQUFHLEdBQUcsS0FBSyxDQUFDLE1BQU0sQ0FBQyxFQUFFLEVBQUUsTUFBTSxFQUFFLEtBQUssQ0FBQyxDQUFDO09BQ3ZDOztBQUVELGFBQU8sR0FBRyxDQUFDO0tBQ1o7O0FBRUQsUUFBSSxFQUFFLEdBQUcsQ0FBQyxFQUFFLENBQUMsSUFBSTtBQUNqQixnQkFBWSxFQUFFLFlBQVksQ0FBQyxRQUFRO0dBQ3BDLENBQUM7O0FBRUYsV0FBUyxHQUFHLENBQUMsT0FBTyxFQUFnQjtRQUFkLE9BQU8seURBQUcsRUFBRTs7QUFDaEMsUUFBSSxJQUFJLEdBQUcsT0FBTyxDQUFDLElBQUksQ0FBQzs7QUFFeEIsT0FBRyxDQUFDLE1BQU0sQ0FBQyxPQUFPLENBQUMsQ0FBQztBQUNwQixRQUFJLENBQUMsT0FBTyxDQUFDLE9BQU8sSUFBSSxZQUFZLENBQUMsT0FBTyxFQUFFO0FBQzVDLFVBQUksR0FBRyxRQUFRLENBQUMsT0FBTyxFQUFFLElBQUksQ0FBQyxDQUFDO0tBQ2hDO0FBQ0QsUUFBSSxNQUFNLFlBQUE7UUFDTixXQUFXLEdBQUcsWUFBWSxDQUFDLGNBQWMsR0FBRyxFQUFFLEdBQUcsU0FBUyxDQUFDO0FBQy9ELFFBQUksWUFBWSxDQUFDLFNBQVMsRUFBRTtBQUMxQixVQUFJLE9BQU8sQ0FBQyxNQUFNLEVBQUU7QUFDbEIsY0FBTSxHQUFHLE9BQU8sS0FBSyxPQUFPLENBQUMsTUFBTSxDQUFDLENBQUMsQ0FBQyxHQUFHLENBQUMsT0FBTyxDQUFDLENBQUMsTUFBTSxDQUFDLE9BQU8sQ0FBQyxNQUFNLENBQUMsR0FBRyxPQUFPLENBQUMsTUFBTSxDQUFDO09BQzVGLE1BQU07QUFDTCxjQUFNLEdBQUcsQ0FBQyxPQUFPLENBQUMsQ0FBQztPQUNwQjtLQUNGOztBQUVELGFBQVMsSUFBSSxDQUFDLE9BQU8sZ0JBQWU7QUFDbEMsYUFBTyxFQUFFLEdBQUcsWUFBWSxDQUFDLElBQUksQ0FBQyxTQUFTLEVBQUUsT0FBTyxFQUFFLFNBQVMsQ0FBQyxPQUFPLEVBQUUsU0FBUyxDQUFDLFFBQVEsRUFBRSxJQUFJLEVBQUUsV0FBVyxFQUFFLE1BQU0sQ0FBQyxDQUFDO0tBQ3JIO0FBQ0QsUUFBSSxHQUFHLGlCQUFpQixDQUFDLFlBQVksQ0FBQyxJQUFJLEVBQUUsSUFBSSxFQUFFLFNBQVMsRUFBRSxPQUFPLENBQUMsTUFBTSxJQUFJLEVBQUUsRUFBRSxJQUFJLEVBQUUsV0FBVyxDQUFDLENBQUM7QUFDdEcsV0FBTyxJQUFJLENBQUMsT0FBTyxFQUFFLE9BQU8sQ0FBQyxDQUFDO0dBQy9CO0FBQ0QsS0FBRyxDQUFDLEtBQUssR0FBRyxJQUFJLENBQUM7O0FBRWpCLEtBQUcsQ0FBQyxNQUFNLEdBQUcsVUFBUyxPQUFPLEVBQUU7QUFDN0IsUUFBSSxDQUFDLE9BQU8sQ0FBQyxPQUFPLEVBQUU7QUFDcEIsZUFBUyxDQUFDLE9BQU8sR0FBRyxTQUFTLENBQUMsS0FBSyxDQUFDLE9BQU8sQ0FBQyxPQUFPLEVBQUUsR0FBRyxDQUFDLE9BQU8sQ0FBQyxDQUFDOztBQUVsRSxVQUFJLFlBQVksQ0FBQyxVQUFVLEVBQUU7QUFDM0IsaUJBQVMsQ0FBQyxRQUFRLEdBQUcsU0FBUyxDQUFDLEtBQUssQ0FBQyxPQUFPLENBQUMsUUFBUSxFQUFFLEdBQUcsQ0FBQyxRQUFRLENBQUMsQ0FBQztPQUN0RTtBQUNELFVBQUksWUFBWSxDQUFDLFVBQVUsSUFBSSxZQUFZLENBQUMsYUFBYSxFQUFFO0FBQ3pELGlCQUFTLENBQUMsVUFBVSxHQUFHLFNBQVMsQ0FBQyxLQUFLLENBQUMsT0FBTyxDQUFDLFVBQVUsRUFBRSxHQUFHLENBQUMsVUFBVSxDQUFDLENBQUM7T0FDNUU7S0FDRixNQUFNO0FBQ0wsZUFBUyxDQUFDLE9BQU8sR0FBRyxPQUFPLENBQUMsT0FBTyxDQUFDO0FBQ3BDLGVBQVMsQ0FBQyxRQUFRLEdBQUcsT0FBTyxDQUFDLFFBQVEsQ0FBQztBQUN0QyxlQUFTLENBQUMsVUFBVSxHQUFHLE9BQU8sQ0FBQyxVQUFVLENBQUM7S0FDM0M7R0FDRixDQUFDOztBQUVGLEtBQUcsQ0FBQyxNQUFNLEdBQUcsVUFBUyxDQUFDLEVBQUUsSUFBSSxFQUFFLFdBQVcsRUFBRSxNQUFNLEVBQUU7QUFDbEQsUUFBSSxZQUFZLENBQUMsY0FBYyxJQUFJLENBQUMsV0FBVyxFQUFFO0FBQy9DLFlBQU0sMkJBQWMsd0JBQXdCLENBQUMsQ0FBQztLQUMvQztBQUNELFFBQUksWUFBWSxDQUFDLFNBQVMsSUFBSSxDQUFDLE1BQU0sRUFBRTtBQUNyQyxZQUFNLDJCQUFjLHlCQUF5QixDQUFDLENBQUM7S0FDaEQ7O0FBRUQsV0FBTyxXQUFXLENBQUMsU0FBUyxFQUFFLENBQUMsRUFBRSxZQUFZLENBQUMsQ0FBQyxDQUFDLEVBQUUsSUFBSSxFQUFFLENBQUMsRUFBRSxXQUFXLEVBQUUsTUFBTSxDQUFDLENBQUM7R0FDakYsQ0FBQztBQUNGLFNBQU8sR0FBRyxDQUFDO0NBQ1o7O0FBRU0sU0FBUyxXQUFXLENBQUMsU0FBUyxFQUFFLENBQUMsRUFBRSxFQUFFLEVBQUUsSUFBSSxFQUFFLG1CQUFtQixFQUFFLFdBQVcsRUFBRSxNQUFNLEVBQUU7QUFDNUYsV0FBUyxJQUFJLENBQUMsT0FBTyxFQUFnQjtRQUFkLE9BQU8seURBQUcsRUFBRTs7QUFDakMsUUFBSSxhQUFhLEdBQUcsTUFBTSxDQUFDO0FBQzNCLFFBQUksTUFBTSxJQUFJLE9BQU8sS0FBSyxNQUFNLENBQUMsQ0FBQyxDQUFDLEVBQUU7QUFDbkMsbUJBQWEsR0FBRyxDQUFDLE9BQU8sQ0FBQyxDQUFDLE1BQU0sQ0FBQyxNQUFNLENBQUMsQ0FBQztLQUMxQzs7QUFFRCxXQUFPLEVBQUUsQ0FBQyxTQUFTLEVBQ2YsT0FBTyxFQUNQLFNBQVMsQ0FBQyxPQUFPLEVBQUUsU0FBUyxDQUFDLFFBQVEsRUFDckMsT0FBTyxDQUFDLElBQUksSUFBSSxJQUFJLEVBQ3BCLFdBQVcsSUFBSSxDQUFDLE9BQU8sQ0FBQyxXQUFXLENBQUMsQ0FBQyxNQUFNLENBQUMsV0FBVyxDQUFDLEVBQ3hELGFBQWEsQ0FBQyxDQUFDO0dBQ3BCOztBQUVELE1BQUksR0FBRyxpQkFBaUIsQ0FBQyxFQUFFLEVBQUUsSUFBSSxFQUFFLFNBQVMsRUFBRSxNQUFNLEVBQUUsSUFBSSxFQUFFLFdBQVcsQ0FBQyxDQUFDOztBQUV6RSxNQUFJLENBQUMsT0FBTyxHQUFHLENBQUMsQ0FBQztBQUNqQixNQUFJLENBQUMsS0FBSyxHQUFHLE1BQU0sR0FBRyxNQUFNLENBQUMsTUFBTSxHQUFHLENBQUMsQ0FBQztBQUN4QyxNQUFJLENBQUMsV0FBVyxHQUFHLG1CQUFtQixJQUFJLENBQUMsQ0FBQztBQUM1QyxTQUFPLElBQUksQ0FBQztDQUNiOztBQUVNLFNBQVMsY0FBYyxDQUFDLE9BQU8sRUFBRSxPQUFPLEVBQUUsT0FBTyxFQUFFO0FBQ3hELE1BQUksQ0FBQyxPQUFPLEVBQUU7QUFDWixRQUFJLE9BQU8sQ0FBQyxJQUFJLEtBQUssZ0JBQWdCLEVBQUU7QUFDckMsYUFBTyxHQUFHLE9BQU8sQ0FBQyxJQUFJLENBQUMsZUFBZSxDQUFDLENBQUM7S0FDekMsTUFBTTtBQUNMLGFBQU8sR0FBRyxPQUFPLENBQUMsUUFBUSxDQUFDLE9BQU8sQ0FBQyxJQUFJLENBQUMsQ0FBQztLQUMxQztHQUNGLE1BQU0sSUFBSSxDQUFDLE9BQU8sQ0FBQyxJQUFJLElBQUksQ0FBQyxPQUFPLENBQUMsSUFBSSxFQUFFOztBQUV6QyxXQUFPLENBQUMsSUFBSSxHQUFHLE9BQU8sQ0FBQztBQUN2QixXQUFPLEdBQUcsT0FBTyxDQUFDLFFBQVEsQ0FBQyxPQUFPLENBQUMsQ0FBQztHQUNyQztBQUNELFNBQU8sT0FBTyxDQUFDO0NBQ2hCOztBQUVNLFNBQVMsYUFBYSxDQUFDLE9BQU8sRUFBRSxPQUFPLEVBQUUsT0FBTyxFQUFFO0FBQ3ZELFNBQU8sQ0FBQyxPQUFPLEdBQUcsSUFBSSxDQUFDO0FBQ3ZCLE1BQUksT0FBTyxDQUFDLEdBQUcsRUFBRTtBQUNmLFdBQU8sQ0FBQyxJQUFJLENBQUMsV0FBVyxHQUFHLE9BQU8sQ0FBQyxHQUFHLENBQUMsQ0FBQyxDQUFDLElBQUksT0FBTyxDQUFDLElBQUksQ0FBQyxXQUFXLENBQUM7R0FDdkU7O0FBRUQsTUFBSSxZQUFZLFlBQUEsQ0FBQztBQUNqQixNQUFJLE9BQU8sQ0FBQyxFQUFFLElBQUksT0FBTyxDQUFDLEVBQUUsS0FBSyxJQUFJLEVBQUU7QUFDckMsV0FBTyxDQUFDLElBQUksR0FBRyxrQkFBWSxPQUFPLENBQUMsSUFBSSxDQUFDLENBQUM7QUFDekMsZ0JBQVksR0FBRyxPQUFPLENBQUMsSUFBSSxDQUFDLGVBQWUsQ0FBQyxHQUFHLE9BQU8sQ0FBQyxFQUFFLENBQUM7O0FBRTFELFFBQUksWUFBWSxDQUFDLFFBQVEsRUFBRTtBQUN6QixhQUFPLENBQUMsUUFBUSxHQUFHLEtBQUssQ0FBQyxNQUFNLENBQUMsRUFBRSxFQUFFLE9BQU8sQ0FBQyxRQUFRLEVBQUUsWUFBWSxDQUFDLFFBQVEsQ0FBQyxDQUFDO0tBQzlFO0dBQ0Y7O0FBRUQsTUFBSSxPQUFPLEtBQUssU0FBUyxJQUFJLFlBQVksRUFBRTtBQUN6QyxXQUFPLEdBQUcsWUFBWSxDQUFDO0dBQ3hCOztBQUVELE1BQUksT0FBTyxLQUFLLFNBQVMsRUFBRTtBQUN6QixVQUFNLDJCQUFjLGNBQWMsR0FBRyxPQUFPLENBQUMsSUFBSSxHQUFHLHFCQUFxQixDQUFDLENBQUM7R0FDNUUsTUFBTSxJQUFJLE9BQU8sWUFBWSxRQUFRLEVBQUU7QUFDdEMsV0FBTyxPQUFPLENBQUMsT0FBTyxFQUFFLE9BQU8sQ0FBQyxDQUFDO0dBQ2xDO0NBQ0Y7O0FBRU0sU0FBUyxJQUFJLEdBQUc7QUFBRSxTQUFPLEVBQUUsQ0FBQztDQUFFOztBQUVyQyxTQUFTLFFBQVEsQ0FBQyxPQUFPLEVBQUUsSUFBSSxFQUFFO0FBQy9CLE1BQUksQ0FBQyxJQUFJLElBQUksRUFBRSxNQUFNLElBQUksSUFBSSxDQUFBLEFBQUMsRUFBRTtBQUM5QixRQUFJLEdBQUcsSUFBSSxHQUFHLGtCQUFZLElBQUksQ0FBQyxHQUFHLEVBQUUsQ0FBQztBQUNyQyxRQUFJLENBQUMsSUFBSSxHQUFHLE9BQU8sQ0FBQztHQUNyQjtBQUNELFNBQU8sSUFBSSxDQUFDO0NBQ2I7O0FBRUQsU0FBUyxpQkFBaUIsQ0FBQyxFQUFFLEVBQUUsSUFBSSxFQUFFLFNBQVMsRUFBRSxNQUFNLEVBQUUsSUFBSSxFQUFFLFdBQVcsRUFBRTtBQUN6RSxNQUFJLEVBQUUsQ0FBQyxTQUFTLEVBQUU7QUFDaEIsUUFBSSxLQUFLLEdBQUcsRUFBRSxDQUFDO0FBQ2YsUUFBSSxHQUFHLEVBQUUsQ0FBQyxTQUFTLENBQUMsSUFBSSxFQUFFLEtBQUssRUFBRSxTQUFTLEVBQUUsTUFBTSxJQUFJLE1BQU0sQ0FBQyxDQUFDLENBQUMsRUFBRSxJQUFJLEVBQUUsV0FBVyxFQUFFLE1BQU0sQ0FBQyxDQUFDO0FBQzVGLFNBQUssQ0FBQyxNQUFNLENBQUMsSUFBSSxFQUFFLEtBQUssQ0FBQyxDQUFDO0dBQzNCO0FBQ0QsU0FBTyxJQUFJLENBQUM7Q0FDYiIsImZpbGUiOiJydW50aW1lLmpzIiwic291cmNlc0NvbnRlbnQiOlsiaW1wb3J0ICogYXMgVXRpbHMgZnJvbSAnLi91dGlscyc7XG5pbXBvcnQgRXhjZXB0aW9uIGZyb20gJy4vZXhjZXB0aW9uJztcbmltcG9ydCB7IENPTVBJTEVSX1JFVklTSU9OLCBSRVZJU0lPTl9DSEFOR0VTLCBjcmVhdGVGcmFtZSB9IGZyb20gJy4vYmFzZSc7XG5cbmV4cG9ydCBmdW5jdGlvbiBjaGVja1JldmlzaW9uKGNvbXBpbGVySW5mbykge1xuICBjb25zdCBjb21waWxlclJldmlzaW9uID0gY29tcGlsZXJJbmZvICYmIGNvbXBpbGVySW5mb1swXSB8fCAxLFxuICAgICAgICBjdXJyZW50UmV2aXNpb24gPSBDT01QSUxFUl9SRVZJU0lPTjtcblxuICBpZiAoY29tcGlsZXJSZXZpc2lvbiAhPT0gY3VycmVudFJldmlzaW9uKSB7XG4gICAgaWYgKGNvbXBpbGVyUmV2aXNpb24gPCBjdXJyZW50UmV2aXNpb24pIHtcbiAgICAgIGNvbnN0IHJ1bnRpbWVWZXJzaW9ucyA9IFJFVklTSU9OX0NIQU5HRVNbY3VycmVudFJldmlzaW9uXSxcbiAgICAgICAgICAgIGNvbXBpbGVyVmVyc2lvbnMgPSBSRVZJU0lPTl9DSEFOR0VTW2NvbXBpbGVyUmV2aXNpb25dO1xuICAgICAgdGhyb3cgbmV3IEV4Y2VwdGlvbignVGVtcGxhdGUgd2FzIHByZWNvbXBpbGVkIHdpdGggYW4gb2xkZXIgdmVyc2lvbiBvZiBIYW5kbGViYXJzIHRoYW4gdGhlIGN1cnJlbnQgcnVudGltZS4gJyArXG4gICAgICAgICAgICAnUGxlYXNlIHVwZGF0ZSB5b3VyIHByZWNvbXBpbGVyIHRvIGEgbmV3ZXIgdmVyc2lvbiAoJyArIHJ1bnRpbWVWZXJzaW9ucyArICcpIG9yIGRvd25ncmFkZSB5b3VyIHJ1bnRpbWUgdG8gYW4gb2xkZXIgdmVyc2lvbiAoJyArIGNvbXBpbGVyVmVyc2lvbnMgKyAnKS4nKTtcbiAgICB9IGVsc2Uge1xuICAgICAgLy8gVXNlIHRoZSBlbWJlZGRlZCB2ZXJzaW9uIGluZm8gc2luY2UgdGhlIHJ1bnRpbWUgZG9lc24ndCBrbm93IGFib3V0IHRoaXMgcmV2aXNpb24geWV0XG4gICAgICB0aHJvdyBuZXcgRXhjZXB0aW9uKCdUZW1wbGF0ZSB3YXMgcHJlY29tcGlsZWQgd2l0aCBhIG5ld2VyIHZlcnNpb24gb2YgSGFuZGxlYmFycyB0aGFuIHRoZSBjdXJyZW50IHJ1bnRpbWUuICcgK1xuICAgICAgICAgICAgJ1BsZWFzZSB1cGRhdGUgeW91ciBydW50aW1lIHRvIGEgbmV3ZXIgdmVyc2lvbiAoJyArIGNvbXBpbGVySW5mb1sxXSArICcpLicpO1xuICAgIH1cbiAgfVxufVxuXG5leHBvcnQgZnVuY3Rpb24gdGVtcGxhdGUodGVtcGxhdGVTcGVjLCBlbnYpIHtcbiAgLyogaXN0YW5idWwgaWdub3JlIG5leHQgKi9cbiAgaWYgKCFlbnYpIHtcbiAgICB0aHJvdyBuZXcgRXhjZXB0aW9uKCdObyBlbnZpcm9ubWVudCBwYXNzZWQgdG8gdGVtcGxhdGUnKTtcbiAgfVxuICBpZiAoIXRlbXBsYXRlU3BlYyB8fCAhdGVtcGxhdGVTcGVjLm1haW4pIHtcbiAgICB0aHJvdyBuZXcgRXhjZXB0aW9uKCdVbmtub3duIHRlbXBsYXRlIG9iamVjdDogJyArIHR5cGVvZiB0ZW1wbGF0ZVNwZWMpO1xuICB9XG5cbiAgdGVtcGxhdGVTcGVjLm1haW4uZGVjb3JhdG9yID0gdGVtcGxhdGVTcGVjLm1haW5fZDtcblxuICAvLyBOb3RlOiBVc2luZyBlbnYuVk0gcmVmZXJlbmNlcyByYXRoZXIgdGhhbiBsb2NhbCB2YXIgcmVmZXJlbmNlcyB0aHJvdWdob3V0IHRoaXMgc2VjdGlvbiB0byBhbGxvd1xuICAvLyBmb3IgZXh0ZXJuYWwgdXNlcnMgdG8gb3ZlcnJpZGUgdGhlc2UgYXMgcHN1ZWRvLXN1cHBvcnRlZCBBUElzLlxuICBlbnYuVk0uY2hlY2tSZXZpc2lvbih0ZW1wbGF0ZVNwZWMuY29tcGlsZXIpO1xuXG4gIGZ1bmN0aW9uIGludm9rZVBhcnRpYWxXcmFwcGVyKHBhcnRpYWwsIGNvbnRleHQsIG9wdGlvbnMpIHtcbiAgICBpZiAob3B0aW9ucy5oYXNoKSB7XG4gICAgICBjb250ZXh0ID0gVXRpbHMuZXh0ZW5kKHt9LCBjb250ZXh0LCBvcHRpb25zLmhhc2gpO1xuICAgICAgaWYgKG9wdGlvbnMuaWRzKSB7XG4gICAgICAgIG9wdGlvbnMuaWRzWzBdID0gdHJ1ZTtcbiAgICAgIH1cbiAgICB9XG5cbiAgICBwYXJ0aWFsID0gZW52LlZNLnJlc29sdmVQYXJ0aWFsLmNhbGwodGhpcywgcGFydGlhbCwgY29udGV4dCwgb3B0aW9ucyk7XG4gICAgbGV0IHJlc3VsdCA9IGVudi5WTS5pbnZva2VQYXJ0aWFsLmNhbGwodGhpcywgcGFydGlhbCwgY29udGV4dCwgb3B0aW9ucyk7XG5cbiAgICBpZiAocmVzdWx0ID09IG51bGwgJiYgZW52LmNvbXBpbGUpIHtcbiAgICAgIG9wdGlvbnMucGFydGlhbHNbb3B0aW9ucy5uYW1lXSA9IGVudi5jb21waWxlKHBhcnRpYWwsIHRlbXBsYXRlU3BlYy5jb21waWxlck9wdGlvbnMsIGVudik7XG4gICAgICByZXN1bHQgPSBvcHRpb25zLnBhcnRpYWxzW29wdGlvbnMubmFtZV0oY29udGV4dCwgb3B0aW9ucyk7XG4gICAgfVxuICAgIGlmIChyZXN1bHQgIT0gbnVsbCkge1xuICAgICAgaWYgKG9wdGlvbnMuaW5kZW50KSB7XG4gICAgICAgIGxldCBsaW5lcyA9IHJlc3VsdC5zcGxpdCgnXFxuJyk7XG4gICAgICAgIGZvciAobGV0IGkgPSAwLCBsID0gbGluZXMubGVuZ3RoOyBpIDwgbDsgaSsrKSB7XG4gICAgICAgICAgaWYgKCFsaW5lc1tpXSAmJiBpICsgMSA9PT0gbCkge1xuICAgICAgICAgICAgYnJlYWs7XG4gICAgICAgICAgfVxuXG4gICAgICAgICAgbGluZXNbaV0gPSBvcHRpb25zLmluZGVudCArIGxpbmVzW2ldO1xuICAgICAgICB9XG4gICAgICAgIHJlc3VsdCA9IGxpbmVzLmpvaW4oJ1xcbicpO1xuICAgICAgfVxuICAgICAgcmV0dXJuIHJlc3VsdDtcbiAgICB9IGVsc2Uge1xuICAgICAgdGhyb3cgbmV3IEV4Y2VwdGlvbignVGhlIHBhcnRpYWwgJyArIG9wdGlvbnMubmFtZSArICcgY291bGQgbm90IGJlIGNvbXBpbGVkIHdoZW4gcnVubmluZyBpbiBydW50aW1lLW9ubHkgbW9kZScpO1xuICAgIH1cbiAgfVxuXG4gIC8vIEp1c3QgYWRkIHdhdGVyXG4gIGxldCBjb250YWluZXIgPSB7XG4gICAgc3RyaWN0OiBmdW5jdGlvbihvYmosIG5hbWUpIHtcbiAgICAgIGlmICghKG5hbWUgaW4gb2JqKSkge1xuICAgICAgICB0aHJvdyBuZXcgRXhjZXB0aW9uKCdcIicgKyBuYW1lICsgJ1wiIG5vdCBkZWZpbmVkIGluICcgKyBvYmopO1xuICAgICAgfVxuICAgICAgcmV0dXJuIG9ialtuYW1lXTtcbiAgICB9LFxuICAgIGxvb2t1cDogZnVuY3Rpb24oZGVwdGhzLCBuYW1lKSB7XG4gICAgICBjb25zdCBsZW4gPSBkZXB0aHMubGVuZ3RoO1xuICAgICAgZm9yIChsZXQgaSA9IDA7IGkgPCBsZW47IGkrKykge1xuICAgICAgICBpZiAoZGVwdGhzW2ldICYmIGRlcHRoc1tpXVtuYW1lXSAhPSBudWxsKSB7XG4gICAgICAgICAgcmV0dXJuIGRlcHRoc1tpXVtuYW1lXTtcbiAgICAgICAgfVxuICAgICAgfVxuICAgIH0sXG4gICAgbGFtYmRhOiBmdW5jdGlvbihjdXJyZW50LCBjb250ZXh0KSB7XG4gICAgICByZXR1cm4gdHlwZW9mIGN1cnJlbnQgPT09ICdmdW5jdGlvbicgPyBjdXJyZW50LmNhbGwoY29udGV4dCkgOiBjdXJyZW50O1xuICAgIH0sXG5cbiAgICBlc2NhcGVFeHByZXNzaW9uOiBVdGlscy5lc2NhcGVFeHByZXNzaW9uLFxuICAgIGludm9rZVBhcnRpYWw6IGludm9rZVBhcnRpYWxXcmFwcGVyLFxuXG4gICAgZm46IGZ1bmN0aW9uKGkpIHtcbiAgICAgIGxldCByZXQgPSB0ZW1wbGF0ZVNwZWNbaV07XG4gICAgICByZXQuZGVjb3JhdG9yID0gdGVtcGxhdGVTcGVjW2kgKyAnX2QnXTtcbiAgICAgIHJldHVybiByZXQ7XG4gICAgfSxcblxuICAgIHByb2dyYW1zOiBbXSxcbiAgICBwcm9ncmFtOiBmdW5jdGlvbihpLCBkYXRhLCBkZWNsYXJlZEJsb2NrUGFyYW1zLCBibG9ja1BhcmFtcywgZGVwdGhzKSB7XG4gICAgICBsZXQgcHJvZ3JhbVdyYXBwZXIgPSB0aGlzLnByb2dyYW1zW2ldLFxuICAgICAgICAgIGZuID0gdGhpcy5mbihpKTtcbiAgICAgIGlmIChkYXRhIHx8IGRlcHRocyB8fCBibG9ja1BhcmFtcyB8fCBkZWNsYXJlZEJsb2NrUGFyYW1zKSB7XG4gICAgICAgIHByb2dyYW1XcmFwcGVyID0gd3JhcFByb2dyYW0odGhpcywgaSwgZm4sIGRhdGEsIGRlY2xhcmVkQmxvY2tQYXJhbXMsIGJsb2NrUGFyYW1zLCBkZXB0aHMpO1xuICAgICAgfSBlbHNlIGlmICghcHJvZ3JhbVdyYXBwZXIpIHtcbiAgICAgICAgcHJvZ3JhbVdyYXBwZXIgPSB0aGlzLnByb2dyYW1zW2ldID0gd3JhcFByb2dyYW0odGhpcywgaSwgZm4pO1xuICAgICAgfVxuICAgICAgcmV0dXJuIHByb2dyYW1XcmFwcGVyO1xuICAgIH0sXG5cbiAgICBkYXRhOiBmdW5jdGlvbih2YWx1ZSwgZGVwdGgpIHtcbiAgICAgIHdoaWxlICh2YWx1ZSAmJiBkZXB0aC0tKSB7XG4gICAgICAgIHZhbHVlID0gdmFsdWUuX3BhcmVudDtcbiAgICAgIH1cbiAgICAgIHJldHVybiB2YWx1ZTtcbiAgICB9LFxuICAgIG1lcmdlOiBmdW5jdGlvbihwYXJhbSwgY29tbW9uKSB7XG4gICAgICBsZXQgb2JqID0gcGFyYW0gfHwgY29tbW9uO1xuXG4gICAgICBpZiAocGFyYW0gJiYgY29tbW9uICYmIChwYXJhbSAhPT0gY29tbW9uKSkge1xuICAgICAgICBvYmogPSBVdGlscy5leHRlbmQoe30sIGNvbW1vbiwgcGFyYW0pO1xuICAgICAgfVxuXG4gICAgICByZXR1cm4gb2JqO1xuICAgIH0sXG5cbiAgICBub29wOiBlbnYuVk0ubm9vcCxcbiAgICBjb21waWxlckluZm86IHRlbXBsYXRlU3BlYy5jb21waWxlclxuICB9O1xuXG4gIGZ1bmN0aW9uIHJldChjb250ZXh0LCBvcHRpb25zID0ge30pIHtcbiAgICBsZXQgZGF0YSA9IG9wdGlvbnMuZGF0YTtcblxuICAgIHJldC5fc2V0dXAob3B0aW9ucyk7XG4gICAgaWYgKCFvcHRpb25zLnBhcnRpYWwgJiYgdGVtcGxhdGVTcGVjLnVzZURhdGEpIHtcbiAgICAgIGRhdGEgPSBpbml0RGF0YShjb250ZXh0LCBkYXRhKTtcbiAgICB9XG4gICAgbGV0IGRlcHRocyxcbiAgICAgICAgYmxvY2tQYXJhbXMgPSB0ZW1wbGF0ZVNwZWMudXNlQmxvY2tQYXJhbXMgPyBbXSA6IHVuZGVmaW5lZDtcbiAgICBpZiAodGVtcGxhdGVTcGVjLnVzZURlcHRocykge1xuICAgICAgaWYgKG9wdGlvbnMuZGVwdGhzKSB7XG4gICAgICAgIGRlcHRocyA9IGNvbnRleHQgIT09IG9wdGlvbnMuZGVwdGhzWzBdID8gW2NvbnRleHRdLmNvbmNhdChvcHRpb25zLmRlcHRocykgOiBvcHRpb25zLmRlcHRocztcbiAgICAgIH0gZWxzZSB7XG4gICAgICAgIGRlcHRocyA9IFtjb250ZXh0XTtcbiAgICAgIH1cbiAgICB9XG5cbiAgICBmdW5jdGlvbiBtYWluKGNvbnRleHQvKiwgb3B0aW9ucyovKSB7XG4gICAgICByZXR1cm4gJycgKyB0ZW1wbGF0ZVNwZWMubWFpbihjb250YWluZXIsIGNvbnRleHQsIGNvbnRhaW5lci5oZWxwZXJzLCBjb250YWluZXIucGFydGlhbHMsIGRhdGEsIGJsb2NrUGFyYW1zLCBkZXB0aHMpO1xuICAgIH1cbiAgICBtYWluID0gZXhlY3V0ZURlY29yYXRvcnModGVtcGxhdGVTcGVjLm1haW4sIG1haW4sIGNvbnRhaW5lciwgb3B0aW9ucy5kZXB0aHMgfHwgW10sIGRhdGEsIGJsb2NrUGFyYW1zKTtcbiAgICByZXR1cm4gbWFpbihjb250ZXh0LCBvcHRpb25zKTtcbiAgfVxuICByZXQuaXNUb3AgPSB0cnVlO1xuXG4gIHJldC5fc2V0dXAgPSBmdW5jdGlvbihvcHRpb25zKSB7XG4gICAgaWYgKCFvcHRpb25zLnBhcnRpYWwpIHtcbiAgICAgIGNvbnRhaW5lci5oZWxwZXJzID0gY29udGFpbmVyLm1lcmdlKG9wdGlvbnMuaGVscGVycywgZW52LmhlbHBlcnMpO1xuXG4gICAgICBpZiAodGVtcGxhdGVTcGVjLnVzZVBhcnRpYWwpIHtcbiAgICAgICAgY29udGFpbmVyLnBhcnRpYWxzID0gY29udGFpbmVyLm1lcmdlKG9wdGlvbnMucGFydGlhbHMsIGVudi5wYXJ0aWFscyk7XG4gICAgICB9XG4gICAgICBpZiAodGVtcGxhdGVTcGVjLnVzZVBhcnRpYWwgfHwgdGVtcGxhdGVTcGVjLnVzZURlY29yYXRvcnMpIHtcbiAgICAgICAgY29udGFpbmVyLmRlY29yYXRvcnMgPSBjb250YWluZXIubWVyZ2Uob3B0aW9ucy5kZWNvcmF0b3JzLCBlbnYuZGVjb3JhdG9ycyk7XG4gICAgICB9XG4gICAgfSBlbHNlIHtcbiAgICAgIGNvbnRhaW5lci5oZWxwZXJzID0gb3B0aW9ucy5oZWxwZXJzO1xuICAgICAgY29udGFpbmVyLnBhcnRpYWxzID0gb3B0aW9ucy5wYXJ0aWFscztcbiAgICAgIGNvbnRhaW5lci5kZWNvcmF0b3JzID0gb3B0aW9ucy5kZWNvcmF0b3JzO1xuICAgIH1cbiAgfTtcblxuICByZXQuX2NoaWxkID0gZnVuY3Rpb24oaSwgZGF0YSwgYmxvY2tQYXJhbXMsIGRlcHRocykge1xuICAgIGlmICh0ZW1wbGF0ZVNwZWMudXNlQmxvY2tQYXJhbXMgJiYgIWJsb2NrUGFyYW1zKSB7XG4gICAgICB0aHJvdyBuZXcgRXhjZXB0aW9uKCdtdXN0IHBhc3MgYmxvY2sgcGFyYW1zJyk7XG4gICAgfVxuICAgIGlmICh0ZW1wbGF0ZVNwZWMudXNlRGVwdGhzICYmICFkZXB0aHMpIHtcbiAgICAgIHRocm93IG5ldyBFeGNlcHRpb24oJ211c3QgcGFzcyBwYXJlbnQgZGVwdGhzJyk7XG4gICAgfVxuXG4gICAgcmV0dXJuIHdyYXBQcm9ncmFtKGNvbnRhaW5lciwgaSwgdGVtcGxhdGVTcGVjW2ldLCBkYXRhLCAwLCBibG9ja1BhcmFtcywgZGVwdGhzKTtcbiAgfTtcbiAgcmV0dXJuIHJldDtcbn1cblxuZXhwb3J0IGZ1bmN0aW9uIHdyYXBQcm9ncmFtKGNvbnRhaW5lciwgaSwgZm4sIGRhdGEsIGRlY2xhcmVkQmxvY2tQYXJhbXMsIGJsb2NrUGFyYW1zLCBkZXB0aHMpIHtcbiAgZnVuY3Rpb24gcHJvZyhjb250ZXh0LCBvcHRpb25zID0ge30pIHtcbiAgICBsZXQgY3VycmVudERlcHRocyA9IGRlcHRocztcbiAgICBpZiAoZGVwdGhzICYmIGNvbnRleHQgIT09IGRlcHRoc1swXSkge1xuICAgICAgY3VycmVudERlcHRocyA9IFtjb250ZXh0XS5jb25jYXQoZGVwdGhzKTtcbiAgICB9XG5cbiAgICByZXR1cm4gZm4oY29udGFpbmVyLFxuICAgICAgICBjb250ZXh0LFxuICAgICAgICBjb250YWluZXIuaGVscGVycywgY29udGFpbmVyLnBhcnRpYWxzLFxuICAgICAgICBvcHRpb25zLmRhdGEgfHwgZGF0YSxcbiAgICAgICAgYmxvY2tQYXJhbXMgJiYgW29wdGlvbnMuYmxvY2tQYXJhbXNdLmNvbmNhdChibG9ja1BhcmFtcyksXG4gICAgICAgIGN1cnJlbnREZXB0aHMpO1xuICB9XG5cbiAgcHJvZyA9IGV4ZWN1dGVEZWNvcmF0b3JzKGZuLCBwcm9nLCBjb250YWluZXIsIGRlcHRocywgZGF0YSwgYmxvY2tQYXJhbXMpO1xuXG4gIHByb2cucHJvZ3JhbSA9IGk7XG4gIHByb2cuZGVwdGggPSBkZXB0aHMgPyBkZXB0aHMubGVuZ3RoIDogMDtcbiAgcHJvZy5ibG9ja1BhcmFtcyA9IGRlY2xhcmVkQmxvY2tQYXJhbXMgfHwgMDtcbiAgcmV0dXJuIHByb2c7XG59XG5cbmV4cG9ydCBmdW5jdGlvbiByZXNvbHZlUGFydGlhbChwYXJ0aWFsLCBjb250ZXh0LCBvcHRpb25zKSB7XG4gIGlmICghcGFydGlhbCkge1xuICAgIGlmIChvcHRpb25zLm5hbWUgPT09ICdAcGFydGlhbC1ibG9jaycpIHtcbiAgICAgIHBhcnRpYWwgPSBvcHRpb25zLmRhdGFbJ3BhcnRpYWwtYmxvY2snXTtcbiAgICB9IGVsc2Uge1xuICAgICAgcGFydGlhbCA9IG9wdGlvbnMucGFydGlhbHNbb3B0aW9ucy5uYW1lXTtcbiAgICB9XG4gIH0gZWxzZSBpZiAoIXBhcnRpYWwuY2FsbCAmJiAhb3B0aW9ucy5uYW1lKSB7XG4gICAgLy8gVGhpcyBpcyBhIGR5bmFtaWMgcGFydGlhbCB0aGF0IHJldHVybmVkIGEgc3RyaW5nXG4gICAgb3B0aW9ucy5uYW1lID0gcGFydGlhbDtcbiAgICBwYXJ0aWFsID0gb3B0aW9ucy5wYXJ0aWFsc1twYXJ0aWFsXTtcbiAgfVxuICByZXR1cm4gcGFydGlhbDtcbn1cblxuZXhwb3J0IGZ1bmN0aW9uIGludm9rZVBhcnRpYWwocGFydGlhbCwgY29udGV4dCwgb3B0aW9ucykge1xuICBvcHRpb25zLnBhcnRpYWwgPSB0cnVlO1xuICBpZiAob3B0aW9ucy5pZHMpIHtcbiAgICBvcHRpb25zLmRhdGEuY29udGV4dFBhdGggPSBvcHRpb25zLmlkc1swXSB8fCBvcHRpb25zLmRhdGEuY29udGV4dFBhdGg7XG4gIH1cblxuICBsZXQgcGFydGlhbEJsb2NrO1xuICBpZiAob3B0aW9ucy5mbiAmJiBvcHRpb25zLmZuICE9PSBub29wKSB7XG4gICAgb3B0aW9ucy5kYXRhID0gY3JlYXRlRnJhbWUob3B0aW9ucy5kYXRhKTtcbiAgICBwYXJ0aWFsQmxvY2sgPSBvcHRpb25zLmRhdGFbJ3BhcnRpYWwtYmxvY2snXSA9IG9wdGlvbnMuZm47XG5cbiAgICBpZiAocGFydGlhbEJsb2NrLnBhcnRpYWxzKSB7XG4gICAgICBvcHRpb25zLnBhcnRpYWxzID0gVXRpbHMuZXh0ZW5kKHt9LCBvcHRpb25zLnBhcnRpYWxzLCBwYXJ0aWFsQmxvY2sucGFydGlhbHMpO1xuICAgIH1cbiAgfVxuXG4gIGlmIChwYXJ0aWFsID09PSB1bmRlZmluZWQgJiYgcGFydGlhbEJsb2NrKSB7XG4gICAgcGFydGlhbCA9IHBhcnRpYWxCbG9jaztcbiAgfVxuXG4gIGlmIChwYXJ0aWFsID09PSB1bmRlZmluZWQpIHtcbiAgICB0aHJvdyBuZXcgRXhjZXB0aW9uKCdUaGUgcGFydGlhbCAnICsgb3B0aW9ucy5uYW1lICsgJyBjb3VsZCBub3QgYmUgZm91bmQnKTtcbiAgfSBlbHNlIGlmIChwYXJ0aWFsIGluc3RhbmNlb2YgRnVuY3Rpb24pIHtcbiAgICByZXR1cm4gcGFydGlhbChjb250ZXh0LCBvcHRpb25zKTtcbiAgfVxufVxuXG5leHBvcnQgZnVuY3Rpb24gbm9vcCgpIHsgcmV0dXJuICcnOyB9XG5cbmZ1bmN0aW9uIGluaXREYXRhKGNvbnRleHQsIGRhdGEpIHtcbiAgaWYgKCFkYXRhIHx8ICEoJ3Jvb3QnIGluIGRhdGEpKSB7XG4gICAgZGF0YSA9IGRhdGEgPyBjcmVhdGVGcmFtZShkYXRhKSA6IHt9O1xuICAgIGRhdGEucm9vdCA9IGNvbnRleHQ7XG4gIH1cbiAgcmV0dXJuIGRhdGE7XG59XG5cbmZ1bmN0aW9uIGV4ZWN1dGVEZWNvcmF0b3JzKGZuLCBwcm9nLCBjb250YWluZXIsIGRlcHRocywgZGF0YSwgYmxvY2tQYXJhbXMpIHtcbiAgaWYgKGZuLmRlY29yYXRvcikge1xuICAgIGxldCBwcm9wcyA9IHt9O1xuICAgIHByb2cgPSBmbi5kZWNvcmF0b3IocHJvZywgcHJvcHMsIGNvbnRhaW5lciwgZGVwdGhzICYmIGRlcHRoc1swXSwgZGF0YSwgYmxvY2tQYXJhbXMsIGRlcHRocyk7XG4gICAgVXRpbHMuZXh0ZW5kKHByb2csIHByb3BzKTtcbiAgfVxuICByZXR1cm4gcHJvZztcbn1cbiJdfQ==
+
+
+/***/ },
+/* 244 */
+/***/ function(module, exports) {
+
+	/* WEBPACK VAR INJECTION */(function(global) {/* global window */
+	'use strict';
+	
+	exports.__esModule = true;
+	
+	exports['default'] = function (Handlebars) {
+	  /* istanbul ignore next */
+	  var root = typeof global !== 'undefined' ? global : window,
+	      $Handlebars = root.Handlebars;
+	  /* istanbul ignore next */
+	  Handlebars.noConflict = function () {
+	    if (root.Handlebars === Handlebars) {
+	      root.Handlebars = $Handlebars;
+	    }
+	    return Handlebars;
+	  };
+	};
+	
+	module.exports = exports['default'];
+	//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIi4uLy4uLy4uL2xpYi9oYW5kbGViYXJzL25vLWNvbmZsaWN0LmpzIl0sIm5hbWVzIjpbXSwibWFwcGluZ3MiOiI7Ozs7O3FCQUNlLFVBQVMsVUFBVSxFQUFFOztBQUVsQyxNQUFJLElBQUksR0FBRyxPQUFPLE1BQU0sS0FBSyxXQUFXLEdBQUcsTUFBTSxHQUFHLE1BQU07TUFDdEQsV0FBVyxHQUFHLElBQUksQ0FBQyxVQUFVLENBQUM7O0FBRWxDLFlBQVUsQ0FBQyxVQUFVLEdBQUcsWUFBVztBQUNqQyxRQUFJLElBQUksQ0FBQyxVQUFVLEtBQUssVUFBVSxFQUFFO0FBQ2xDLFVBQUksQ0FBQyxVQUFVLEdBQUcsV0FBVyxDQUFDO0tBQy9CO0FBQ0QsV0FBTyxVQUFVLENBQUM7R0FDbkIsQ0FBQztDQUNIIiwiZmlsZSI6Im5vLWNvbmZsaWN0LmpzIiwic291cmNlc0NvbnRlbnQiOlsiLyogZ2xvYmFsIHdpbmRvdyAqL1xuZXhwb3J0IGRlZmF1bHQgZnVuY3Rpb24oSGFuZGxlYmFycykge1xuICAvKiBpc3RhbmJ1bCBpZ25vcmUgbmV4dCAqL1xuICBsZXQgcm9vdCA9IHR5cGVvZiBnbG9iYWwgIT09ICd1bmRlZmluZWQnID8gZ2xvYmFsIDogd2luZG93LFxuICAgICAgJEhhbmRsZWJhcnMgPSByb290LkhhbmRsZWJhcnM7XG4gIC8qIGlzdGFuYnVsIGlnbm9yZSBuZXh0ICovXG4gIEhhbmRsZWJhcnMubm9Db25mbGljdCA9IGZ1bmN0aW9uKCkge1xuICAgIGlmIChyb290LkhhbmRsZWJhcnMgPT09IEhhbmRsZWJhcnMpIHtcbiAgICAgIHJvb3QuSGFuZGxlYmFycyA9ICRIYW5kbGViYXJzO1xuICAgIH1cbiAgICByZXR1cm4gSGFuZGxlYmFycztcbiAgfTtcbn1cbiJdfQ==
+	
+	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
+
+/***/ },
+/* 245 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	var _render = __webpack_require__(224);
+	
+	var _render2 = _interopRequireDefault(_render);
+	
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+	
+	module.exports = function (node) {
+	  if (!node) {
+	    return '';
+	  }
+	  var nodeEl = (0, _render2.default)(node, this.cm, this.callback);
+	  var temp = document.createElement('div');
+	  temp.appendChild(nodeEl);
+	  return temp.innerHTML;
+	};
+
+/***/ },
+/* 246 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var Handlebars = __webpack_require__(226);
+	module.exports = (Handlebars["default"] || Handlebars).template({"1":function(container,depth0,helpers,partials,data) {
+	    return "    <span class=\"blocks-literal\">"
+	    + container.escapeExpression(container.lambda(depth0, depth0))
+	    + "</span>\n";
+	},"compiler":[7,">= 4.0.0"],"main":function(container,depth0,helpers,partials,data) {
+	    var stack1;
+	
+	  return "<span class=\"blocks-struct\">\n  <span class=\"blocks-operator\">define-struct</span>\n  <span class=\"blocks-args\">\n    <span class=\"blocks-name\">"
+	    + container.escapeExpression(container.lambda(((stack1 = (depth0 != null ? depth0.node : depth0)) != null ? stack1.name : stack1), depth0))
+	    + "</span>\n"
+	    + ((stack1 = helpers.each.call(depth0 != null ? depth0 : {},((stack1 = (depth0 != null ? depth0.node : depth0)) != null ? stack1.fields : stack1),{"name":"each","hash":{},"fn":container.program(1, data, 0),"inverse":container.noop,"data":data})) != null ? stack1 : "")
+	    + "  </span>\n</span>\n";
+	},"useData":true});
+
+/***/ },
+/* 247 */
+/***/ function(module, exports, __webpack_require__) {
+
 	// style-loader: Adds some css to the DOM by adding a <style> tag
 	
 	// load the styles
-	var content = __webpack_require__(226);
+	var content = __webpack_require__(248);
 	if(typeof content === 'string') content = [[module.id, content, '']];
 	// add the styles to the DOM
 	var update = __webpack_require__(195)(content, {});
@@ -19423,7 +20770,7 @@
 	}
 
 /***/ },
-/* 226 */
+/* 248 */
 /***/ function(module, exports, __webpack_require__) {
 
 	exports = module.exports = __webpack_require__(194)();
@@ -19431,19 +20778,19 @@
 	
 	
 	// module
-	exports.push([module.id, ".blocks-expression {\n  display: inline-flex;\n  align-items: stretch;\n  color: black;\n  border: 2px solid black;\n  border-radius: 15px 0px 0px 15px;\n  margin: 5px;\n  background: #ccc;\n  cursor: default;\n}\n\n.blocks-operator {\n  display: flex;\n  justify-content: center;\n  flex-direction: column;\n  font-weight: bold;\n  border-right: 2px solid black;\n  padding: 5px;\n  min-width: 20px;\n  text-align: center;\n}\n\n.blocks-args {\n  display: inline-flex;\n  flex-wrap: wrap;\n  flex-grow: 1;\n  background: #eee;\n}\n\n.blocks-literal {\n  display: inline-block;\n  color: black;\n  border-radius: 5px;\n  padding: 5px;\n  border: 1px solid transparent;\n}\n\n\n.blocks-expression.blocks-selected {\n  border-color: red;\n}\n.blocks-expression.blocks-selected .blocks-operator {\n  border-color: red;\n}\n.blocks-literal.blocks-selected {\n  border-color: red;\n}\n\n.blocks-editing {\n  outline: 0;\n}\n\n.blocks-literal.blocks-editing {\n  border: 1px solid green;\n}\n\n.blocks-over-target {\n  background-color: red;\n}\n\n.blocks-white-space:before {\n  content: ' ';\n}\n.blocks-white-space {\n  padding: 5px;\n  border: 2px solid transparent;\n  font-weight: bold;\n}\n\n.blocks-white-space:hover {\n  border-color: black;\n  border-radius: 5px;\n}\n.blocks-white-space:hover:before {\n  content: '+';\n}\n\n.blocks-white-space.blocks-editing:before {\n  content: '';\n}\n.blocks-white-space.blocks-editing {\n  font-weight: normal;\n  margin: 15px;\n}", ""]);
+	exports.push([module.id, ".blocks-struct,\n.blocks-expression {\n  display: inline-flex;\n  align-items: stretch;\n  color: black;\n  border: 2px solid black;\n  border-radius: 15px 0px 0px 15px;\n  margin: 5px;\n  background: #ccc;\n  cursor: default;\n}\n\n.blocks-operator {\n  display: flex;\n  justify-content: center;\n  flex-direction: column;\n  font-weight: bold;\n  border-right: 2px solid black;\n  padding: 5px;\n  min-width: 20px;\n  text-align: center;\n}\n\n.blocks-args {\n  display: inline-flex;\n  flex-wrap: wrap;\n  flex-grow: 1;\n  background: #eee;\n}\n\n.blocks-name,\n.blocks-literal {\n  display: inline-block;\n  color: black;\n  border-radius: 5px;\n  padding: 5px;\n  border: 1px solid transparent;\n}\n\n.blocks-name {\n  color: red;\n}\n\n\n.blocks-expression.blocks-selected {\n  border-color: red;\n}\n.blocks-expression.blocks-selected .blocks-operator {\n  border-color: red;\n}\n.blocks-literal.blocks-selected {\n  border-color: red;\n}\n\n.blocks-editing {\n  outline: 0;\n}\n\n.blocks-literal.blocks-editing {\n  border: 1px solid green;\n}\n\n.blocks-over-target {\n  background-color: red;\n}\n\n.blocks-white-space:before {\n  content: ' ';\n}\n.blocks-white-space {\n  padding: 5px;\n  border: 2px solid transparent;\n  font-weight: bold;\n}\n\n.blocks-white-space:hover {\n  border-color: black;\n  border-radius: 5px;\n}\n.blocks-white-space:hover:before {\n  content: '+';\n}\n\n.blocks-white-space.blocks-editing:before {\n  content: '';\n}\n.blocks-white-space.blocks-editing {\n  font-weight: normal;\n  margin: 15px;\n}", ""]);
 	
 	// exports
 
 
 /***/ },
-/* 227 */
+/* 249 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// style-loader: Adds some css to the DOM by adding a <style> tag
 	
 	// load the styles
-	var content = __webpack_require__(228);
+	var content = __webpack_require__(250);
 	if(typeof content === 'string') content = [[module.id, content, '']];
 	// add the styles to the DOM
 	var update = __webpack_require__(195)(content, {});
@@ -19463,7 +20810,7 @@
 	}
 
 /***/ },
-/* 228 */
+/* 250 */
 /***/ function(module, exports, __webpack_require__) {
 
 	exports = module.exports = __webpack_require__(194)();
@@ -19477,7 +20824,7 @@
 
 
 /***/ },
-/* 229 */
+/* 251 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -19490,11 +20837,11 @@
 	
 	var _ast = __webpack_require__(199);
 	
-	var _lex = __webpack_require__(230);
+	var _lex = __webpack_require__(252);
 	
-	var _parser = __webpack_require__(238);
+	var _parser = __webpack_require__(260);
 	
-	var _structures = __webpack_require__(231);
+	var _structures = __webpack_require__(253);
 	
 	var structures = _interopRequireWildcard(_structures);
 	
@@ -19513,10 +20860,26 @@
 	  };
 	
 	  if (node instanceof structures.callExpr) {
-	    return new _ast.Expression(from, to, node.func.stx, node.args.map(parseNode));
+	    return new _ast.Expression(from, to, node.func.stx, node.args.map(parseNode).filter(function (item) {
+	      return item !== null;
+	    }));
+	  } else if (node instanceof structures.defVar) {
+	    return new _ast.Expression(from, to, "define", [parseNode(node.name), parseNode(node.expr)]);
+	  } else if (node instanceof structures.defStruct) {
+	    return new _ast.Struct(from, to, node.name.stx, node.fields.map(parseNode).filter(function (item) {
+	      return item != null;
+	    }));
+	  } else if (node instanceof structures.defFunc) {
+	    return new _ast.FunctionDefinition(from, to, node.name.stx, node.args.map(function (symbolNode) {
+	      return symbolNode.stx;
+	    }), parseNode(node.body));
+	  } else if (node instanceof structures.symbolExpr) {
+	    return new _ast.Literal(from, to, node.stx);
 	  } else if (node instanceof structures.literal) {
 	    return new _ast.Literal(from, to, node.stx);
 	  }
+	  console.log("!! No translator for", node);
+	  return null;
 	}
 	
 	var Parser = (function () {
@@ -19528,7 +20891,9 @@
 	    key: 'parse',
 	    value: function parse(code) {
 	      var ast = (0, _parser.parse)((0, _lex.lex)(code, 'foo', true));
-	      var rootNodes = ast.map(parseNode);
+	      var rootNodes = ast.map(parseNode).filter(function (item) {
+	        return item !== null;
+	      });
 	      return new _ast.AST(rootNodes);
 	    }
 	  }]);
@@ -19539,27 +20904,27 @@
 	exports.default = Parser;
 
 /***/ },
-/* 230 */
+/* 252 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
 	// if not defined, declare the compiler object as part of plt
 	window.plt = window.plt || {};
-	plt.compiler = __webpack_require__(231);
-	var types = __webpack_require__(232);
-	var jsnums = __webpack_require__(233);
+	plt.compiler = __webpack_require__(253);
+	var types = __webpack_require__(254);
+	var jsnums = __webpack_require__(255);
 	
 	/*
-	 
+	
 	 Follows WeScheme's current implementation of Advanced Student
 	 http://docs.racket-lang.org/htdp-langs/advanced.html
 	
 	 NOT SUPPORTED BY MOBY, WESCHEME, OR THIS COMPILER: define-datatype, begin0, set!, time, delay, shared, recur,
 	    match, check-member-of, check-range, (require planet), byetstrings (#"Apple"),
 	    regexps (#rx or #px), hashtables (#hash), graphs (#1=100 #1# #1#), #reader and #lang
-	 
-	 
+	
+	
 	 TODO
 	 - JSLint
 	 - convert Location structs to use those from the Pyret lexer
@@ -20087,7 +21452,7 @@
 	        }
 	
 	        i += elts.location.span;
-	        datum = new literal(new Vector(len, elts));
+	        datum = new literal(new types.Vector(len, elts));
 	        datum.location = new Location(startCol, startRow, iStart, i - iStart);
 	        return datum;
 	      } else {
@@ -20504,7 +21869,7 @@
 	module.exports = plt.compiler;
 
 /***/ },
-/* 231 */
+/* 253 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -20553,14 +21918,14 @@
 	exports.globalEnv = globalEnv;
 	exports.pinfo = pinfo;
 	exports.getBasePinfo = getBasePinfo;
-	var types = __webpack_require__(232);
+	var types = __webpack_require__(254);
 	var Vector = types.Vector;
 	
 	//////////////////////////////////////////////////////////////////////////////
 	/////////////////// COMMON FUNCTIONS AND STRUCTURES //////////////////////////
 	//////////////// used by multiple phases of the compiler/////////////////////
 	
-	var unimplementedException = function unimplementedException(str) {
+	var unimplementedException = exports.unimplementedException = function unimplementedException(str) {
 	  this.str = str;
 	};
 	
@@ -20613,7 +21978,7 @@
 	  this.toString = function () {
 	    return "(" + this.first.toString() + " " + this.second.toString() + ")";
 	  };
-	};
+	}
 	
 	/**************************************************************************
 	 *
@@ -20649,7 +22014,7 @@
 	  this.toString = function () {
 	    return "(define (" + this.name.toString() + " " + this.args.join(" ") + ")\n    " + this.body.toString() + ")";
 	  };
-	};
+	}
 	defFunc.prototype = heir(Program.prototype);
 	
 	// Variable definition
@@ -20661,7 +22026,7 @@
 	  this.toString = function () {
 	    return "(define " + this.name.toString() + " " + this.expr.toString() + ")";
 	  };
-	};
+	}
 	defVar.prototype = heir(Program.prototype);
 	
 	// Multi-Variable definition
@@ -20673,7 +22038,7 @@
 	  this.toString = function () {
 	    return "(define-values (" + this.names.join(" ") + ") " + this.expr.toString() + ")";
 	  };
-	};
+	}
 	defVars.prototype = heir(Program.prototype);
 	
 	// Structure definition
@@ -20685,7 +22050,7 @@
 	  this.toString = function () {
 	    return "(define-struct " + this.name.toString() + " (" + this.fields.toString() + "))";
 	  };
-	};
+	}
 	defStruct.prototype = heir(Program.prototype);
 	
 	// Begin expression
@@ -20696,7 +22061,7 @@
 	  this.toString = function () {
 	    return "(begin " + this.exprs.join(" ") + ")";
 	  };
-	};
+	}
 	beginExpr.prototype = heir(Program.prototype);
 	
 	// Lambda expression
@@ -20708,7 +22073,7 @@
 	  this.toString = function () {
 	    return "(lambda (" + this.args.join(" ") + ") " + this.body.toString() + ")";
 	  };
-	};
+	}
 	lambdaExpr.prototype = heir(Program.prototype);
 	
 	// Local expression
@@ -20720,7 +22085,7 @@
 	  this.toString = function () {
 	    return "(local (" + this.defs.toString() + ") " + this.body.toString() + ")";
 	  };
-	};
+	}
 	localExpr.prototype = heir(Program.prototype);
 	
 	// Letrec expression
@@ -20731,7 +22096,7 @@
 	  this.toString = function () {
 	    return "(letrec (" + this.bindings.toString() + ") (" + this.body.toString() + "))";
 	  };
-	};
+	}
 	
 	// Let expression
 	function letExpr(bindings, body, stx) {
@@ -20741,7 +22106,7 @@
 	  this.toString = function () {
 	    return "(let (" + this.bindings.toString() + ") (" + this.body.toString() + "))";
 	  };
-	};
+	}
 	
 	// Let* expressions
 	function letStarExpr(bindings, body, stx) {
@@ -20751,7 +22116,7 @@
 	  this.toString = function () {
 	    return "(let* (" + this.bindings.toString() + ") (" + this.body.toString() + "))";
 	  };
-	};
+	}
 	
 	// cond expression
 	function condExpr(clauses, stx) {
@@ -20760,7 +22125,7 @@
 	  this.toString = function () {
 	    return "(cond\n    " + this.clauses.join("\n    ") + ")";
 	  };
-	};
+	}
 	
 	// Case expression
 	function caseExpr(expr, clauses, stx) {
@@ -20771,7 +22136,7 @@
 	  this.toString = function () {
 	    return "(case " + this.expr.toString() + "\n    " + this.clauses.join("\n    ") + ")";
 	  };
-	};
+	}
 	caseExpr.prototype = heir(Program.prototype);
 	
 	// and expression
@@ -20781,7 +22146,7 @@
 	  this.toString = function () {
 	    return "(and " + this.exprs.join(" ") + ")";
 	  };
-	};
+	}
 	
 	// or expression
 	function orExpr(exprs, stx) {
@@ -20790,7 +22155,7 @@
 	  this.toString = function () {
 	    return "(or " + this.exprs.toString() + ")";
 	  };
-	};
+	}
 	
 	// application expression
 	function callExpr(func, args, stx) {
@@ -20801,7 +22166,7 @@
 	  this.toString = function () {
 	    return "(" + [this.func].concat(this.args).join(" ") + ")";
 	  };
-	};
+	}
 	callExpr.prototype = heir(Program.prototype);
 	
 	// if expression
@@ -20814,7 +22179,7 @@
 	  this.toString = function () {
 	    return "(if " + this.predicate.toString() + " " + this.consequence.toString() + " " + this.alternative.toString() + ")";
 	  };
-	};
+	}
 	ifExpr.prototype = heir(Program.prototype);
 	
 	// when/unless expression
@@ -20826,7 +22191,7 @@
 	  this.toString = function () {
 	    return "(" + this.stx[0] + " " + this.predicate.toString() + " " + this.exprs.toString() + ")";
 	  };
-	};
+	}
 	whenUnlessExpr.prototype = heir(Program.prototype);
 	
 	// symbol expression (ID)
@@ -20834,7 +22199,7 @@
 	  Program.call(this);
 	  this.val = val;
 	  this.stx = stx;
-	};
+	}
 	symbolExpr.prototype = heir(Program.prototype);
 	
 	// Literal values (String, Char, Number, Vector)
@@ -20846,14 +22211,14 @@
 	    if (this.val === true) return "#t";
 	    if (this.val === false) return "#f";
 	    // racket prints special chars using their names
-	    if (this.val instanceof Char) {
+	    if (this.val instanceof types.Char) {
 	      var c = this.val.val;
 	      return c === '\b' ? '#\\backspace' : c === '\t' ? '#\\tab' : c === '\n' ? '#\\newline' : c === ' ' ? '#\\space' : c === '\v' ? '#\\vtab' :
 	      /* else */this.val.toWrittenString();
 	    }
 	    return types.toWrittenString(this.val);
 	  };
-	};
+	}
 	literal.prototype = heir(Program.prototype);
 	
 	Vector.prototype.toString = Vector.prototype.toWrittenString = function () {
@@ -20894,7 +22259,7 @@
 	
 	    return "'" + elementToString(this.val);
 	  };
-	};
+	}
 	quotedExpr.prototype = heir(Program.prototype);
 	
 	// unquoted expression
@@ -20904,7 +22269,7 @@
 	  this.toString = function () {
 	    return "," + this.val.toString();
 	  };
-	};
+	}
 	unquotedExpr.prototype = heir(Program.prototype);
 	
 	// quasiquoted expression
@@ -20914,7 +22279,7 @@
 	  this.toString = function () {
 	    if (this.val instanceof Array) return "`(" + this.val.toString() + ")";else return "`" + this.val.toString();
 	  };
-	};
+	}
 	quasiquotedExpr.prototype = heir(Program.prototype);
 	
 	// unquote-splicing
@@ -20924,7 +22289,7 @@
 	  this.toString = function () {
 	    return ",@" + this.val.toString();
 	  };
-	};
+	}
 	unquoteSplice.prototype = heir(Program.prototype);
 	
 	// require expression
@@ -20935,7 +22300,7 @@
 	  this.toString = function () {
 	    return "(require " + this.spec.toString() + ")";
 	  };
-	};
+	}
 	requireExpr.prototype = heir(Program.prototype);
 	
 	// provide expression
@@ -20946,7 +22311,7 @@
 	  this.toString = function () {
 	    return "(provide " + this.clauses.toString() + ")";
 	  };
-	};
+	}
 	provideStatement.prototype = heir(Program.prototype);
 	
 	// Unsupported structure (allows us to generate parser errors ahead of "unsupported" errors)
@@ -20958,7 +22323,7 @@
 	  this.toString = function () {
 	    return this.val.toString();
 	  };
-	};
+	}
 	unsupportedExpr.prototype = heir(Program.prototype);
 	
 	function isExpression(node) {
@@ -21101,7 +22466,7 @@
 	function emptyEnv() {
 	  env.call(this);
 	  // TODO: fix this circular dependency
-	  var compiler = __webpack_require__(235);
+	  var compiler = __webpack_require__(257);
 	  this.lookup = function (name, depth) {
 	    return new compiler.unboundStackReference(name);
 	  };
@@ -21125,7 +22490,7 @@
 	  this.lookup = function (name, depth) {
 	
 	    // TODO: fix this circular dependency
-	    var compiler = __webpack_require__(235);
+	    var compiler = __webpack_require__(257);
 	    return name === this.name ? new compiler.localStackReference(name, this.boxed, depth) : this.parent.lookup(name, depth + 1);
 	  };
 	}
@@ -21140,7 +22505,7 @@
 	  this.lookup = function (name, depth) {
 	    var pos = this.names.indexOf(name);
 	    // TODO: fix this circular dependency
-	    var compiler = __webpack_require__(235);
+	    var compiler = __webpack_require__(257);
 	    return pos > -1 ? new compiler.globalStackReference(name, depth, pos) : this.parent.lookup(name, depth + 1);
 	  };
 	}
@@ -21153,7 +22518,7 @@
 	// loop through known modules and see if we know this name
 	var defaultModuleResolver = exports.defaultModuleResolver = function defaultModuleResolver(name) {
 	  // TODO: fix this circular dependency
-	  var modules = __webpack_require__(236);
+	  var modules = __webpack_require__(258);
 	  for (var i = 0; i < modules.knownModules.length; i++) {
 	    if (modules.knownModules[i].name === name) return modules.knownModules[i];
 	  }
@@ -21191,13 +22556,13 @@
 	    }
 	  }
 	  return matrix[b.length][a.length];
-	};
+	}
 	
 	// moduleGuess: symbol -> symbol
 	// loop through known modules and make best suggestion for a given name
 	var moduleGuess = exports.moduleGuess = function moduleGuess(wrongName) {
 	  // TODO: fix this circular dependency
-	  var modules = __webpack_require__(236);
+	  var modules = __webpack_require__(258);
 	  return modules.knownModules.reduce(function (best, module) {
 	    var dist = levenshteinDistance(module.name, wrongName);
 	    return dist < best.distance ? { name: module.name, distance: dist } : best;
@@ -21217,7 +22582,7 @@
 	      collectionName = parts[0],
 	      moduleName = parts.slice(1).join();
 	  // TODO: fix this circular dependency
-	  var modules = __webpack_require__(236);
+	  var modules = __webpack_require__(258);
 	  return modules.knownCollections.indexOf(collectionName) > -1 && defaultModuleResolver(path.toString()) || /^wescheme\/\w+$/.exec(path);
 	};
 	
@@ -21383,7 +22748,7 @@
 	      // if it's a struct provide, return a list containing the constructor and predicate,
 	      // along with all the accessor and mutator functions
 	      // TODO: fix this circular dependency
-	      var analyzer = __webpack_require__(237);
+	      var analyzer = __webpack_require__(259);
 	      if (provideBinding instanceof analyzer.provideBindingStructId) {
 	        return [ref(binding.constructor), ref(binding.predicate)].concat(binding.accessors.map(ref), binding.mutators.map(ref));
 	      } else {
@@ -21408,7 +22773,7 @@
 	    // is really a structure.
 	    function checkBindingCompatibility(binding, exportedBinding) {
 	      // TODO: fix this circular dependency
-	      var analyzer = __webpack_require__(237);
+	      var analyzer = __webpack_require__(259);
 	      if (binding instanceof analyzer.provideBindingStructId && !(exportedBinding instanceof structBinding)) {
 	        throwError(new types.Message(["provided-structure-not-structure: ", exportedBinding.symbl]));
 	      } else {
@@ -21451,7 +22816,7 @@
 	
 	  var info = new pinfo();
 	  // TODO: fix this circular dependency
-	  var modules = __webpack_require__(236);
+	  var modules = __webpack_require__(258);
 	  var topLevelEnv = modules = modules.topLevelModules.reduceRight(function (env, mod) {
 	    return env.extendEnv_moduleBinding(mod);
 	  }, baseConstantsEnv);
@@ -21464,2405 +22829,2265 @@
 	}
 
 /***/ },
-/* 232 */
+/* 254 */
 /***/ function(module, exports, __webpack_require__) {
 
+	'use strict';
+	
+	function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.constructor === Symbol ? "symbol" : typeof obj; }
+	
 	//////////////////////////////////////////////////////////////////////
 	// helper functions
 	
-	var jsnums = __webpack_require__(233);
-	var _Hashtable = __webpack_require__(234);
+	var jsnums = __webpack_require__(255);
+	var _Hashtable = __webpack_require__(256);
 	
 	var types = {};
 	
-	
 	(function () {
 	
-	//////////////////////////////////////////////////////////////////////
+					//////////////////////////////////////////////////////////////////////
 	
+					var appendChild = function appendChild(parent, child) {
+									parent.appendChild(child);
+					};
 	
-	var appendChild = function(parent, child) {
-	    parent.appendChild(child);
-	};
+					var hasOwnProperty = ({}).hasOwnProperty;
 	
+					//////////////////////////////////////////////////////////////////////
 	
+					var _eqHashCodeCounter = 0;
+					var makeEqHashCode = function makeEqHashCode() {
+									_eqHashCodeCounter++;
+									return _eqHashCodeCounter;
+					};
 	
-	var hasOwnProperty = {}.hasOwnProperty;
+					// getHashCode: any -> (or fixnum string)
+					// Produces a hashcode appropriate for eq.
+					var getEqHashCode = function getEqHashCode(x) {
+									if (typeof x == 'string') {
+													return x;
+									}
+									if (x && !x._eqHashCode) {
+													console.log("hashing", x);
+													x._eqHashCode = makeEqHashCode();
+									}
+									if (x && x._eqHashCode) {
+													return x._eqHashCode;
+									}
+									return 0;
+					};
 	
-	//////////////////////////////////////////////////////////////////////
+					// Union/find for circular equality testing.
 	
+					var UnionFind = function UnionFind() {
+									// this.parenMap holds the arrows from an arbitrary pointer
+									// to its parent.
+									this.parentMap = makeLowLevelEqHash();
+					};
 	
+					// find: ptr -> UnionFindNode
+					// Returns the representative for this ptr.
+					UnionFind.prototype.find = function (ptr) {
+									var parent = this.parentMap.containsKey(ptr) ? this.parentMap.get(ptr) : ptr;
+									if (parent === ptr) {
+													return parent;
+									} else {
+													var rep = this.find(parent);
+													// Path compression:
+													this.parentMap.put(ptr, rep);
+													return rep;
+									}
+					};
 	
-	var _eqHashCodeCounter = 0;
-	var makeEqHashCode = function() {
-	    _eqHashCodeCounter++;
-	    return _eqHashCodeCounter;
-	};
+					// merge: ptr ptr -> void
+					// Merge the representative nodes for ptr1 and ptr2.
+					UnionFind.prototype.merge = function (ptr1, ptr2) {
+									this.parentMap.put(this.find(ptr1), this.find(ptr2));
+					};
 	
-	    
-	// getHashCode: any -> (or fixnum string)
-	// Produces a hashcode appropriate for eq.
-	var getEqHashCode = function(x) {
-	    if (x && !x._eqHashCode) {
-		x._eqHashCode = makeEqHashCode();
-	    }
-	    if (x && x._eqHashCode) {
-		return x._eqHashCode;
-	    }
-	    if (typeof(x) == 'string') {
-		return x;
-	    }
-	    return 0;
-	};
-	
-	
-	// Union/find for circular equality testing.
-	
-	var UnionFind = function() {
-		// this.parenMap holds the arrows from an arbitrary pointer
-		// to its parent.
-		this.parentMap = makeLowLevelEqHash();
-	}
-	
-	// find: ptr -> UnionFindNode
-	// Returns the representative for this ptr.
-	UnionFind.prototype.find = function(ptr) {
-		var parent = (this.parentMap.containsKey(ptr) ? 
-			      this.parentMap.get(ptr) : ptr);
-		if (parent === ptr) {
-		    return parent;
-		} else {
-		    var rep = this.find(parent);
-		    // Path compression:
-		    this.parentMap.put(ptr, rep);
-		    return rep;
-		}
-	};
-	
-	// merge: ptr ptr -> void
-	// Merge the representative nodes for ptr1 and ptr2.
-	UnionFind.prototype.merge = function(ptr1, ptr2) {
-		this.parentMap.put(this.find(ptr1), this.find(ptr2));
-	};
-	
-	
-	
-	//////////////////////////////////////////////////////////////////////
-	
-	// Class inheritance infrastructure
-	
-	// This code copied directly from http://ejohn.org/blog/simple-javascript-inheritance/
-	var Class = (function(){
-		var initializing = false, fnTest = /xyz/.test(function(){xyz;}) ? /\b_super\b/ : /.*/;
-		// The base Class implementation (does nothing)
-		var innerClass = function(){};
-		
-		// Create a new Class that inherits from this class
-		innerClass.extend = function(prop) {
-			var _super = this.prototype;
-			
-			// Instantiate a base class (but only create the instance,
-			// don't run the init constructor)
-			initializing = true;
-			var prototype = new this();
-			initializing = false;
-			
-			// Copy the properties over onto the new prototype
-			for (var name in prop) {
-				// Check if we're overwriting an existing function
-				prototype[name] = typeof prop[name] == "function" && 
-					typeof _super[name] == "function" && fnTest.test(prop[name]) ?
-					(function(name, fn){
-						return function() {
-							var tmp = this._super;
-							
-							// Add a new ._super() method that is the same method
-							// but on the super-class
-							this._super = _super[name];
-							
-							// The method only need to be bound temporarily, so we
-							// remove it when we're done executing
-							var ret = fn.apply(this, arguments);				
-							this._super = tmp;
-							
-							return ret;
-						};
-					})(name, prop[name]) :
-					prop[name];
-			}
-			
-			// The dummy class constructor
-			var Dummy = function() {
-				// All construction is actually done in the init method
-				if ( !initializing && this.init )
-					this.init.apply(this, arguments);
-			}
-			
-			// Populate our constructed prototype object
-			Dummy.prototype = prototype;
-			
-			// Enforce the constructor to be what we expect
-			Dummy.constructor = Dummy;
-	
-			// And make this class extendable
-			Dummy.extend = arguments.callee;
-			
-			return Dummy;
-		};
-		return innerClass;
-	})();
-	 
-	function makeLParen(){
-	   var node = document.createElement('span');
-	   node.appendChild(document.createTextNode("("));
-	   node.className = "lParen";
-	   return node;
-	}
-	
-	function makeRParen(){
-	   var node = document.createElement('span');
-	   node.appendChild(document.createTextNode(")"));
-	   node.className = "rParen";
-	   return node;
-	}
-	
-	//////////////////////////////////////////////////////////////////////
-	
-	
-	var StructType = function(name, type, numberOfArgs, numberOfFields, firstField,
-			      constructor, predicate, accessor, mutator) {
-		this.name = name;
-		this.type = type;
-		this.numberOfArgs = numberOfArgs;
-		this.numberOfFields = numberOfFields;
-		this.firstField = firstField;
-	
-		this.constructor = constructor;
-		this.predicate = predicate;
-		this.accessor = accessor;
-		this.mutator = mutator;
-	};
-	
-	StructType.prototype.toString = function() {
-		return '#<struct-type:' + this.name + '>';
-	};
-	
-	StructType.prototype.isEqual = function(other, aUnionFind) {
-		return this === other;
-	};
-	
-	
-	var makeStructureType = function(theName, parentType, initFieldCnt, autoFieldCnt, autoV, guard) {
-	    // If no parent type given, then the parent type is Struct
-	    if ( !parentType ) {
-		parentType = ({type: Struct,
-			       numberOfArgs: 0,
-			       numberOfFields: 0,
-			       firstField: 0});
-	    }
-	    var numParentArgs = parentType.numberOfArgs;
-	
-	    // Create a new struct type inheriting from the parent
-	    var aStruct = parentType.type.extend({
-		init: function(name, initArgs) {
-			// if there's no guard, construct a default one
-	
-			if (!guard) {
-				guard = function(k) {
-					if (arguments.length == 3) {
-						k(arguments[1]);
+					function makeLParen() {
+									var node = document.createElement('span');
+									node.appendChild(document.createTextNode("("));
+									node.className = "lParen";
+									return node;
 					}
-					else {
-						var args = [];
-						var i;
-						for(i = 1; i < arguments.length-1; i++) {
-							args.push(arguments[i]);
-						}
-						k(new ValuesWrapper(args));
+	
+					function makeRParen() {
+									var node = document.createElement('span');
+									node.appendChild(document.createTextNode(")"));
+									node.className = "rParen";
+									return node;
 					}
-				}
-			}
-	
-			var that = this;
-			var cont = function(guardRes) {
-				var guardedArgs;
-				if ( guardRes instanceof ValuesWrapper ) {
-					guardedArgs = guardRes.elts;
-				} else {
-					guardedArgs = [guardRes];
-				}
-				
-				var parentArgs = guardedArgs.slice(0, numParentArgs);
-				that._super(name, parentArgs);
-	
-				for (var i = 0; i < initFieldCnt; i++) {
-					that._fields.push(guardedArgs[i+numParentArgs]);
-				}
-				for (var i = 0; i < autoFieldCnt; i++) {
-					that._fields.push(autoV);
-				}
-			};
-			initArgs.unshift(cont);
-			initArgs.push(Symbol.makeInstance(name));
-			guard.apply(null, initArgs);
-		}
-	    });
-	    // Set type, necessary for equality checking
-	    aStruct.prototype.type = aStruct;
-	
-	    // construct and return the new type
-	    return new StructType(theName,
-				  aStruct,
-				  initFieldCnt + numParentArgs,
-				  initFieldCnt + autoFieldCnt,
-				  parentType.firstField + parentType.numberOfFields,
-				  function() {
-				  	var args = [];
-					for (var i = 0; i < arguments.length; i++) {
-						args.push(arguments[i]);
-					}
-					return new aStruct(theName, args);
-				  },
-				  function(x) { return x instanceof aStruct; },
-				  function(x, i) { return x._fields[i + this.firstField]; },
-				  function(x, i, v) { x._fields[i + this.firstField] = v; });
-	};
-	
-	// Structures.
-	var Struct = Class.extend({
-		init: function (constructorName, fields) {
-		    this._constructorName = constructorName; 
-		    this._fields = [];
-		},
-	
-		toWrittenString: function(cache) { 
-		    //    cache.put(this, true);
-		    var buffer = [];
-		    var i;
-		    buffer.push("(");
-		    buffer.push(this._constructorName);
-		    for(i = 0; i < this._fields.length; i++) {
-			buffer.push(" ");
-			buffer.push(toWrittenString(this._fields[i], cache));
-		    }
-		    buffer.push(")");
-		    return buffer.join("");
-		},
-	
-		toDisplayedString: function(cache) { return this.toWrittenString(cache); },
-	
-		toDomNode: function(cache) {
-		    //    cache.put(this, true);
-		    var node = document.createElement("div"),
-	            constructor= document.createElement("span");
-	            constructor.appendChild(document.createTextNode(this._constructorName));
-		    var i;
-		    node.appendChild(makeLParen());
-		    node.appendChild(constructor);
-		    for(i = 0; i < this._fields.length; i++) {
-	                appendChild(node, toDomNode(this._fields[i], cache));
-		    }
-		    node.appendChild(makeRParen());
-		    return node;
-		},
-	
-	
-		isEqual: function(other, aUnionFind) {
-		    if ( other.type == undefined ||
-			 this.type !== other.type ||
-			 !(other instanceof this.type) ) {
-			    return false;
-		    }
-	
-		    for (var i = 0; i < this._fields.length; i++) {
-			if (! isEqual(this._fields[i],
-				      other._fields[i],
-				      aUnionFind)) {
-				return false;
-			}
-		    }
-		    return true;
-		}
-	});
-	Struct.prototype.type = Struct;
 	
-	
-	
-	//////////////////////////////////////////////////////////////////////
-	
-	// Regular expressions.
-	
-	var RegularExpression = function(pattern) {
-	    this.pattern = pattern;
-	};
-	
-	
-	var ByteRegularExpression = function(pattern) {
-	    this.pattern = pattern;
-	};
-	
-	
-	
-	
-	//////////////////////////////////////////////////////////////////////
-	
-	// Paths
-	
-	var Path = function(p) {
-	    this.path = p;
-	};
-	
-	
-	//////////////////////////////////////////////////////////////////////
-	
-	// Bytes
-	
-	var Bytes = function(bts, mutable) {
-	    this.bytes = bts;
-	    this.mutable = (mutable === undefined) ? false : mutable;
-	};
-	
-	Bytes.prototype.get = function(i) {
-		return this.bytes[i];
-	};
-	
-	Bytes.prototype.set = function(i, b) {
-		if (this.mutable) {
-			this.bytes[i] = b;
-		}
-	};
-	
-	Bytes.prototype.length = function() {
-		return this.bytes.length;
-	};
-	
-	Bytes.prototype.copy = function(mutable) {
-		return new Bytes(this.bytes.slice(0), mutable);
-	};
-	
-	Bytes.prototype.subbytes = function(start, end) {
-		if (end == null || end == undefined) {
-			end = this.bytes.length;
-		}
-		
-		return new Bytes( this.bytes.slice(start, end), true );
-	};
-	
-	
-	Bytes.prototype.toString = function() {
-		var ret = '';
-		for (var i = 0; i < this.bytes.length; i++) {
-			ret += String.fromCharCode(this.bytes[i]);
-		}
-	
-		return ret;
-	};
-	
-	Bytes.prototype.toDisplayedString = Bytes.prototype.toString;
-	
-	Bytes.prototype.toWrittenString = function() {
-		var ret = ['#"'];
-		for (var i = 0; i < this.bytes.length; i++) {
-			ret.push( escapeByte(this.bytes[i]) );
-		}
-		ret.push('"');
-		return ret.join('');
-	};
-	
-	var escapeByte = function(aByte) {
-		var ret = [];
-		var returnVal;
-		switch(aByte) {
-			case 7: returnVal = '\\a'; break;
-			case 8: returnVal = '\\b'; break;
-			case 9: returnVal = '\\t'; break;
-			case 10: returnVal = '\\n'; break;
-			case 11: returnVal = '\\v'; break;
-			case 12: returnVal = '\\f'; break;
-			case 13: returnVal = '\\r'; break;
-			case 34: returnVal = '\\"'; break;
-			case 92: returnVal = '\\\\'; break;
-			default: if (val >= 32 && val <= 126) {
-					 returnVal = String.fromCharCode(val);
-				 }
-				 else {
-					 ret.push( '\\' + val.toString(8) );
-				 }
-				 break;
-		}
-		return returnVal;
-	};
-	
-	
-	
-	
-	//////////////////////////////////////////////////////////////////////
-	// Boxes
-	    
-	var Box = function(x, mutable) {
-		this.val = x;
-		this.mutable = mutable;
-	};
-	
-	Box.prototype.unbox = function() {
-	    return this.val;
-	};
-	
-	Box.prototype.set = function(newVal) {
-	    if (this.mutable) {
-		    this.val = newVal;
-	    }
-	};
-	
-	Box.prototype.toString = function() {
-	    return "#&" + this.val.toString();
-	};
-	
-	Box.prototype.toWrittenString = function(cache) {
-	    return "#&" + toWrittenString(this.val, cache);
-	};
-	
-	Box.prototype.toDisplayedString = function(cache) {
-	    return "#&" + toDisplayedString(this.val, cache);
-	};
-	
-	Box.prototype.toDomNode = function(cache) {
-	    var parent = document.createElement("span"),
-	    boxSymbol = document.createElement("span");
-	    boxSymbol.appendChild(document.createTextNode("#&"));
-	    parent.className = "wescheme-box";
-	    parent.appendChild(boxSymbol);
-	    parent.appendChild(toDomNode(this.val, cache));
-	    return parent;
-	};
-	
-	//////////////////////////////////////////////////////////////////////
-	
-	
-	
-	
-	
-	
-	
-	
-	// We are reusing the built-in Javascript boolean class here.
-	Logic = {
-	    TRUE : true,
-	    FALSE : false
-	};
-	
-	// WARNING
-	// WARNING: we are extending the built-in Javascript boolean class here!
-	// WARNING
-	Boolean.prototype.toWrittenString = function(cache) {
-	    if (this.valueOf()) { return "true"; }
-	    return "false";
-	};
-	Boolean.prototype.toDisplayedString = Boolean.prototype.toWrittenString;
-	
-	Boolean.prototype.toString = function() { return this.valueOf() ? "true" : "false"; };
-	
-	Boolean.prototype.isEqual = function(other, aUnionFind){
-	    return this == other;
-	};
-	
-	
-	
-	
-	// Chars
-	// Char: string -> Char
-	Char = function(val){
-	    this.val = val;
-	};
-	    
-	Char.makeInstance = function(val){
-	    return new Char(val);
-	};
-	
-	Char.prototype.toString = function() {
-		var code = this.val.charCodeAt(0);
-		var returnVal;
-		switch (code) {
-			case 0: returnVal = '#\\nul'; break;
-			case 8: returnVal = '#\\backspace'; break;
-			case 9: returnVal = '#\\tab'; break;
-			case 10: returnVal = '#\\newline'; break;
-			case 11: returnVal = '#\\vtab'; break;
-			case 12: returnVal = '#\\page'; break;
-			case 13: returnVal = '#\\return'; break;
-			case 20: returnVal = '#\\space'; break;
-			case 127: returnVal = '#\\rubout'; break;
-			default: if (code >= 32 && code <= 126) {
-					 returnVal = ("#\\" + this.val);
-				 }
-				 else {
-					 var numStr = code.toString(16).toUpperCase();
-					 while (numStr.length < 4) {
-						 numStr = '0' + numStr;
-					 }
-					 returnVal = ('#\\u' + numStr);
-				 }
-				 break;
-		}
-		return returnVal;
-	};
-	
-	Char.prototype.toWrittenString = Char.prototype.toString;
-	
-	Char.prototype.toDisplayedString = function (cache) {
-	    return this.val;
-	};
-	
-	Char.prototype.getValue = function() {
-	    return this.val;
-	};
-	
-	Char.prototype.isEqual = function(other, aUnionFind){
-	    return other instanceof Char && this.val == other.val;
-	};
-	
-	//////////////////////////////////////////////////////////////////////
-	    
-	// Symbols
-	
-	//////////////////////////////////////////////////////////////////////
-	var Symbol = function(val) {
-	    this.val = val;
-	};
-	
-	var symbolCache = {};
-	    
-	// makeInstance: string -> Symbol.
-	Symbol.makeInstance = function(val) {
-	    // To ensure that we can eq? symbols with equal values.
-	    if (!(hasOwnProperty.call(symbolCache, val))) {
-		symbolCache[val] = new Symbol(val);
-	    }
-	    return symbolCache[val];
-	};
-	    
-	Symbol.prototype.isEqual = function(other, aUnionFind) {
-	    return other instanceof Symbol &&
-	    this.val == other.val;
-	};
-	    
-	
-	Symbol.prototype.toString = function() {
-	    return this.val;
-	};
-	
-	Symbol.prototype.toWrittenString = function(cache) {
-	    return this.val;
-	};
-	
-	Symbol.prototype.toDisplayedString = function(cache) {
-	    return this.val;
-	};
-	
-	Symbol.prototype.toDomNode = function(cache) {
-	    var wrapper = document.createElement("span");
-	    wrapper.className = "wescheme-symbol";
-	    wrapper.style.fontFamily = 'monospace';
-	    wrapper.style.whiteSpace = "pre";
-	    wrapper.appendChild(document.createTextNode("'" + this.val));
-	    return wrapper;
-	};
-	
-	
-	
-	//////////////////////////////////////////////////////////////////////
-	
-	
-	
-	
-	
-	
-	// Keywords
-	
-	var Keyword = function(val) {
-	    this.val = val;
-	};
-	
-	var keywordCache = {};
-	    
-	
-	// makeInstance: string -> Keyword.
-	Keyword.makeInstance = function(val) {
-	    // To ensure that we can eq? symbols with equal values.
-	    if (!(hasOwnProperty.call(keywordCache, val))) {
-		keywordCache[val] = new Keyword(val);
-	    }
-	    return keywordCache[val];
-	};
-	    
-	Keyword.prototype.isEqual = function(other, aUnionFind) {
-	    return other instanceof Keyword &&
-	    this.val == other.val;
-	};
-	    
-	
-	Keyword.prototype.toString = function() {
-	    return this.val;
-	};
-	
-	Keyword.prototype.toWrittenString = function(cache) {
-	    return this.val;
-	};
-	
-	Keyword.prototype.toDisplayedString = function(cache) {
-	    return this.val;
-	};
-	
-	
-	//////////////////////////////////////////////////////////////////////
-	
-	
-	    
-	    
-	    
-	Empty = function() {
-	};
-	Empty.EMPTY = new Empty();
-	
-	
-	Empty.prototype.isEqual = function(other, aUnionFind) {
-	    return other instanceof Empty;
-	};
-	
-	Empty.prototype.reverse = function() {
-	    return this;
-	};
-	
-	Empty.prototype.first = function() {
-	    throw new Error("first can't be applied on empty.");
-	};
-	Empty.prototype.rest = function() {
-	    throw new Error("rest can't be applied on empty.");
-	};
-	Empty.prototype.isEmpty = function() {
-	    return true;
-	};
-	Empty.prototype.toWrittenString = function(cache) { return "empty"; };
-	Empty.prototype.toDisplayedString = function(cache) { return "empty"; };
-	Empty.prototype.toString = function(cache) { return "()"; };
-	
-	
-	    
-	// Empty.append: (listof X) -> (listof X)
-	Empty.prototype.append = function(b){
-	    return b;
-	};
-	    
-	Cons = function(f, r) {
-	    this.f = f;
-	    this.r = r;
-	};
-	
-	Cons.prototype.reverse = function() {
-	    var lst = this;
-	    var ret = Empty.EMPTY;
-	    while (!lst.isEmpty()){
-		ret = Cons.makeInstance(lst.first(), ret);
-		lst = lst.rest();
-	    }
-	    return ret;
-	};
-	    
-	Cons.makeInstance = function(f, r) {
-	    return new Cons(f, r);
-	};
-	
-	
-	// FIXME: can we reduce the recursion on this?
-	Cons.prototype.isEqual = function(other, aUnionFind) {
-	    if (! (other instanceof Cons)) {
-		return Logic.FALSE;
-	    }
-	    return (isEqual(this.first(), other.first(), aUnionFind) &&
-		    isEqual(this.rest(), other.rest(), aUnionFind));
-	};
-	    
-	Cons.prototype.first = function() {
-	    return this.f;
-	};
-	    
-	Cons.prototype.rest = function() {
-	    return this.r;
-	};
-	    
-	Cons.prototype.isEmpty = function() {
-	    return false;
-	};
-	    
-	// Cons.append: (listof X) -> (listof X)
-	Cons.prototype.append = function(b){
-	    if (b === Empty.EMPTY)
-		return this;
-	    var ret = b;
-	    var lst = this.reverse();
-	    while ( !lst.isEmpty() ) {
-		ret = Cons.makeInstance(lst.first(), ret);
-		lst = lst.rest();
-	    }
-		
-	    return ret;
-	};
-	    
-	
-	Cons.prototype.toWrittenString = function(cache) {
-	    //    cache.put(this, true);
-	    var texts = ["list"];
-	    var p = this;
-	    while ( p instanceof Cons ) {
-		texts.push(toWrittenString(p.first(), cache));
-		p = p.rest();
-	    }
-	    if ( p !== Empty.EMPTY ) {
-		// If not a list, we've got to switch over to cons pair
-		// representation.
-		return explicitConsString(this, cache, toWrittenString);
-	    }
-	    return "(" + texts.join(" ") + ")";
-	};
-	
-	var explicitConsString = function(p, cache, f) {
-	    var texts = [];
-	    var tails = []
-	    while ( p instanceof Cons ) {
-		texts.push("(cons ");
-		texts.push(f(p.first(), cache));
-		texts.push(" ");
-	
-		tails.push(")");
-		p = p.rest();
-	    }
-	    texts.push(f(p, cache));
-	    return (texts.join("") + tails.join(""));
-	};
-	
-	
-	Cons.prototype.toString = Cons.prototype.toWrittenString;
-	
-	Cons.prototype.toDisplayedString = function(cache) {
-	    //    cache.put(this, true);
-	    var texts = ["list"];
-	    var p = this;
-	    while ( p instanceof Cons ) {
-		texts.push(toDisplayedString(p.first(), cache));
-		p = p.rest();
-	    }
-	    if ( p !== Empty.EMPTY ) {
-		return explicitConsString(this, cache, toDisplayedString);
-	    }
-	//    while (true) {
-	//	if ((!(p instanceof Cons)) && (!(p instanceof Empty))) {
-	//	    texts.push(".");
-	//	    texts.push(toDisplayedString(p, cache));
-	//	    break;
-	//	}
-	//	if (p.isEmpty()) 
-	//	    break;
-	//	texts.push(toDisplayedString(p.first(), cache));
-	//	p = p.rest();
-	//    }
-	    return "(" + texts.join(" ") + ")";
-	};
-	
-	
-	
-	Cons.prototype.toDomNode = function(cache) {
-	    //    cache.put(this, true);
-	    var node = document.createElement("span"),
-	        abbr = document.createElement("span");
-	    node.className = "wescheme-cons";
-	    abbr.appendChild(document.createTextNode("list"));
-	 
-	     node.appendChild(makeLParen());
-	     node.appendChild(abbr);
-	    var p = this;
-	    while ( p instanceof Cons ) {
-	      appendChild(node, toDomNode(p.first(), cache));
-	      p = p.rest();
-	    }
-	    if ( p !== Empty.EMPTY ) {
-		return explicitConsDomNode(this, cache);
-	    }
-	 node.appendChild(makeRParen());
-	    return node;
-	};
-	
-	var explicitConsDomNode = function(p, cache) {
-	    var topNode = document.createElement("span");
-	    var node = topNode, constructor = document.createElement("span");
-	       constructor.appendChild(document.createTextNode("cons"));
-	
-	    node.className = "wescheme-cons";
-	    while ( p instanceof Cons ) {
-	      node.appendChild(makeLParen());
-	      node.appendChild(constructor);
-	      appendChild(node, toDomNode(p.first(), cache));
-	
-	      var restSpan = document.createElement("span");
-	      node.appendChild(restSpan);
-	      node.appendChild(makeRParen());
-	      node = restSpan;
-	      p = p.rest();
-	    }
-	    appendChild(node, toDomNode(p, cache));
-	    return topNode;
-	};
-	
-	
-	
-	//////////////////////////////////////////////////////////////////////
-	
-	Vector = function(n, initialElements) {
-	    this.elts = new Array(n);
-	    if (initialElements) {
-		for (var i = 0; i < n; i++) {
-		    this.elts[i] = initialElements[i];
-		}
-	    } else {
-		for (var i = 0; i < n; i++) {
-		    this.elts[i] = undefined;
-		}
-	    }
-	    this.mutable = true;
-	};
-	Vector.makeInstance = function(n, elts) {
-	    return new Vector(n, elts);
-	}
-	    Vector.prototype.length = function() {
-		return this.elts.length;
+					//////////////////////////////////////////////////////////////////////
+	
+					var StructType = function StructType(name, type, numberOfArgs, numberOfFields, firstField, constructor, predicate, accessor, mutator) {
+									this.name = name;
+									this.type = type;
+									this.numberOfArgs = numberOfArgs;
+									this.numberOfFields = numberOfFields;
+									this.firstField = firstField;
+	
+									this.constructor = constructor;
+									this.predicate = predicate;
+									this.accessor = accessor;
+									this.mutator = mutator;
+					};
+	
+					StructType.prototype.toString = function () {
+									return '#<struct-type:' + this.name + '>';
+					};
+	
+					StructType.prototype.isEqual = function (other, aUnionFind) {
+									return this === other;
+					};
+	
+					var makeStructureType = function makeStructureType(theName, parentType, initFieldCnt, autoFieldCnt, autoV, guard) {
+									// If no parent type given, then the parent type is Struct
+									if (!parentType) {
+													parentType = { type: Struct,
+																	numberOfArgs: 0,
+																	numberOfFields: 0,
+																	firstField: 0 };
+									}
+									var numParentArgs = parentType.numberOfArgs;
+									var aStruct = function aStruct(name, initArgs) {
+													this.init(name, initArgs);
+									};
+									Object.assign(aStruct.prototype, parentType.type.prototype);
+									aStruct.prototype.init = function (name, initArgs) {
+													// if there's no guard, construct a default one
+	
+													if (!guard) {
+																	guard = function (k) {
+																					if (arguments.length == 3) {
+																									k(arguments[1]);
+																					} else {
+																									var args = [];
+																									var i;
+																									for (i = 1; i < arguments.length - 1; i++) {
+																													args.push(arguments[i]);
+																									}
+																									k(new ValuesWrapper(args));
+																					}
+																	};
+													}
+	
+													var that = this;
+													var cont = function cont(guardRes) {
+																	var guardedArgs;
+																	if (guardRes instanceof ValuesWrapper) {
+																					guardedArgs = guardRes.elts;
+																	} else {
+																					guardedArgs = [guardRes];
+																	}
+	
+																	var parentArgs = guardedArgs.slice(0, numParentArgs);
+																	parentType.type.init.bind(that)(name, parentArgs);
+	
+																	for (var i = 0; i < initFieldCnt; i++) {
+																					that._fields.push(guardedArgs[i + numParentArgs]);
+																	}
+																	for (var i = 0; i < autoFieldCnt; i++) {
+																					that._fields.push(autoV);
+																	}
+													};
+													initArgs.unshift(cont);
+													initArgs.push(Symbol.makeInstance(name));
+													guard.apply(null, initArgs);
+									};
+	
+									// Create a new struct type inheriting from the parent
+									//var aStruct = parentType.type.extend({
+									//  init: function(name, initArgs) {
+									//	  // if there's no guard, construct a default one
+									//
+									//	  if (!guard) {
+									//		  guard = function(k) {
+									//			  if (arguments.length == 3) {
+									//				  k(arguments[1]);
+									//			  }
+									//			  else {
+									//				  var args = [];
+									//				  var i;
+									//				  for(i = 1; i < arguments.length-1; i++) {
+									//					  args.push(arguments[i]);
+									//				  }
+									//				  k(new ValuesWrapper(args));
+									//			  }
+									//		  }
+									//	  }
+									//
+									//	  var that = this;
+									//	  var cont = function(guardRes) {
+									//		  var guardedArgs;
+									//		  if ( guardRes instanceof ValuesWrapper ) {
+									//			  guardedArgs = guardRes.elts;
+									//		  } else {
+									//			  guardedArgs = [guardRes];
+									//		  }
+									//
+									//		  var parentArgs = guardedArgs.slice(0, numParentArgs);
+									//		  that._super(name, parentArgs);
+									//
+									//		  for (var i = 0; i < initFieldCnt; i++) {
+									//			  that._fields.push(guardedArgs[i+numParentArgs]);
+									//		  }
+									//		  for (var i = 0; i < autoFieldCnt; i++) {
+									//			  that._fields.push(autoV);
+									//		  }
+									//	  };
+									//	  initArgs.unshift(cont);
+									//	  initArgs.push(Symbol.makeInstance(name));
+									//	  guard.apply(null, initArgs);
+									//  }
+									//});
+									// Set type, necessary for equality checking
+									aStruct.prototype.type = aStruct;
+	
+									// construct and return the new type
+									return new StructType(theName, aStruct, initFieldCnt + numParentArgs, initFieldCnt + autoFieldCnt, parentType.firstField + parentType.numberOfFields, function () {
+													var args = [];
+													for (var i = 0; i < arguments.length; i++) {
+																	args.push(arguments[i]);
+													}
+													return new aStruct(theName, args);
+									}, function (x) {
+													return x instanceof aStruct;
+									}, function (x, i) {
+													return x._fields[i + this.firstField];
+									}, function (x, i, v) {
+													x._fields[i + this.firstField] = v;
+									});
+					};
+	
+					// Structures.
+					var Struct = function Struct(constructorName, fields) {
+									this.init(constructorName, fields);
+					};
+					Object.assign(Struct.prototype, {
+									init: function init(constructorName, fields) {
+													this._constructorName = constructorName;
+													this._fields = [];
+									},
+									toWrittenString: function toWrittenString(cache) {
+													//    cache.put(this, true);
+													var buffer = [];
+													var i;
+													buffer.push("(");
+													buffer.push(this._constructorName);
+													for (i = 0; i < this._fields.length; i++) {
+																	buffer.push(" ");
+																	buffer.push(_toWrittenString(this._fields[i], cache));
+													}
+													buffer.push(")");
+													return buffer.join("");
+									},
+									toDisplayedString: function toDisplayedString(cache) {
+													return this.toWrittenString(cache);
+									},
+									toDomNode: function toDomNode(cache) {
+													//    cache.put(this, true);
+													var node = document.createElement("div"),
+													    constructor = document.createElement("span");
+													constructor.appendChild(document.createTextNode(this._constructorName));
+													var i;
+													node.appendChild(makeLParen());
+													node.appendChild(constructor);
+													for (i = 0; i < this._fields.length; i++) {
+																	appendChild(node, _toDomNode(this._fields[i], cache));
+													}
+													node.appendChild(makeRParen());
+													return node;
+									},
+									isEqual: function isEqual(other, aUnionFind) {
+													if (other.type == undefined || this.type !== other.type || !(other instanceof this.type)) {
+																	return false;
+													}
+	
+													for (var i = 0; i < this._fields.length; i++) {
+																	if (!_isEqual(this._fields[i], other._fields[i], aUnionFind)) {
+																					return false;
+																	}
+													}
+													return true;
+									}
+					});
+					Struct.prototype.type = Struct;
+	
+					//////////////////////////////////////////////////////////////////////
+	
+					// Regular expressions.
+	
+					var RegularExpression = function RegularExpression(pattern) {
+									this.pattern = pattern;
+					};
+	
+					var ByteRegularExpression = function ByteRegularExpression(pattern) {
+									this.pattern = pattern;
+					};
+	
+					//////////////////////////////////////////////////////////////////////
+	
+					// Paths
+	
+					var Path = function Path(p) {
+									this.path = p;
+					};
+	
+					//////////////////////////////////////////////////////////////////////
+	
+					// Bytes
+	
+					var Bytes = function Bytes(bts, mutable) {
+									this.bytes = bts;
+									this.mutable = mutable === undefined ? false : mutable;
+					};
+	
+					Bytes.prototype.get = function (i) {
+									return this.bytes[i];
+					};
+	
+					Bytes.prototype.set = function (i, b) {
+									if (this.mutable) {
+													this.bytes[i] = b;
+									}
+					};
+	
+					Bytes.prototype.length = function () {
+									return this.bytes.length;
+					};
+	
+					Bytes.prototype.copy = function (mutable) {
+									return new Bytes(this.bytes.slice(0), mutable);
+					};
+	
+					Bytes.prototype.subbytes = function (start, end) {
+									if (end == null || end == undefined) {
+													end = this.bytes.length;
+									}
+	
+									return new Bytes(this.bytes.slice(start, end), true);
+					};
+	
+					Bytes.prototype.toString = function () {
+									var ret = '';
+									for (var i = 0; i < this.bytes.length; i++) {
+													ret += String.fromCharCode(this.bytes[i]);
+									}
+	
+									return ret;
+					};
+	
+					Bytes.prototype.toDisplayedString = Bytes.prototype.toString;
+	
+					Bytes.prototype.toWrittenString = function () {
+									var ret = ['#"'];
+									for (var i = 0; i < this.bytes.length; i++) {
+													ret.push(escapeByte(this.bytes[i]));
+									}
+									ret.push('"');
+									return ret.join('');
+					};
+	
+					var escapeByte = function escapeByte(aByte) {
+									var ret = [];
+									var returnVal;
+									switch (aByte) {
+													case 7:
+																	returnVal = '\\a';break;
+													case 8:
+																	returnVal = '\\b';break;
+													case 9:
+																	returnVal = '\\t';break;
+													case 10:
+																	returnVal = '\\n';break;
+													case 11:
+																	returnVal = '\\v';break;
+													case 12:
+																	returnVal = '\\f';break;
+													case 13:
+																	returnVal = '\\r';break;
+													case 34:
+																	returnVal = '\\"';break;
+													case 92:
+																	returnVal = '\\\\';break;
+													default:
+																	if (val >= 32 && val <= 126) {
+																					returnVal = String.fromCharCode(val);
+																	} else {
+																					ret.push('\\' + val.toString(8));
+																	}
+																	break;
+									}
+									return returnVal;
+					};
+	
+					//////////////////////////////////////////////////////////////////////
+					// Boxes
+	
+					var Box = function Box(x, mutable) {
+									this.val = x;
+									this.mutable = mutable;
+					};
+	
+					Box.prototype.unbox = function () {
+									return this.val;
+					};
+	
+					Box.prototype.set = function (newVal) {
+									if (this.mutable) {
+													this.val = newVal;
+									}
+					};
+	
+					Box.prototype.toString = function () {
+									return "#&" + this.val.toString();
+					};
+	
+					Box.prototype.toWrittenString = function (cache) {
+									return "#&" + _toWrittenString(this.val, cache);
+					};
+	
+					Box.prototype.toDisplayedString = function (cache) {
+									return "#&" + toDisplayedString(this.val, cache);
+					};
+	
+					Box.prototype.toDomNode = function (cache) {
+									var parent = document.createElement("span"),
+									    boxSymbol = document.createElement("span");
+									boxSymbol.appendChild(document.createTextNode("#&"));
+									parent.className = "wescheme-box";
+									parent.appendChild(boxSymbol);
+									parent.appendChild(_toDomNode(this.val, cache));
+									return parent;
+					};
+	
+					//////////////////////////////////////////////////////////////////////
+	
+					// We are reusing the built-in Javascript boolean class here.
+					var Logic = {
+									TRUE: true,
+									FALSE: false
+					};
+	
+					// WARNING
+					// WARNING: we are extending the built-in Javascript boolean class here!
+					// WARNING
+					Boolean.prototype.toWrittenString = function (cache) {
+									if (this.valueOf()) {
+													return "true";
+									}
+									return "false";
+					};
+					Boolean.prototype.toDisplayedString = Boolean.prototype.toWrittenString;
+	
+					Boolean.prototype.toString = function () {
+									return this.valueOf() ? "true" : "false";
+					};
+	
+					Boolean.prototype.isEqual = function (other, aUnionFind) {
+									return this == other;
+					};
+	
+					// Chars
+					// Char: string -> Char
+					var Char = function Char(val) {
+									this.val = val;
+					};
+	
+					Char.makeInstance = function (val) {
+									return new Char(val);
+					};
+	
+					Char.prototype.toString = function () {
+									var code = this.val.charCodeAt(0);
+									var returnVal;
+									switch (code) {
+													case 0:
+																	returnVal = '#\\nul';break;
+													case 8:
+																	returnVal = '#\\backspace';break;
+													case 9:
+																	returnVal = '#\\tab';break;
+													case 10:
+																	returnVal = '#\\newline';break;
+													case 11:
+																	returnVal = '#\\vtab';break;
+													case 12:
+																	returnVal = '#\\page';break;
+													case 13:
+																	returnVal = '#\\return';break;
+													case 20:
+																	returnVal = '#\\space';break;
+													case 127:
+																	returnVal = '#\\rubout';break;
+													default:
+																	if (code >= 32 && code <= 126) {
+																					returnVal = "#\\" + this.val;
+																	} else {
+																					var numStr = code.toString(16).toUpperCase();
+																					while (numStr.length < 4) {
+																									numStr = '0' + numStr;
+																					}
+																					returnVal = '#\\u' + numStr;
+																	}
+																	break;
+									}
+									return returnVal;
+					};
+	
+					Char.prototype.toWrittenString = Char.prototype.toString;
+	
+					Char.prototype.toDisplayedString = function (cache) {
+									return this.val;
+					};
+	
+					Char.prototype.getValue = function () {
+									return this.val;
+					};
+	
+					Char.prototype.isEqual = function (other, aUnionFind) {
+									return other instanceof Char && this.val == other.val;
+					};
+	
+					//////////////////////////////////////////////////////////////////////
+	
+					// Symbols
+	
+					//////////////////////////////////////////////////////////////////////
+					var Symbol = function Symbol(val) {
+									this.val = val;
+					};
+	
+					var symbolCache = {};
+	
+					// makeInstance: string -> Symbol.
+					Symbol.makeInstance = function (val) {
+									// To ensure that we can eq? symbols with equal values.
+									if (!hasOwnProperty.call(symbolCache, val)) {
+													symbolCache[val] = new Symbol(val);
+									}
+									return symbolCache[val];
+					};
+	
+					Symbol.prototype.isEqual = function (other, aUnionFind) {
+									return other instanceof Symbol && this.val == other.val;
+					};
+	
+					Symbol.prototype.toString = function () {
+									return this.val;
+					};
+	
+					Symbol.prototype.toWrittenString = function (cache) {
+									return this.val;
+					};
+	
+					Symbol.prototype.toDisplayedString = function (cache) {
+									return this.val;
+					};
+	
+					Symbol.prototype.toDomNode = function (cache) {
+									var wrapper = document.createElement("span");
+									wrapper.className = "wescheme-symbol";
+									wrapper.style.fontFamily = 'monospace';
+									wrapper.style.whiteSpace = "pre";
+									wrapper.appendChild(document.createTextNode("'" + this.val));
+									return wrapper;
+					};
+	
+					//////////////////////////////////////////////////////////////////////
+	
+					// Keywords
+	
+					var Keyword = function Keyword(val) {
+									this.val = val;
+					};
+	
+					var keywordCache = {};
+	
+					// makeInstance: string -> Keyword.
+					Keyword.makeInstance = function (val) {
+									// To ensure that we can eq? symbols with equal values.
+									if (!hasOwnProperty.call(keywordCache, val)) {
+													keywordCache[val] = new Keyword(val);
+									}
+									return keywordCache[val];
+					};
+	
+					Keyword.prototype.isEqual = function (other, aUnionFind) {
+									return other instanceof Keyword && this.val == other.val;
+					};
+	
+					Keyword.prototype.toString = function () {
+									return this.val;
+					};
+	
+					Keyword.prototype.toWrittenString = function (cache) {
+									return this.val;
+					};
+	
+					Keyword.prototype.toDisplayedString = function (cache) {
+									return this.val;
+					};
+	
+					//////////////////////////////////////////////////////////////////////
+	
+					var Empty = function Empty() {};
+					Empty.EMPTY = new Empty();
+	
+					Empty.prototype.isEqual = function (other, aUnionFind) {
+									return other instanceof Empty;
+					};
+	
+					Empty.prototype.reverse = function () {
+									return this;
+					};
+	
+					Empty.prototype.first = function () {
+									throw new Error("first can't be applied on empty.");
+					};
+					Empty.prototype.rest = function () {
+									throw new Error("rest can't be applied on empty.");
+					};
+					Empty.prototype.isEmpty = function () {
+									return true;
+					};
+					Empty.prototype.toWrittenString = function (cache) {
+									return "empty";
+					};
+					Empty.prototype.toDisplayedString = function (cache) {
+									return "empty";
+					};
+					Empty.prototype.toString = function (cache) {
+									return "()";
+					};
+	
+					// Empty.append: (listof X) -> (listof X)
+					Empty.prototype.append = function (b) {
+									return b;
+					};
+	
+					var Cons = function Cons(f, r) {
+									this.f = f;
+									this.r = r;
+					};
+	
+					Cons.prototype.reverse = function () {
+									var lst = this;
+									var ret = Empty.EMPTY;
+									while (!lst.isEmpty()) {
+													ret = Cons.makeInstance(lst.first(), ret);
+													lst = lst.rest();
+									}
+									return ret;
+					};
+	
+					Cons.makeInstance = function (f, r) {
+									return new Cons(f, r);
+					};
+	
+					// FIXME: can we reduce the recursion on this?
+					Cons.prototype.isEqual = function (other, aUnionFind) {
+									if (!(other instanceof Cons)) {
+													return Logic.FALSE;
+									}
+									return _isEqual(this.first(), other.first(), aUnionFind) && _isEqual(this.rest(), other.rest(), aUnionFind);
+					};
+	
+					Cons.prototype.first = function () {
+									return this.f;
+					};
+	
+					Cons.prototype.rest = function () {
+									return this.r;
+					};
+	
+					Cons.prototype.isEmpty = function () {
+									return false;
+					};
+	
+					// Cons.append: (listof X) -> (listof X)
+					Cons.prototype.append = function (b) {
+									if (b === Empty.EMPTY) return this;
+									var ret = b;
+									var lst = this.reverse();
+									while (!lst.isEmpty()) {
+													ret = Cons.makeInstance(lst.first(), ret);
+													lst = lst.rest();
+									}
+	
+									return ret;
+					};
+	
+					Cons.prototype.toWrittenString = function (cache) {
+									//    cache.put(this, true);
+									var texts = ["list"];
+									var p = this;
+									while (p instanceof Cons) {
+													texts.push(_toWrittenString(p.first(), cache));
+													p = p.rest();
+									}
+									if (p !== Empty.EMPTY) {
+													// If not a list, we've got to switch over to cons pair
+													// representation.
+													return explicitConsString(this, cache, _toWrittenString);
+									}
+									return "(" + texts.join(" ") + ")";
+					};
+	
+					var explicitConsString = function explicitConsString(p, cache, f) {
+									var texts = [];
+									var tails = [];
+									while (p instanceof Cons) {
+													texts.push("(cons ");
+													texts.push(f(p.first(), cache));
+													texts.push(" ");
+	
+													tails.push(")");
+													p = p.rest();
+									}
+									texts.push(f(p, cache));
+									return texts.join("") + tails.join("");
+					};
+	
+					Cons.prototype.toString = Cons.prototype.toWrittenString;
+	
+					Cons.prototype.toDisplayedString = function (cache) {
+									//    cache.put(this, true);
+									var texts = ["list"];
+									var p = this;
+									while (p instanceof Cons) {
+													texts.push(toDisplayedString(p.first(), cache));
+													p = p.rest();
+									}
+									if (p !== Empty.EMPTY) {
+													return explicitConsString(this, cache, toDisplayedString);
+									}
+									//    while (true) {
+									//	if ((!(p instanceof Cons)) && (!(p instanceof Empty))) {
+									//	    texts.push(".");
+									//	    texts.push(toDisplayedString(p, cache));
+									//	    break;
+									//	}
+									//	if (p.isEmpty())
+									//	    break;
+									//	texts.push(toDisplayedString(p.first(), cache));
+									//	p = p.rest();
+									//    }
+									return "(" + texts.join(" ") + ")";
+					};
+	
+					Cons.prototype.toDomNode = function (cache) {
+									//    cache.put(this, true);
+									var node = document.createElement("span"),
+									    abbr = document.createElement("span");
+									node.className = "wescheme-cons";
+									abbr.appendChild(document.createTextNode("list"));
+	
+									node.appendChild(makeLParen());
+									node.appendChild(abbr);
+									var p = this;
+									while (p instanceof Cons) {
+													appendChild(node, _toDomNode(p.first(), cache));
+													p = p.rest();
+									}
+									if (p !== Empty.EMPTY) {
+													return explicitConsDomNode(this, cache);
+									}
+									node.appendChild(makeRParen());
+									return node;
+					};
+	
+					var explicitConsDomNode = function explicitConsDomNode(p, cache) {
+									var topNode = document.createElement("span");
+									var node = topNode,
+									    constructor = document.createElement("span");
+									constructor.appendChild(document.createTextNode("cons"));
+	
+									node.className = "wescheme-cons";
+									while (p instanceof Cons) {
+													node.appendChild(makeLParen());
+													node.appendChild(constructor);
+													appendChild(node, _toDomNode(p.first(), cache));
+	
+													var restSpan = document.createElement("span");
+													node.appendChild(restSpan);
+													node.appendChild(makeRParen());
+													node = restSpan;
+													p = p.rest();
+									}
+									appendChild(node, _toDomNode(p, cache));
+									return topNode;
+					};
+	
+					//////////////////////////////////////////////////////////////////////
+	
+					var Vector = function Vector(n, initialElements) {
+									this.elts = new Array(n);
+									if (initialElements) {
+													for (var i = 0; i < n; i++) {
+																	this.elts[i] = initialElements[i];
+													}
+									} else {
+													for (var i = 0; i < n; i++) {
+																	this.elts[i] = undefined;
+													}
+									}
+									this.mutable = true;
+					};
+					Vector.makeInstance = function (n, elts) {
+									return new Vector(n, elts);
+					};
+					Vector.prototype.length = function () {
+									return this.elts.length;
+					};
+					Vector.prototype.ref = function (k) {
+									return this.elts[k];
+					};
+					Vector.prototype.set = function (k, v) {
+									this.elts[k] = v;
+					};
+	
+					Vector.prototype.isEqual = function (other, aUnionFind) {
+									if (other != null && other != undefined && other instanceof Vector) {
+													if (other.length() != this.length()) {
+																	return false;
+													}
+													for (var i = 0; i < this.length(); i++) {
+																	if (!_isEqual(this.elts[i], other.elts[i], aUnionFind)) {
+																					return false;
+																	}
+													}
+													return true;
+									} else {
+													return false;
+									}
+					};
+	
+					Vector.prototype.toList = function () {
+									var ret = Empty.EMPTY;
+									for (var i = this.length() - 1; i >= 0; i--) {
+													ret = Cons.makeInstance(this.elts[i], ret);
+									}
+									return ret;
+					};
+	
+					Vector.prototype.toWrittenString = function (cache) {
+									//    cache.put(this, true);
+									var texts = [];
+									for (var i = 0; i < this.length(); i++) {
+													texts.push(_toWrittenString(this.ref(i), cache));
+									}
+									return "#(" + texts.join(" ") + ")";
+					};
+	
+					Vector.prototype.toDisplayedString = function (cache) {
+									//    cache.put(this, true);
+									var texts = [];
+									for (var i = 0; i < this.length(); i++) {
+													texts.push(toDisplayedString(this.ref(i), cache));
+									}
+									return "#(" + texts.join(" ") + ")";
+					};
+	
+					Vector.prototype.toDomNode = function (cache) {
+									//    cache.put(this, true);
+									var node = document.createElement("span"),
+									    lVect = document.createElement("span"),
+									    rVect = document.createElement("span");
+									lVect.appendChild(document.createTextNode("#("));
+									lVect.className = "lParen";
+									rVect.appendChild(document.createTextNode(")"));
+									rVect.className = "rParen";
+									node.className = "wescheme-vector";
+									node.appendChild(lVect);
+									for (var i = 0; i < this.length(); i++) {
+													appendChild(node, _toDomNode(this.ref(i), cache));
+									}
+									node.appendChild(rVect);
+									return node;
+					};
+	
+					//////////////////////////////////////////////////////////////////////
+	
+					// Now using mutable strings
+					var Str = function Str(chars) {
+									this.chars = chars;
+									this.length = chars.length;
+									this.mutable = true;
+					};
+	
+					Str.makeInstance = function (chars) {
+									return new Str(chars);
+					};
+	
+					Str.fromString = function (s) {
+									return Str.makeInstance(s.split(""));
+					};
+	
+					Str.prototype.toString = function () {
+									return this.chars.join("");
+					};
+	
+					Str.prototype.toWrittenString = function (cache) {
+									return escapeString(this.toString());
+					};
+	
+					Str.prototype.toDisplayedString = Str.prototype.toString;
+	
+					Str.prototype.copy = function () {
+									return Str.makeInstance(this.chars.slice(0));
+					};
+	
+					Str.prototype.substring = function (start, end) {
+									if (end == null || end == undefined) {
+													end = this.length;
+									}
+	
+									return Str.makeInstance(this.chars.slice(start, end));
+					};
+	
+					Str.prototype.charAt = function (index) {
+									return this.chars[index];
+					};
+	
+					Str.prototype.charCodeAt = function (index) {
+									return this.chars[index].charCodeAt(0);
+					};
+	
+					Str.prototype.replace = function (expr, newStr) {
+									return Str.fromString(this.toString().replace(expr, newStr));
+					};
+	
+					Str.prototype.isEqual = function (other, aUnionFind) {
+									if (!(other instanceof Str || typeof other == 'string')) {
+													return false;
+									}
+									return this.toString() === other.toString();
+					};
+	
+					Str.prototype.set = function (i, c) {
+									this.chars[i] = c;
+					};
+	
+					Str.prototype.toUpperCase = function () {
+									return Str.fromString(this.chars.join("").toUpperCase());
+					};
+	
+					Str.prototype.toLowerCase = function () {
+									return Str.fromString(this.chars.join("").toLowerCase());
+					};
+	
+					Str.prototype.match = function (regexpr) {
+									return this.toString().match(regexpr);
+					};
+	
+					//var _quoteReplacingRegexp = new RegExp("[\"\\\\]", "g");
+					var escapeString = function escapeString(s) {
+									return '"' + replaceUnprintableStringChars(s) + '"';
+									//    return '"' + s.replace(_quoteReplacingRegexp,
+									//			      function(match, submatch, index) {
+									//				  return "\\" + match;
+									//			      }) + '"';
+					};
+	
+					var replaceUnprintableStringChars = function replaceUnprintableStringChars(s) {
+									var ret = [];
+									for (var i = 0; i < s.length; i++) {
+													var val = s.charCodeAt(i);
+													switch (val) {
+																	case 7:
+																					ret.push('\\a');break;
+																	case 8:
+																					ret.push('\\b');break;
+																	case 9:
+																					ret.push('\\t');break;
+																	case 10:
+																					ret.push('\\n');break;
+																	case 11:
+																					ret.push('\\v');break;
+																	case 12:
+																					ret.push('\\f');break;
+																	case 13:
+																					ret.push('\\r');break;
+																	case 34:
+																					ret.push('\\"');break;
+																	case 92:
+																					ret.push('\\\\');break;
+																	default:
+																					if (val >= 32 && val <= 126) {
+																									ret.push(s.charAt(i));
+																					} else {
+																									var numStr = val.toString(16).toUpperCase();
+																									while (numStr.length < 4) {
+																													numStr = '0' + numStr;
+																									}
+																									ret.push('\\u' + numStr);
+																					}
+																					break;
+													}
+									}
+									return ret.join('');
+					};
+	
+					/*
+	    // Strings
+	    // For the moment, we just reuse Javascript strings.
+	    String = String;
+	    String.makeInstance = function(s) {
+	        return s.valueOf();
 	    };
-	Vector.prototype.ref = function(k) {
-	    return this.elts[k];
-	};
-	Vector.prototype.set = function(k, v) {
-	    this.elts[k] = v;
-	};
-	
-	Vector.prototype.isEqual = function(other, aUnionFind) {
-	    if (other != null && other != undefined && other instanceof Vector) {
-		if (other.length() != this.length()) {
-		    return false
-		}
-		for (var i = 0; i <  this.length(); i++) {
-		    if (! isEqual(this.elts[i], other.elts[i], aUnionFind)) {
-			return false;
-		    }
-		}
-		return true;
-	    } else {
-		return false;
-	    }
-	};
-	
-	Vector.prototype.toList = function() {
-	    var ret = Empty.EMPTY;
-	    for (var i = this.length() - 1; i >= 0; i--) {
-		ret = Cons.makeInstance(this.elts[i], ret);	    
-	    }	
-	    return ret;
-	};
-	
-	Vector.prototype.toWrittenString = function(cache) {
-	    //    cache.put(this, true);
-	    var texts = [];
-	    for (var i = 0; i < this.length(); i++) {
-		texts.push(toWrittenString(this.ref(i), cache));
-	    }
-	    return "#(" + texts.join(" ") + ")";
-	};
-	
-	Vector.prototype.toDisplayedString = function(cache) {
-	    //    cache.put(this, true);
-	    var texts = [];
-	    for (var i = 0; i < this.length(); i++) {
-		texts.push(toDisplayedString(this.ref(i), cache));
-	    }
-	    return "#(" + texts.join(" ") + ")";
-	};
-	
-	Vector.prototype.toDomNode = function(cache) {
-	    //    cache.put(this, true);
-	    var node = document.createElement("span"),
-	        lVect = document.createElement("span"),
-	        rVect = document.createElement("span");
-	    lVect.appendChild(document.createTextNode("#("));
-	    lVect.className = "lParen";
-	    rVect.appendChild(document.createTextNode(")"));
-	    rVect.className = "rParen";
-	    node.className = "wescheme-vector";
-	    node.appendChild(lVect);
-	    for (var i = 0; i < this.length(); i++) {
-	      appendChild(node, toDomNode(this.ref(i), cache));
-	    }
-	    node.appendChild(rVect);
-	    return node;
-	};
-	
-	
-	//////////////////////////////////////////////////////////////////////
-	
-	
-	
-	
-	
-	
-	// Now using mutable strings
-	var Str = function(chars) {
-		this.chars = chars;
-		this.length = chars.length;
-		this.mutable = true;
-	}
-	
-	Str.makeInstance = function(chars) {
-		return new Str(chars);
-	}
-	
-	Str.fromString = function(s) {
-		return Str.makeInstance(s.split(""));
-	}
-	
-	Str.prototype.toString = function() {
-		return this.chars.join("");
-	}
-	
-	Str.prototype.toWrittenString = function(cache) {
-	    return escapeString(this.toString());
-	}
-	
-	Str.prototype.toDisplayedString = Str.prototype.toString;
-	
-	Str.prototype.copy = function() {
-		return Str.makeInstance(this.chars.slice(0));
-	}
-	
-	Str.prototype.substring = function(start, end) {
-		if (end == null || end == undefined) {
-			end = this.length;
-		}
-		
-		return Str.makeInstance( this.chars.slice(start, end) );
-	}
-	
-	Str.prototype.charAt = function(index) {
-		return this.chars[index];
-	}
-	
-	Str.prototype.charCodeAt = function(index) {
-		return this.chars[index].charCodeAt(0);
-	}
-	
-	Str.prototype.replace = function(expr, newStr) {
-		return Str.fromString( this.toString().replace(expr, newStr) );
-	}
-	
-	
-	Str.prototype.isEqual = function(other, aUnionFind) {
-		if ( !(other instanceof Str || typeof(other) == 'string') ) {
-			return false;
-		}
-		return this.toString() === other.toString();
-	}
-	
-	
-	Str.prototype.set = function(i, c) {
-		this.chars[i] = c;
-	}
-	
-	Str.prototype.toUpperCase = function() {
-		return Str.fromString( this.chars.join("").toUpperCase() );
-	}
-	
-	Str.prototype.toLowerCase = function() {
-		return Str.fromString( this.chars.join("").toLowerCase() );
-	}
-	
-	Str.prototype.match = function(regexpr) {
-		return this.toString().match(regexpr);
-	}
-	
-	
-	//var _quoteReplacingRegexp = new RegExp("[\"\\\\]", "g");
-	var escapeString = function(s) {
-	    return '"' + replaceUnprintableStringChars(s) + '"';
-	//    return '"' + s.replace(_quoteReplacingRegexp,
-	//			      function(match, submatch, index) {
-	//				  return "\\" + match;
-	//			      }) + '"';
-	};
-	
-	var replaceUnprintableStringChars = function(s) {
-		var ret = [];
-		for (var i = 0; i < s.length; i++) {
-			var val = s.charCodeAt(i);
-			switch(val) {
-				case 7: ret.push('\\a'); break;
-				case 8: ret.push('\\b'); break;
-				case 9: ret.push('\\t'); break;
-				case 10: ret.push('\\n'); break;
-				case 11: ret.push('\\v'); break;
-				case 12: ret.push('\\f'); break;
-				case 13: ret.push('\\r'); break;
-				case 34: ret.push('\\"'); break;
-				case 92: ret.push('\\\\'); break;
-				default: if (val >= 32 && val <= 126) {
-						 ret.push( s.charAt(i) );
-					 }
-					 else {
-						 var numStr = val.toString(16).toUpperCase();
-						 while (numStr.length < 4) {
-							 numStr = '0' + numStr;
-						 }
-						 ret.push('\\u' + numStr);
-					 }
-					 break;
-			}
-		}
-		return ret.join('');
-	};
-	
-	
-	/*
-	// Strings
-	// For the moment, we just reuse Javascript strings.
-	String = String;
-	String.makeInstance = function(s) {
-	    return s.valueOf();
-	};
 	    
 	    
-	// WARNING
-	// WARNING: we are extending the built-in Javascript string class here!
-	// WARNING
-	String.prototype.isEqual = function(other, aUnionFind){
-	    return this == other;
-	};
-	    
-	var _quoteReplacingRegexp = new RegExp("[\"\\\\]", "g");
-	String.prototype.toWrittenString = function(cache) {
-	    return '"' + this.replace(_quoteReplacingRegexp,
-				      function(match, submatch, index) {
-					  return "\\" + match;
-				      }) + '"';
-	};
-	
-	String.prototype.toDisplayedString = function(cache) {
-	    return this;
-	};
-	*/
-	
-	
-	//////////////////////////////////////////////////////////////////////
-	
-	// makeLowLevelEqHash: -> hashtable
-	// Constructs an eq hashtable that uses Moby's getEqHashCode function.
-	var makeLowLevelEqHash = function() {
-	    return new _Hashtable(function(x) { return getEqHashCode(x); },
-				  function(x, y) { return x === y; });
-	};
-	
-	
-	
-	
-	
-	
-	
-	
-	//////////////////////////////////////////////////////////////////////
-	// Hashtables
-	var EqHashTable = function(inputHash) {
-	    this.hash = makeLowLevelEqHash();
-	    this.mutable = true;
-	
-	};
-	EqHashTable = EqHashTable;
-	
-	EqHashTable.prototype.toWrittenString = function(cache) {
-	    var keys = this.hash.keys();
-	    var ret = [];
-	    for (var i = 0; i < keys.length; i++) {
-		    var keyStr = types.toWrittenString(keys[i], cache);
-		    var valStr = types.toWrittenString(this.hash.get(keys[i]), cache);
-		    ret.push('(' + keyStr + ' . ' + valStr + ')');
-	    }
-	    return ('#hasheq(' + ret.join(' ') + ')');
-	};
-	
-	EqHashTable.prototype.toDisplayedString = function(cache) {
-	    var keys = this.hash.keys();
-	    var ret = [];
-	    for (var i = 0; i < keys.length; i++) {
-		    var keyStr = types.toDisplayedString(keys[i], cache);
-		    var valStr = types.toDisplayedString(this.hash.get(keys[i]), cache);
-		    ret.push('(' + keyStr + ' . ' + valStr + ')');
-	    }
-	    return ('#hasheq(' + ret.join(' ') + ')');
-	};
-	
-	EqHashTable.prototype.isEqual = function(other, aUnionFind) {
-	    if ( !(other instanceof EqHashTable) ) {
-		return false; 
-	    }
-	
-	    if (this.hash.keys().length != other.hash.keys().length) { 
-		return false;
-	    }
-	
-	    var keys = this.hash.keys();
-	    for (var i = 0; i < keys.length; i++){
-		if ( !(other.hash.containsKey(keys[i]) &&
-		       isEqual(this.hash.get(keys[i]),
-			       other.hash.get(keys[i]),
-			       aUnionFind)) ) {
-			return false;
-		}
-	    }
-	    return true;
-	};
-	
-	
-	
-	var EqualHashTable = function(inputHash) {
-		this.hash = new _Hashtable(function(x) {
-				return toWrittenString(x); 
-			},
-			function(x, y) {
-				return isEqual(x, y, new UnionFind()); 
-			});
-		this.mutable = true;
-	};
-	
-	EqualHashTable = EqualHashTable;
-	
-	EqualHashTable.prototype.toWrittenString = function(cache) {
-	    var keys = this.hash.keys();
-	    var ret = [];
-	    for (var i = 0; i < keys.length; i++) {
-		    var keyStr = types.toWrittenString(keys[i], cache);
-		    var valStr = types.toWrittenString(this.hash.get(keys[i]), cache);
-		    ret.push('(' + keyStr + ' . ' + valStr + ')');
-	    }
-	    return ('#hash(' + ret.join(' ') + ')');
-	};
-	EqualHashTable.prototype.toDisplayedString = function(cache) {
-	    var keys = this.hash.keys();
-	    var ret = [];
-	    for (var i = 0; i < keys.length; i++) {
-		    var keyStr = types.toDisplayedString(keys[i], cache);
-		    var valStr = types.toDisplayedString(this.hash.get(keys[i]), cache);
-		    ret.push('(' + keyStr + ' . ' + valStr + ')');
-	    }
-	    return ('#hash(' + ret.join(' ') + ')');
-	};
-	
-	EqualHashTable.prototype.isEqual = function(other, aUnionFind) {
-	    if ( !(other instanceof EqualHashTable) ) {
-		return false; 
-	    }
-	
-	    if (this.hash.keys().length != other.hash.keys().length) { 
-		return false;
-	    }
-	
-	    var keys = this.hash.keys();
-	    for (var i = 0; i < keys.length; i++){
-		if (! (other.hash.containsKey(keys[i]) &&
-		       isEqual(this.hash.get(keys[i]),
-			       other.hash.get(keys[i]),
-			       aUnionFind))) {
-		    return false;
-		}
-	    }
-	    return true;
-	};
-	
-	
-	//////////////////////////////////////////////////////////////////////
-	
-	var JsObject = function(name, obj) {
-		this.name = name;
-		this.obj = obj;
-	};
-	
-	JsObject.prototype.toString = function() {
-		return '#<js-object:' + typeof(this.obj) + ':' + this.name + '>';
-	};
-	
-	JsObject.prototype.isEqual = function(other, aUnionFind) {
-		return (this.obj === other.obj);
-	};
-	
-	//////////////////////////////////////////////////////////////////////
-	
-	var WorldConfig = function(startup, shutdown, args) {
-		this.startup = startup;
-		this.shutdown = shutdown;
-		this.startupArgs = args;
-		this.shutdownArg = undefined;
-	};
-	
-	WorldConfig.prototype.toString = function() {
-		return '#<world-config>';
-	};
-	
-	WorldConfig.prototype.isEqual = function(other, aUnionFind) {
-		if ( ! isEqual(this.startup, other.startup, aUnionFind) ||
-		     ! isEqual(this.shutdown, other.shutdown, aUnionFind) ||
-		     this.startupArgs.length != other.startupArgs.length || 
-		     ! isEqual(this.shutdownArg, other.shutdownArg, aUnionFind) ) {
-			return false;
-		}
-	
-		for (var i = 0; i < args.length; i++) {
-			if ( !isEqual(this.startupArgs[i], other.startupArgs[i], aUnionFind) )
-				return false;
-		}
-		return true;
-	};
-	
-	
-	var Effect = makeStructureType('effect', false, 0, 0, false, false);
-	Effect.type.prototype.invokeEffect = function(k) {
-		helpers.raise(types.incompleteExn(
-				types.exnFail,
-				'effect type created without using make-effect-type',
-				[]));
-	};
-	//Effect.handlerIndices = [];
-	
-	
-	//var wrapHandler = function(handler, caller, changeWorld) {
-	//	return types.jsObject('function', function() {
-	//		var externalArgs = arguments;
-	//		changeWorld(function(w, k) {
-	//			var args = helpers.map(helpers.wrapJsObject, externalArgs);
-	//			args.unshift(w);
-	//			caller(handler, args, k);
-	//		});
-	//	});
-	//};
-	
-	
-	var makeEffectType = function(name, superType, initFieldCnt, impl, guard, caller) {
-		if ( !superType ) {
-			superType = Effect;
-		}
-		
-		var newType = makeStructureType(name, superType, initFieldCnt, 0, false, guard);
-		var lastFieldIndex = newType.firstField + newType.numberOfFields;
-	
-		newType.type.prototype.invokeEffect = function(changeWorld, k) {
-			var schemeChangeWorld = new PrimProc('update-world', 1, false, true,
-				function(aState, worldUpdater) {
-					helpers.check(aState, worldUpdater, helpers.procArityContains(1),
-						      'update-world', 'procedure (arity 1)', 1);
-					
-					changeWorld(function(w, k2) { interpret.call(aState,
-										     worldUpdater, [w],
-										     k2,
-										     function(e) { throw e; }); },
-						    function() { aState.v = VOID_VALUE; });
-				});
-	
-			var args = this._fields.slice(0, lastFieldIndex);
-			args.unshift(schemeChangeWorld);
-			caller(impl, args, k);
-		}
-	
-		return newType;
-	};
-	
-	
-	var RenderEffect = makeStructureType('render-effect', false, 0, 0, false, false);
-	RenderEffect.type.prototype.callImplementation = function(caller, k) {
-		helpers.raise(types.incompleteExn(
-				types.exnFail,
-				'render effect created without using make-render-effect-type',
-				[]));
-	};
-	
-	var makeRenderEffectType = function(name, superType, initFieldCnt, impl, guard) {
-		if ( !superType ) {
-			superType = RenderEffect;
-		}
-		
-		var newType = makeStructureType(name, superType, initFieldCnt, 0, false, guard);
-		var lastFieldIndex = newType.firstField + newType.numberOfFields;
-	
-		newType.type.prototype.callImplementation = function(caller, k) {
-			var args = this._fields.slice(0, lastFieldIndex);
-			caller(impl, args, k);
-		}
-	
-		return newType;
-	};
-	
-	//////////////////////////////////////////////////////////////////////
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	//////////////////////////////////////////////////////////////////////
-	
-	
-	
-	
-	
-	
-	
-	var toWrittenString = function(x, cache) {
-	    if (! cache) { 
-	     	cache = makeLowLevelEqHash();
-	    }
-	
-	    if (typeof(x) == 'object') {
-		    if (cache.containsKey(x)) {
-			    return "...";
-		    } else {
-		        cache.put(x, true);
-	            }
-	    }
-	
-	    if (x == undefined || x == null) {
-		return "#<undefined>";
-	    }
-	    if (typeof(x) == 'string') {
-		return escapeString(x.toString());
-	    }
-	    if (typeof(x) != 'object' && typeof(x) != 'function') {
-		return x.toString();
-	    }
-	
-	    var returnVal;
-	    if (typeof(x.toWrittenString) !== 'undefined') {
-		returnVal = x.toWrittenString(cache);
-	    } else if (typeof(x.toDisplayedString) !== 'undefined') {
-		returnVal = x.toDisplayedString(cache);
-	    } else {
-		returnVal = x.toString();
-	    }
-	    cache.remove(x);
-	    return returnVal;
-	};
-	
-	
-	
-	var toDisplayedString = function(x, cache) {
-	    if (! cache) {
-	    	cache = makeLowLevelEqHash();
-	    }
-	    if (typeof(x) == 'object') {
-		    if (cache.containsKey(x)) {
-			    return "...";
-		    }
-		    cache.put(x, true);
-	    }
-	
-	    if (x == undefined || x == null) {
-		return "#<undefined>";
-	    }
-	    if (typeof(x) == 'string') {
-		return x;
-	    }
-	    if (typeof(x) != 'object' && typeof(x) != 'function') {
-		return x.toString();
-	    }
-	
-	    var returnVal;
-	    if (typeof(x.toDisplayedString) !== 'undefined') {
-		returnVal = x.toDisplayedString(cache);
-	    } else if (typeof(x.toWrittenString) !== 'undefined') {
-		returnVal = x.toWrittenString(cache);
-	    } else {
-		returnVal = x.toString();
-	    }
-	    cache.remove(x);
-	    return returnVal;
-	};
-	
-	
-	
-	// toDomNode: scheme-value -> dom-node
-	var toDomNode = function(x, cache) {
-	    if (! cache) {
-	    	cache = makeLowLevelEqHash();
-	    }
-	    
-	    if (isNumber(x)) {
-		return numberToDomNode(x);
-	    }
-	
-	    if (typeof(x) == 'object') {
-		    if (cache.containsKey(x)) {
-	        var node = document.createElement("span");
-	        node.style['font-family'] = 'monospace';
-	        node.appendChild(document.createTextNode("..."));
-	        return node;
-		    }
-		    cache.put(x, true);
-	    }
-	
-	    if (x == undefined || x == null) {
-	      var node = document.createElement("span");
-	      node.style['font-family'] = 'monospace';
-	      node.appendChild(document.createTextNode("#<undefined>"));
-	      return node;
-	    }
-	    if (typeof(x) == 'string') {
-	        return textToDomNode(toWrittenString(x));
-	    }
-	    if (typeof(x) != 'object' && typeof(x) != 'function') {
-	        return textToDomNode(x.toString());
-	    }
-	
-	    var returnVal;
-	    if (x.nodeType) {
-		returnVal =  x;
-	    } else if (typeof(x.toDomNode) !== 'undefined') {
-		returnVal =  x.toDomNode(cache);
-	    } else if (typeof(x.toWrittenString) !== 'undefined') {	
-	        returnVal = textToDomNode(x.toWrittenString(cache))
-	    } else if (typeof(x.toDisplayedString) !== 'undefined') {
-	        returnVal = textToDomNode(x.toDisplayedString(cache));
-	    } else {
-	        returnVal = textToDomNode(x.toString());
-	    }
-	    cache.remove(x);
-	    return returnVal;
-	};
-	
-	
-	var textToDomNode = function(text) {
-	    var chunks = text.split("\n");
-	    var i;
-	    var wrapper = document.createElement("span");
-	    var newlineDiv;
-	    wrapper.className = (text==="true" || text==="false")? "wescheme-boolean" : "wescheme-string";
-	    wrapper.style.fontFamily = 'monospace';
-	    wrapper.style.whiteSpace = "pre";
-	    if (chunks.length > 0) {
-	        wrapper.appendChild(document.createTextNode(chunks[0]));
-	    }
-	    for (i = 1; i < chunks.length; i++) {
-	        newlineDiv = document.createElement("br");
-	        newlineDiv.style.clear = 'left';
-	        wrapper.appendChild(newlineDiv);
-	        wrapper.appendChild(document.createTextNode(chunks[i]));
-	    }
-	    return wrapper;
-	};
-	
-	
-	
-	// numberToDomNode: jsnum -> dom
-	// Given a jsnum, produces a dom-node representation.
-	var numberToDomNode = function(n) {
-	    var node;
-	    if (jsnums.isExact(n)) {
-	      if (jsnums.isInteger(n)) {
-	          node = document.createElement("span");
-	          node.className = "wescheme-number Integer";
-	          node.appendChild(document.createTextNode(n.toString()));
-	          return node;
-	      } else if (jsnums.isRational(n)) {
-	          return rationalToDomNode(n);
-	      } else if (isComplex(n)) {
-	          node = document.createElement("span");
-	          node.className = "wescheme-number Complex";
-	          node.appendChild(document.createTextNode(n.toString()));
-	          return node;
-	      } else {
-	          node = document.createElement("span");
-	          node.className = "wescheme-number";
-	          node.appendChild(document.createTextNode(n.toString()));
-	          return node;
-	      }
-	    } else {
-	      node = document.createElement("span");
-	      node.className = "wescheme-number";
-	      node.appendChild(document.createTextNode(n.toString()));
-	      return node;
-	    }
-	};
-	
-	// rationalToDomNode: rational -> dom-node
-	var rationalToDomNode = function(n) {
-	    var repeatingDecimalNode = document.createElement("span");
-	    var chunks = jsnums.toRepeatingDecimal(jsnums.numerator(n),
-						   jsnums.denominator(n),
-						   {limit: 25});
-	    var firstPart = document.createElement("span");
-	    firstPart.appendChild(document.createTextNode(chunks[0] + '.' + chunks[1]));
-	    repeatingDecimalNode.appendChild(firstPart);
-	    if (chunks[2] === '...') {
-	      firstPart.appendChild(document.createTextNode(chunks[2]));
-	    } else if (chunks[2] !== '0') {
-	      var overlineSpan = document.createElement("span");
-	      overlineSpan.style.textDecoration = 'overline';
-	      overlineSpan.appendChild(document.createTextNode(chunks[2]));
-	      repeatingDecimalNode.appendChild(overlineSpan);
-	    }
-	
-	
-	    var fractionalNode = document.createElement("span");
-	    var numeratorNode = document.createElement("sup");
-	    numeratorNode.appendChild(document.createTextNode(String(jsnums.numerator(n))));
-	    var denominatorNode = document.createElement("sub");
-	    denominatorNode.appendChild(document.createTextNode(String(jsnums.denominator(n))));
-	    var barNode = document.createElement("span");
-	    barNode.appendChild(document.createTextNode("/"));
-	
-	    fractionalNode.appendChild(numeratorNode);
-	    fractionalNode.appendChild(barNode);
-	    fractionalNode.appendChild(denominatorNode);
-	
-	    
-	    var numberNode = document.createElement("span");
-	    numberNode.appendChild(repeatingDecimalNode);
-	    numberNode.appendChild(fractionalNode);
-	    fractionalNode.style['display'] = 'none';
-	
-	    var showingRepeating = true;
-	
-	    numberNode.onclick = function(e) {
-		showingRepeating = !showingRepeating;
-		repeatingDecimalNode.style['display'] = 
-		    (showingRepeating ? 'inline' : 'none')
-		fractionalNode.style['display'] = 
-		    (!showingRepeating ? 'inline' : 'none')
+	    // WARNING
+	    // WARNING: we are extending the built-in Javascript string class here!
+	    // WARNING
+	    String.prototype.isEqual = function(other, aUnionFind){
+	        return this == other;
 	    };
-	    numberNode.style['cursor'] = 'pointer';
-	    numberNode.className = "wescheme-number Rational";
-	    return numberNode;
-	
-	};
-	
-	    // Alternative: use <sup> and <sub> tags
-	
-	
-	
-	
-	
-	var isNumber = jsnums.isSchemeNumber;
-	var isComplex = isNumber;
-	var isString = function(s) {
-		return (typeof s === 'string' || s instanceof Str);
-	}
-	
-	
-	// isEqual: X Y -> boolean
-	// Returns true if the objects are equivalent; otherwise, returns false.
-	var isEqual = function(x, y, aUnionFind) {
-	    if (x === y) { return true; }
-	
-	    if (isNumber(x) && isNumber(y)) {
-		return jsnums.equals(x, y);
-	    }
-	
-	    if (isString(x) && isString(y)) {
-		return x.toString() === y.toString();
-	    }
-	
-	    if (x == undefined || x == null) {
-		return (y == undefined || y == null);
-	    }
-	
-	    if ( typeof(x) == 'object' &&
-		 typeof(y) == 'object' &&
-		 x.isEqual &&
-		 y.isEqual) {
-		if (aUnionFind.find(x) === aUnionFind.find(y)) {
-		    return true;
-		}
-		else {
-		    aUnionFind.merge(x, y); 
-		    return x.isEqual(y, aUnionFind);
-		}
-	    }
-	    return false;
-	};
-	
-	
-	
-	
-	
-	// liftToplevelToFunctionValue: primitive-function string fixnum scheme-value -> scheme-value
-	// Lifts a primitive toplevel or module-bound value to a scheme value.
-	var liftToplevelToFunctionValue = function(primitiveF,
-					       name,
-					       minArity, 
-					       procedureArityDescription) {
-	    if (! primitiveF._mobyLiftedFunction) {
-		var lifted = function(args) {
-		    return primitiveF.apply(null, args.slice(0, minArity).concat([args.slice(minArity)]));
-		};
-		lifted.isEqual = function(other, cache) { 
-		    return this === other; 
-		}
-		lifted.toWrittenString = function(cache) { 
-		    return "#<function:" + name + ">";
-		};
-		lifted.toDisplayedString = lifted.toWrittenString;
-		lifted.procedureArity = procedureArityDescription;
-		primitiveF._mobyLiftedFunction = lifted;
-		    
-	    } 
-	    return primitiveF._mobyLiftedFunction;
-	};
-	
-	
-	
-	//////////////////////////////////////////////////////////////////////
-	var ThreadCell = function(v, isPreserved) {
-	    this.v = v;
-	    this.isPreserved = isPreserved || false;
-	};
-	
-	
-	
-	//////////////////////////////////////////////////////////////////////
-	
-	
-	// Wrapper around functions that return multiple values.
-	var ValuesWrapper = function(elts) {
-	    this.elts = elts;
-	};
-	
-	ValuesWrapper.prototype.toDomNode = function(cache) {
-	    var parent = document.createElement("span");
-	    parent.style.whiteSpace = "pre";
-	    if ( this.elts.length > 0 ) {
-		    parent.appendChild( toDomNode(this.elts[0], cache) );
-		    for (var i = 1; i < this.elts.length; i++) {
-			    parent.appendChild( document.createTextNode('\n') );
-			    parent.appendChild( toDomNode(this.elts[i], cache) );
-		    }
-	    }
-	    return parent;
-	};
-	
-	
-	var UndefinedValue = function() {
-	};
-	UndefinedValue.prototype.toString = function() {
-	    return "#<undefined>";
-	};
-	var UNDEFINED_VALUE = new UndefinedValue();
-	
-	var VoidValue = function() {};
-	VoidValue.prototype.toString = function() {
-		return "#<void>";
-	};
-	
-	var VOID_VALUE = new VoidValue();
-	
-	
-	var EofValue = function() {};
-	EofValue.prototype.toString = function() {
-		return "#<eof>";
-	}
-	
-	var EOF_VALUE = new EofValue();
-	
-	
-	var ClosureValue = function(name, locs, numParams, paramTypes, isRest, closureVals, body) {
-	    this.name = name;
-	    this.locs = locs;
-	    this.numParams = numParams;
-	    this.paramTypes = paramTypes;
-	    this.isRest = isRest;
-	    this.closureVals = closureVals;
-	    this.body = body;
-	};
-	
-	
-	
-	
-	ClosureValue.prototype.toString = function() {
-	    if (this.name !== Empty.EMPTY) {
-		return helpers.format("#<function:~a>", [this.name]);
-	    } else {
-		return "#<function>";
-	    }
-	};
-	
-	
-	var CaseLambdaValue = function(name, closures) {
-	    this.name = name;
-	    this.closures = closures;
-	};
-	
-	CaseLambdaValue.prototype.toString = function() {
-	    if (this.name !== Empty.EMPTY) {
-		return helpers.format("#<case-lambda-procedure:~a>", [this.name]);
-	    } else {
-		return "#<case-lambda-procedure>";
-	    }
-	};
-	
-	
-	
-	var ContinuationClosureValue = function(vstack, cstack) {
-	    this.name = false;
-	    this.vstack = vstack.slice(0);
-	    this.cstack = cstack.slice(0);
-	};
-	
-	ContinuationClosureValue.prototype.toString = function() {
-	    if (this.name !== Empty.EMPTY) {
-		return helpers.format("#<function:~a>", [this.name]);
-	    } else {
-		return "#<function>";
-	    }
-	};
-	
-	
-	
-	//////////////////////////////////////////////////////////////////////
-	
-	
-	
-	var PrefixValue = function() {
-	    this.slots = [];
-	    this.definedMask = [];
-	};
-	
-	PrefixValue.prototype.addSlot = function(v) {
-	    if (v === undefined) { 
-		this.slots.push(types.UNDEFINED);
-		this.definedMask.push(false);
-	    } else {
-	        this.slots.push(v);
-		if (v instanceof GlobalBucket) {
-		    if (v.value === types.UNDEFINED) {
-			this.definedMask.push(false);
-		    } else {
-			this.definedMask.push(true);
-		    }
-		} else {
-		    this.definedMask.push(true);
-		}
-	    }
-	};
-	
-	PrefixValue.prototype.ref = function(n, srcloc) {
-	    if (this.slots[n] instanceof GlobalBucket) {
-	    	if (this.definedMask[n]) {
-	    	    return this.slots[n].value;
-	    	} else {
-	    	    helpers.raise(types.incompleteExn(
-	    			types.exnFailContractVariable,
-	    			new Message([new ColoredPart(this.slots[n].name, srcloc),
-	                            ": this variable is not defined"]),
-	    			[this.slots[n].name]));
-	    	}
-	        } else {
-	    	if (this.definedMask[n]) {
-	    	    return this.slots[n];
-	    	} else {
-	    	    helpers.raise(types.incompleteExn(
-	    			types.exnFailContractVariable,
-	    			"variable has not been defined",
-	    			[false]));
-	    	}
-	    }
-	};
-	
-	PrefixValue.prototype.set = function(n, v) {
-	    if (this.slots[n] instanceof GlobalBucket) {
-		this.slots[n].value = v;
-		this.definedMask[n] = true;
-	    } else {
-		this.slots[n] = v;
-		this.definedMask[n] = true;
-	    }
-	};
-	
-	
-	PrefixValue.prototype.length = function() { 
-	    return this.slots.length;
-	};
-	
-	
-	var GlobalBucket = function(name, value) {
-	    this.name = name;
-	    this.value = value;
-	};
-	
-	
-	
-	var ModuleVariableRecord = function(resolvedModuleName,
-					    variableName) {
-	    this.resolvedModuleName = resolvedModuleName;
-	    this.variableName = variableName;
-	};
-	
-	
-	
-	
-	
-	//////////////////////////////////////////////////////////////////////
-	
-	
-	var VariableReference = function(prefix, pos) {
-	    this.prefix = prefix;
-	    this.pos = pos;
-	};
-	
-	VariableReference.prototype.ref = function() {
-	    return this.prefix.ref(this.pos);
-	};
-	
-	VariableReference.prototype.set = function(v) {
-	    this.prefix.set(this.pos, v);
-	}
-	
-	//////////////////////////////////////////////////////////////////////
-	
-	// Continuation Marks
-	
-	var ContMarkRecordControl = function(dict) {
-	    this.dict = dict || {};
-	};
-	
-	ContMarkRecordControl.prototype.invoke = function(state) {
-	    // No-op: the record will simply pop off the control stack.
-	};
-	
-	ContMarkRecordControl.prototype.update = function(key, val) {
-	 /*
-	    var newDict = makeLowLevelEqHash();
-	    // FIXME: what's the javascript idiom for hash key copy?
-	    // Maybe we should use a rbtree instead?
-	    var oldKeys = this.dict.keys();
-	    for (var i = 0; i < oldKeys.length; i++) {
-		    newDict.put( oldKeys[i], this.dict.get(oldKeys[i]) );
-	    }
-	    newDict.put(key, val);
-	    return new ContMarkRecordControl(newDict);
-	  */
-	  this.dict[key.val] = val;
-	  return this;
-	};
-	
-	
-	
-	var ContinuationMarkSet = function(dict) {
-	    this.dict = dict;
-	}
-	
-	ContinuationMarkSet.prototype.toDomNode = function(cache) {
-	    var dom = document.createElement("span");
-	    dom.appendChild(document.createTextNode('#<continuation-mark-set>'));
-	    return dom;
-	};
-	
-	ContinuationMarkSet.prototype.toWrittenString = function(cache) {
-	    return '#<continuation-mark-set>';
-	};
-	
-	ContinuationMarkSet.prototype.toDisplayedString = function(cache) {
-	    return '#<continuation-mark-set>';
-	};
-	
-	ContinuationMarkSet.prototype.ref = function(key) {
-	    if ( this.dict.containsKey(key) ) {
-		    return this.dict.get(key);
-	    }
-	    return [];
-	};
-	
-	
-	//////////////////////////////////////////////////////////////////////
-	
-	var ContinuationPrompt = function() {
-	};
-	
-	var defaultContinuationPrompt = new ContinuationPrompt();
-	
-	
-	
-	//////////////////////////////////////////////////////////////////////
-	
-	//////////////////////////////////////////////////////////////////////
-	
-	var PrimProc = function(name, numParams, isRest, assignsToValueRegister, impl) {
-	    this.name = name;
-	    this.numParams = numParams;
-	    this.isRest = isRest;
-	    this.assignsToValueRegister = assignsToValueRegister;
-	    this.impl = impl;
-	};
-	
-	PrimProc.prototype.toString = function() {
-	    return ("#<function:" + this.name + ">");
-	};
-	
-	PrimProc.prototype.toWrittenString = function(cache) {
-	    return ("#<function:" + this.name + ">");
-	};
-	
-	PrimProc.prototype.toDisplayedString = function(cache) {
-	    return ("#<function:" + this.name + ">");
-	};
-	
-	
-	PrimProc.prototype.toDomNode = function(cache) {
-	    var node = document.createElement("span");
-	    node.className = "wescheme-primproc";
-	    node.appendChild(document.createTextNode("#<function:"+ this.name +">"));
-	    return node;
-	};
-	
-	
-	var CasePrimitive = function(name, cases) {
-	    this.name = name;
-	    this.cases = cases;
-	};
-	
-	
-	CasePrimitive.prototype.toDomNode = function(cache) {
-	    var node = document.createElement("span");
-	    node.className = "wescheme-caseprimitive";
-	    node.appendChild(document.createTextNode("#<function:"+ this.name +">"));
-	    return node;
-	};
-	
-	CasePrimitive.prototype.toWrittenString = function(cache) {
-	    return ("#<function:" + this.name + ">");
-	};
-	
-	CasePrimitive.prototype.toDisplayedString = function(cache) {
-	    return ("#<function:" + this.name + ">");
-	};
-	
-	
-	
-	
-	/////////////////////////////////////////////////////////////////////
-	// Colored Error Message Support
-	
-	var Message = function(args) {
-	  this.args = args;
-	};
-	
-	Message.prototype.toString = function() {
-	  var toReturn = [];
-	  var i;
-	  for(i = 0; i < this.args.length; i++) {
-	      toReturn.push(''+this.args[i]);
-	  }
-	  
-	  return toReturn.join("");
-	};
-	
-	var isMessage = function(o) {
-	  return o instanceof Message;
-	};
-	
-	var ColoredPart = function(text, location) {
-	  this.text = text;
-	  this.location = location;
-	};
-	
-	var isColoredPart = function(o) {
-	  return o instanceof ColoredPart;
-	};
-	
-	ColoredPart.prototype.toString = function() {
-	    return this.text+'';
-	};
-	
-	var GradientPart = function(coloredParts) {
-	    this.coloredParts = coloredParts;
-	};
-	
-	var isGradientPart = function(o) {
-	  return o instanceof GradientPart;
-	};
-	
-	GradientPart.prototype.toString = function() {
-		var i;
-		var resultArray = [];
-		for(i = 0; i < this.coloredParts.length; i++){
-			resultArray.push(this.coloredParts[i].text+'');
-		}
-		return resultArray.join("");
-	
-	};
-	
-	var MultiPart = function(text, locations, solid) {
-	    this.text = text;
-	    this.locations = locations;
-	    this.solid = solid;
-	};
-	
-	var isMultiPart = function(o) {
-	  return o instanceof MultiPart;
-	};
-	
-	MultiPart.prototype.toString = function() {
-		return this.text;
-	};
-	
-	
-	//////////////////////////////////////////////////////////////////////
-	
-	
-	
-	
-	
-	var makeList = function(args) {
-	    var result = Empty.EMPTY;
-	    var i;
-	    for(i = args.length-1; i >= 0; i--) {
-		result = Cons.makeInstance(args[i], result);
-	    }
-	    return result;
-	};
-	
-	
-	var makeVector = function(args) {
-	    return Vector.makeInstance(args.length, args);
-	};
-	
-	var makeString = function(s) {
-		if (s instanceof Str) {
-			return s;
-		}
-		else if (s instanceof Array) {
-	//		for (var i = 0; i < s.length; i++) {
-	//			if ( typeof s[i] !== 'string' || s[i].length != 1 ) {
-	//				return undefined;
-	//			}
-	//		}
-			return Str.makeInstance(s);
-		}
-		else if (typeof s === 'string') {
-			return Str.fromString(s);
-		}
-		else {
-			throw types.internalError('makeString expects and array of 1-character strings or a string;' +
-						  ' given ' + s.toString(),
-						  false);
-		}
-	};
-	
-	
-	var makeHashEq = function(lst) {
-		var newHash = new EqHashTable();
-		while ( !lst.isEmpty() ) {
-			newHash.hash.put(lst.first().first(), lst.first().rest());
-			lst = lst.rest();
-		}
-		return newHash;
-	};
-	
-	
-	var makeHashEqual = function(lst) {
-		var newHash = new EqualHashTable();
-		while ( !lst.isEmpty() ) {
-			newHash.hash.put(lst.first().first(), lst.first().rest());
-			lst = lst.rest();
-		}
-		return newHash;
-	};
-	
-	
-	//if there is not enough location information available,
-	//this allows for highlighting to be turned off
-	var NoLocation = makeVector(['<no-location>', 0,0,0,0]);
-	
-	var isNoLocation = function(o) {
-	  return o === NoLocation;
-	};
-	
-	
-	
-	var Posn = makeStructureType('posn', false, 2, 0, false, false);
-	var Color = makeStructureType('color', false, 4, 0, false, false);
-	var ArityAtLeast = makeStructureType('arity-at-least', false, 1, 0, false,
-			function(k, n, name) {
-				helpers.check(undefined, n, function(x) { return ( jsnums.isExact(x) &&
-									jsnums.isInteger(x) &&
-									jsnums.greaterThanOrEqual(x, 0) ); },
-					      name, 'exact non-negative integer', 1);
-				k(n);
-			});
-	
-	
-	types.symbol = Symbol.makeInstance;
-	types.rational = jsnums.makeRational;
-	types['float'] = jsnums.makeFloat;
-	types.complex = jsnums.makeComplex;
-	types.bignum = jsnums.makeBignum;
-	types.list = makeList;
-	types.vector = makeVector;
-	types.regexp = function(p) { return new RegularExpression(p) ; }
-	types.byteRegexp = function(p) { return new ByteRegularExpression(p) ; }
-	types['char'] = Char.makeInstance;
-	types['string'] = makeString;
-	types.box = function(x) { return new Box(x, true); };
-	types.boxImmutable = function(x) { return new Box(x, false); };
-	types.path = function(x) { return new Path(x); };
-	types.bytes = function(x, mutable) { return new Bytes(x, mutable); };
-	types.keyword = function(k) { return new Keyword(k); };
-	types.pair = function(x, y) { return Cons.makeInstance(x, y); };
-	types.hash = makeHashEqual;
-	types.hashEq = makeHashEq;
-	types.jsObject = function(name, obj) { return new JsObject(name, obj); };
-	
-	types.toWrittenString = toWrittenString;
-	types.toDisplayedString = toDisplayedString;
-	types.toDomNode = toDomNode;
-	
-	types.posn = Posn.constructor;
-	types.posnX = function(psn) { return Posn.accessor(psn, 0); };
-	types.posnY = function(psn) { return Posn.accessor(psn, 1); };
-	
-	types.color = function(r, g, b, a) { 
-	    if (a === undefined) {
-	        a = 255;
-	    }
-	    return Color.constructor(r, g, b, a);
-	};
-	types.colorRed = function(x) { return Color.accessor(x, 0); };
-	types.colorGreen = function(x) { return Color.accessor(x, 1); };
-	types.colorBlue = function(x) { return Color.accessor(x, 2); };
-	types.colorAlpha = function(x) { return Color.accessor(x, 3); };
-	
-	types.arityAtLeast = ArityAtLeast.constructor;
-	types.arityValue = function(arity) { return ArityAtLeast.accessor(arity, 0); };
-	
-	
-	types.FALSE = Logic.FALSE;
-	types.TRUE = Logic.TRUE;
-	types.EMPTY = Empty.EMPTY;
-	
-	types.isEqual = isEqual;
-	types.isNumber = isNumber;
-	types.isSymbol = function(x) { return x instanceof Symbol; };
-	types.isChar = function(x) { return x instanceof Char; };
-	types.isString = isString;
-	types.isPair = function(x) { return x instanceof Cons; };
-	types.isVector = function(x) { return x instanceof Vector; };
-	types.isBox = function(x) { return x instanceof Box; };
-	types.isHash = function(x) { return (x instanceof EqHashTable ||
-					     x instanceof EqualHashTable); };
-	types.isByteString = function(x) { return x instanceof Bytes; };
-	types.isStruct = function(x) { return x instanceof Struct; };
-	types.isPosn = Posn.predicate;
-	types.isArityAtLeast = ArityAtLeast.predicate;
-	types.isColor = Color.predicate;
-	types.isFunction = function(x) {
-		return (x instanceof PrimProc ||
-			x instanceof CasePrimitive ||
-			x instanceof ClosureValue ||
-			x instanceof CaseLambdaValue ||
-			x instanceof ContinuationClosureValue);
-	};
-	types.getProcedureType = function(x){
-	 return (x instanceof PrimProc)? "PrimProc" :
-	       (x instanceof CasePrimitive)? "CasePrimitive" :
-	       (x instanceof ClosureValue)? "ClosureValue" :
-	       (x instanceof CaseLambdaValue)? "CaseLambdaValue" :
-	       (x instanceof ContinuationClosureValue)? "ContinuationClosureValue" :
-	       /* else */ false;
-	};
-	 
-	types.isJsObject = function(x) { return x instanceof JsObject; };
-	
-	types.UnionFind = UnionFind;
-	types.cons = Cons.makeInstance;
-	
-	types.UNDEFINED = UNDEFINED_VALUE;
-	types.VOID = VOID_VALUE;
-	types.EOF = EOF_VALUE;
-	
-	types.ValuesWrapper = ValuesWrapper;
-	types.ClosureValue = ClosureValue;
-	types.ContinuationPrompt = ContinuationPrompt;
-	types.defaultContinuationPrompt = defaultContinuationPrompt;
-	types.ContinuationClosureValue = ContinuationClosureValue;
-	types.CaseLambdaValue = CaseLambdaValue;
-	types.PrimProc = PrimProc;
-	types.CasePrimitive = CasePrimitive;
-	
-	types.contMarkRecordControl = function(dict) { return new ContMarkRecordControl(dict); };
-	types.isContMarkRecordControl = function(x) { return x instanceof ContMarkRecordControl; };
-	types.continuationMarkSet = function(dict) { return new ContinuationMarkSet(dict); };
-	types.isContinuationMarkSet = function(x) { return x instanceof ContinuationMarkSet; };
-	
-	
-	types.PrefixValue = PrefixValue;
-	types.GlobalBucket = GlobalBucket;
-	types.ModuleVariableRecord = ModuleVariableRecord;
-	types.VariableReference = VariableReference;
-	
-	types.Box = Box;
-	types.ThreadCell = ThreadCell;
-	
-	
-	
-	types.Class = Class;
-	
-	
-	types.makeStructureType = makeStructureType;
-	types.isStructType = function(x) { return x instanceof StructType; };
-	
-	
-	types.makeLowLevelEqHash = makeLowLevelEqHash;
-	
-	
-	// Error type exports
-	var InternalError = function(val, contMarks) {
-		this.val = val;
-		this.contMarks = (contMarks ? contMarks : false);
-	}
-	types.internalError = function(v, contMarks) { return new InternalError(v, contMarks); };
-	types.isInternalError = function(x) { return x instanceof InternalError; };
-	
-	var SchemeError = function(val) {
-		this.val = val;
-	}
-	types.schemeError = function(v) { return new SchemeError(v); };
-	types.isSchemeError = function(v) { return v instanceof SchemeError; };
-	
-	
-	var IncompleteExn = function(constructor, msg, otherArgs) {
-		this.constructor = constructor;
-		this.msg = msg;
-		this.otherArgs = otherArgs;
-	};
-	types.incompleteExn = function(constructor, msg, args) { return new IncompleteExn(constructor, msg, args); };
-	types.isIncompleteExn = function(x) { return x instanceof IncompleteExn; };
-	
-	var Exn = makeStructureType('exn', false, 2, 0, false,
-			function(k, msg, contMarks, name) {
-				// helpers.check(msg, isString, name, 'string', 1, [msg, contMarks]);
-				helpers.check(undefined, contMarks, types.isContinuationMarkSet, name, 'continuation mark set', 2);
-				k( new ValuesWrapper([msg, contMarks]) );
-			});
-	types.exn = Exn.constructor;
-	types.isExn = Exn.predicate;
-	types.exnMessage = function(exn) { return Exn.accessor(exn, 0); };
-	types.exnContMarks = function(exn) { return Exn.accessor(exn, 1); };
-	types.exnSetContMarks = function(exn, v) { Exn.mutator(exn, 1, v); };
-	
-	// (define-struct (exn:break exn) (continuation))
-	var ExnBreak = makeStructureType('exn:break', Exn, 1, 0, false,
-			function(k, msg, contMarks, cont, name) {
-			// FIXME: what type is a continuation here?
-	//			helpers.check(cont, isContinuation, name, 'continuation', 3);
-				k( new ValuesWrapper([msg, contMarks, cont]) );
-			});
-	types.exnBreak = ExnBreak.constructor;
-	types.isExnBreak = ExnBreak.predicate;
-	types.exnBreakContinuation = function(exn) {
-	    return ExnBreak.accessor(exn, 0); };
-	
-	var ExnFail = makeStructureType('exn:fail', Exn, 0, 0, false, false);
-	types.exnFail = ExnFail.constructor;
-	types.isExnFail = ExnFail.predicate;
-	
-	var ExnFailContract = makeStructureType('exn:fail:contract', ExnFail, 0, 0, false, false);
-	types.exnFailContract = ExnFailContract.constructor;
-	types.isExnFailContract = ExnFailContract.predicate;
-	
-	var ExnFailContractArity = makeStructureType('exn:fail:contract:arity', ExnFailContract, 0, 0, false, false);
-	types.exnFailContractArity = ExnFailContract.constructor;
-	types.isExnFailContractArity = ExnFailContract.predicate;
-	
-	var ExnFailContractVariable = makeStructureType('exn:fail:contract:variable', ExnFailContract, 1, 0, false, false);
-	types.exnFailContractVariable = ExnFailContract.constructor;
-	types.isExnFailContractVariable = ExnFailContract.predicate;
-	types.exnFailContractVariableId = function(exn) { return ExnFailContractVariable.accessor(exn, 0); };
-	
-	var ExnFailContractDivisionByZero = makeStructureType('exn:fail:contract:division-by-zero', ExnFailContract, 0, 0, false, false);
-	types.exnFailContractDivisionByZero = ExnFailContractDivisionByZero.constructor;
-	types.isExnFailContractDivisionByZero = ExnFailContractDivisionByZero.predicate;
-	
-	var ExnFailContractArityWithPosition = makeStructureType('exn:fail:contract:arity:position', ExnFailContractArity, 1, 0, false, false);
-	types.exnFailContractArityWithPosition = ExnFailContractArityWithPosition.constructor;
-	types.isExnFailContractArityWithPosition = ExnFailContractArityWithPosition.predicate;
-	
-	types.exnFailContractArityWithPositionLocations = function(exn) { return ExnFailContractArityWithPosition.accessor(exn, 0); };
-	
-	
-	///////////////////////////////////////
-	// World-specific exports
-	
-	types.worldConfig = function(startup, shutdown, args) { return new WorldConfig(startup, shutdown, args); };
-	types.isWorldConfig = function(x) { return x instanceof WorldConfig; };
-	
-	types.makeEffectType = makeEffectType;
-	types.isEffectType = function(x) {
-		return (x instanceof StructType && x.type.prototype.invokeEffect) ? true : false;
-	};
-	
-	
-	types.isEffect = Effect.predicate;
-	
-	//types.EffectDoNothing = makeEffectType('effect:do-nothing',
-	//				       false,
-	//				       0,
-	//				       function(k) { k(); },
-	//				       [],
-	//				       function(k) { k(new ValuesWrapper([])); },
-	//				       function(f, args, k) { f(k); });
-	//types.effectDoNothing = EffectDoNothing.constructor;
-	//types.isEffectDoNothing = EffectDoNothing.predicate;
-	
-	
-	//RenderEffect = makeStructureType('render-effect', false, 2, 0, false,
-	//		function(k, domNode, effects, name) {
-	//			helpers.checkListOf(effects, helpers.procArityContains(0), name, 'procedure (arity 0)', 2);
-	//			k( new ValuesWrapper([domNode, effects]) );
-	//		});
-	
-	types.makeRenderEffectType = makeRenderEffectType;
-	types.isRenderEffectType = function(x) {
-		return (x instanceof StructType && x.type.prototype.callImplementation) ? true : false;
-	};
-	
-	//types.RenderEffect = RenderEffect;
-	//types.makeRenderEffect = RenderEffect.constructor;
-	types.isRenderEffect = RenderEffect.predicate;
-	//types.renderEffectDomNode = function(x) { return RenderEffect.accessor(x, 0); };
-	//types.renderEffectEffects = function(x) { return RenderEffect.accessor(x, 1); };
-	//types.setRenderEffectEffects = function(x, v) { RenderEffect.mutator(x, 1, v); };
-	
-	
-	types.NoLocation = NoLocation;
-	types.isNoLocation = isNoLocation;
-	
-	
-	
-	types.ColoredPart = ColoredPart;
-	types.Message = Message;
-	types.isColoredPart = isColoredPart;
-	types.isMessage = isMessage;
-	types.GradientPart = GradientPart;
-	types.isGradientPart = isGradientPart;
-	types.MultiPart = MultiPart;
-	types.isMultiPart = isMultiPart;
-	types.Vector = Vector;
-	
-	
+	    
+	    var _quoteReplacingRegexp = new RegExp("[\"\\\\]", "g");
+	    String.prototype.toWrittenString = function(cache) {
+	        return '"' + this.replace(_quoteReplacingRegexp,
+	    			      function(match, submatch, index) {
+	    				  return "\\" + match;
+	    			      }) + '"';
+	    };
+	    
+	    String.prototype.toDisplayedString = function(cache) {
+	        return this;
+	    };
+	    */
+	
+					//////////////////////////////////////////////////////////////////////
+	
+					// makeLowLevelEqHash: -> hashtable
+					// Constructs an eq hashtable that uses Moby's getEqHashCode function.
+					var makeLowLevelEqHash = function makeLowLevelEqHash() {
+									return new _Hashtable(function (x) {
+													return getEqHashCode(x);
+									}, function (x, y) {
+													return x === y;
+									});
+					};
+	
+					//////////////////////////////////////////////////////////////////////
+					// Hashtables
+					var EqHashTable = function EqHashTable(inputHash) {
+									this.hash = makeLowLevelEqHash();
+									this.mutable = true;
+					};
+					EqHashTable = EqHashTable;
+	
+					EqHashTable.prototype.toWrittenString = function (cache) {
+									var keys = this.hash.keys();
+									var ret = [];
+									for (var i = 0; i < keys.length; i++) {
+													var keyStr = types.toWrittenString(keys[i], cache);
+													var valStr = types.toWrittenString(this.hash.get(keys[i]), cache);
+													ret.push('(' + keyStr + ' . ' + valStr + ')');
+									}
+									return '#hasheq(' + ret.join(' ') + ')';
+					};
+	
+					EqHashTable.prototype.toDisplayedString = function (cache) {
+									var keys = this.hash.keys();
+									var ret = [];
+									for (var i = 0; i < keys.length; i++) {
+													var keyStr = types.toDisplayedString(keys[i], cache);
+													var valStr = types.toDisplayedString(this.hash.get(keys[i]), cache);
+													ret.push('(' + keyStr + ' . ' + valStr + ')');
+									}
+									return '#hasheq(' + ret.join(' ') + ')';
+					};
+	
+					EqHashTable.prototype.isEqual = function (other, aUnionFind) {
+									if (!(other instanceof EqHashTable)) {
+													return false;
+									}
+	
+									if (this.hash.keys().length != other.hash.keys().length) {
+													return false;
+									}
+	
+									var keys = this.hash.keys();
+									for (var i = 0; i < keys.length; i++) {
+													if (!(other.hash.containsKey(keys[i]) && _isEqual(this.hash.get(keys[i]), other.hash.get(keys[i]), aUnionFind))) {
+																	return false;
+													}
+									}
+									return true;
+					};
+	
+					var EqualHashTable = function EqualHashTable(inputHash) {
+									this.hash = new _Hashtable(function (x) {
+													return _toWrittenString(x);
+									}, function (x, y) {
+													return _isEqual(x, y, new UnionFind());
+									});
+									this.mutable = true;
+					};
+	
+					EqualHashTable = EqualHashTable;
+	
+					EqualHashTable.prototype.toWrittenString = function (cache) {
+									var keys = this.hash.keys();
+									var ret = [];
+									for (var i = 0; i < keys.length; i++) {
+													var keyStr = types.toWrittenString(keys[i], cache);
+													var valStr = types.toWrittenString(this.hash.get(keys[i]), cache);
+													ret.push('(' + keyStr + ' . ' + valStr + ')');
+									}
+									return '#hash(' + ret.join(' ') + ')';
+					};
+					EqualHashTable.prototype.toDisplayedString = function (cache) {
+									var keys = this.hash.keys();
+									var ret = [];
+									for (var i = 0; i < keys.length; i++) {
+													var keyStr = types.toDisplayedString(keys[i], cache);
+													var valStr = types.toDisplayedString(this.hash.get(keys[i]), cache);
+													ret.push('(' + keyStr + ' . ' + valStr + ')');
+									}
+									return '#hash(' + ret.join(' ') + ')';
+					};
+	
+					EqualHashTable.prototype.isEqual = function (other, aUnionFind) {
+									if (!(other instanceof EqualHashTable)) {
+													return false;
+									}
+	
+									if (this.hash.keys().length != other.hash.keys().length) {
+													return false;
+									}
+	
+									var keys = this.hash.keys();
+									for (var i = 0; i < keys.length; i++) {
+													if (!(other.hash.containsKey(keys[i]) && _isEqual(this.hash.get(keys[i]), other.hash.get(keys[i]), aUnionFind))) {
+																	return false;
+													}
+									}
+									return true;
+					};
+	
+					//////////////////////////////////////////////////////////////////////
+	
+					var JsObject = function JsObject(name, obj) {
+									this.name = name;
+									this.obj = obj;
+					};
+	
+					JsObject.prototype.toString = function () {
+									return '#<js-object:' + _typeof(this.obj) + ':' + this.name + '>';
+					};
+	
+					JsObject.prototype.isEqual = function (other, aUnionFind) {
+									return this.obj === other.obj;
+					};
+	
+					//////////////////////////////////////////////////////////////////////
+	
+					var WorldConfig = function WorldConfig(startup, shutdown, args) {
+									this.startup = startup;
+									this.shutdown = shutdown;
+									this.startupArgs = args;
+									this.shutdownArg = undefined;
+					};
+	
+					WorldConfig.prototype.toString = function () {
+									return '#<world-config>';
+					};
+	
+					WorldConfig.prototype.isEqual = function (other, aUnionFind) {
+									if (!_isEqual(this.startup, other.startup, aUnionFind) || !_isEqual(this.shutdown, other.shutdown, aUnionFind) || this.startupArgs.length != other.startupArgs.length || !_isEqual(this.shutdownArg, other.shutdownArg, aUnionFind)) {
+													return false;
+									}
+	
+									for (var i = 0; i < args.length; i++) {
+													if (!_isEqual(this.startupArgs[i], other.startupArgs[i], aUnionFind)) return false;
+									}
+									return true;
+					};
+	
+					var Effect = makeStructureType('effect', false, 0, 0, false, false);
+					Effect.type.prototype.invokeEffect = function (k) {
+									helpers.raise(types.incompleteExn(types.exnFail, 'effect type created without using make-effect-type', []));
+					};
+					//Effect.handlerIndices = [];
+	
+					//var wrapHandler = function(handler, caller, changeWorld) {
+					//	return types.jsObject('function', function() {
+					//		var externalArgs = arguments;
+					//		changeWorld(function(w, k) {
+					//			var args = helpers.map(helpers.wrapJsObject, externalArgs);
+					//			args.unshift(w);
+					//			caller(handler, args, k);
+					//		});
+					//	});
+					//};
+	
+					var makeEffectType = function makeEffectType(name, superType, initFieldCnt, impl, guard, caller) {
+									if (!superType) {
+													superType = Effect;
+									}
+	
+									var newType = makeStructureType(name, superType, initFieldCnt, 0, false, guard);
+									var lastFieldIndex = newType.firstField + newType.numberOfFields;
+	
+									newType.type.prototype.invokeEffect = function (changeWorld, k) {
+													var schemeChangeWorld = new PrimProc('update-world', 1, false, true, function (aState, worldUpdater) {
+																	helpers.check(aState, worldUpdater, helpers.procArityContains(1), 'update-world', 'procedure (arity 1)', 1);
+	
+																	changeWorld(function (w, k2) {
+																					interpret.call(aState, worldUpdater, [w], k2, function (e) {
+																									throw e;
+																					});
+																	}, function () {
+																					aState.v = VOID_VALUE;
+																	});
+													});
+	
+													var args = this._fields.slice(0, lastFieldIndex);
+													args.unshift(schemeChangeWorld);
+													caller(impl, args, k);
+									};
+	
+									return newType;
+					};
+	
+					var RenderEffect = makeStructureType('render-effect', false, 0, 0, false, false);
+					RenderEffect.type.prototype.callImplementation = function (caller, k) {
+									helpers.raise(types.incompleteExn(types.exnFail, 'render effect created without using make-render-effect-type', []));
+					};
+	
+					var makeRenderEffectType = function makeRenderEffectType(name, superType, initFieldCnt, impl, guard) {
+									if (!superType) {
+													superType = RenderEffect;
+									}
+	
+									var newType = makeStructureType(name, superType, initFieldCnt, 0, false, guard);
+									var lastFieldIndex = newType.firstField + newType.numberOfFields;
+	
+									newType.type.prototype.callImplementation = function (caller, k) {
+													var args = this._fields.slice(0, lastFieldIndex);
+													caller(impl, args, k);
+									};
+	
+									return newType;
+					};
+	
+					//////////////////////////////////////////////////////////////////////
+	
+					//////////////////////////////////////////////////////////////////////
+	
+					var _toWrittenString = function _toWrittenString(x, cache) {
+									if (!cache) {
+													cache = makeLowLevelEqHash();
+									}
+	
+									if ((typeof x === 'undefined' ? 'undefined' : _typeof(x)) == 'object') {
+													if (cache.containsKey(x)) {
+																	return "...";
+													} else {
+																	cache.put(x, true);
+													}
+									}
+	
+									if (x == undefined || x == null) {
+													return "#<undefined>";
+									}
+									if (typeof x == 'string') {
+													return escapeString(x.toString());
+									}
+									if ((typeof x === 'undefined' ? 'undefined' : _typeof(x)) != 'object' && typeof x != 'function') {
+													return x.toString();
+									}
+	
+									var returnVal;
+									if (typeof x.toWrittenString !== 'undefined') {
+													returnVal = x.toWrittenString(cache);
+									} else if (typeof x.toDisplayedString !== 'undefined') {
+													returnVal = x.toDisplayedString(cache);
+									} else {
+													returnVal = x.toString();
+									}
+									cache.remove(x);
+									return returnVal;
+					};
+	
+					var toDisplayedString = function toDisplayedString(x, cache) {
+									if (!cache) {
+													cache = makeLowLevelEqHash();
+									}
+									if ((typeof x === 'undefined' ? 'undefined' : _typeof(x)) == 'object') {
+													if (cache.containsKey(x)) {
+																	return "...";
+													}
+													cache.put(x, true);
+									}
+	
+									if (x == undefined || x == null) {
+													return "#<undefined>";
+									}
+									if (typeof x == 'string') {
+													return x;
+									}
+									if ((typeof x === 'undefined' ? 'undefined' : _typeof(x)) != 'object' && typeof x != 'function') {
+													return x.toString();
+									}
+	
+									var returnVal;
+									if (typeof x.toDisplayedString !== 'undefined') {
+													returnVal = x.toDisplayedString(cache);
+									} else if (typeof x.toWrittenString !== 'undefined') {
+													returnVal = x.toWrittenString(cache);
+									} else {
+													returnVal = x.toString();
+									}
+									cache.remove(x);
+									return returnVal;
+					};
+	
+					// toDomNode: scheme-value -> dom-node
+					var _toDomNode = function _toDomNode(x, cache) {
+									if (!cache) {
+													cache = makeLowLevelEqHash();
+									}
+	
+									if (isNumber(x)) {
+													return numberToDomNode(x);
+									}
+	
+									if ((typeof x === 'undefined' ? 'undefined' : _typeof(x)) == 'object') {
+													if (cache.containsKey(x)) {
+																	var node = document.createElement("span");
+																	node.style['font-family'] = 'monospace';
+																	node.appendChild(document.createTextNode("..."));
+																	return node;
+													}
+													cache.put(x, true);
+									}
+	
+									if (x == undefined || x == null) {
+													var node = document.createElement("span");
+													node.style['font-family'] = 'monospace';
+													node.appendChild(document.createTextNode("#<undefined>"));
+													return node;
+									}
+									if (typeof x == 'string') {
+													return textToDomNode(_toWrittenString(x));
+									}
+									if ((typeof x === 'undefined' ? 'undefined' : _typeof(x)) != 'object' && typeof x != 'function') {
+													return textToDomNode(x.toString());
+									}
+	
+									var returnVal;
+									if (x.nodeType) {
+													returnVal = x;
+									} else if (typeof x.toDomNode !== 'undefined') {
+													returnVal = x.toDomNode(cache);
+									} else if (typeof x.toWrittenString !== 'undefined') {
+													returnVal = textToDomNode(x.toWrittenString(cache));
+									} else if (typeof x.toDisplayedString !== 'undefined') {
+													returnVal = textToDomNode(x.toDisplayedString(cache));
+									} else {
+													returnVal = textToDomNode(x.toString());
+									}
+									cache.remove(x);
+									return returnVal;
+					};
+	
+					var textToDomNode = function textToDomNode(text) {
+									var chunks = text.split("\n");
+									var i;
+									var wrapper = document.createElement("span");
+									var newlineDiv;
+									wrapper.className = text === "true" || text === "false" ? "wescheme-boolean" : "wescheme-string";
+									wrapper.style.fontFamily = 'monospace';
+									wrapper.style.whiteSpace = "pre";
+									if (chunks.length > 0) {
+													wrapper.appendChild(document.createTextNode(chunks[0]));
+									}
+									for (i = 1; i < chunks.length; i++) {
+													newlineDiv = document.createElement("br");
+													newlineDiv.style.clear = 'left';
+													wrapper.appendChild(newlineDiv);
+													wrapper.appendChild(document.createTextNode(chunks[i]));
+									}
+									return wrapper;
+					};
+	
+					// numberToDomNode: jsnum -> dom
+					// Given a jsnum, produces a dom-node representation.
+					var numberToDomNode = function numberToDomNode(n) {
+									var node;
+									if (jsnums.isExact(n)) {
+													if (jsnums.isInteger(n)) {
+																	node = document.createElement("span");
+																	node.className = "wescheme-number Integer";
+																	node.appendChild(document.createTextNode(n.toString()));
+																	return node;
+													} else if (jsnums.isRational(n)) {
+																	return rationalToDomNode(n);
+													} else if (isComplex(n)) {
+																	node = document.createElement("span");
+																	node.className = "wescheme-number Complex";
+																	node.appendChild(document.createTextNode(n.toString()));
+																	return node;
+													} else {
+																	node = document.createElement("span");
+																	node.className = "wescheme-number";
+																	node.appendChild(document.createTextNode(n.toString()));
+																	return node;
+													}
+									} else {
+													node = document.createElement("span");
+													node.className = "wescheme-number";
+													node.appendChild(document.createTextNode(n.toString()));
+													return node;
+									}
+					};
+	
+					// rationalToDomNode: rational -> dom-node
+					var rationalToDomNode = function rationalToDomNode(n) {
+									var repeatingDecimalNode = document.createElement("span");
+									var chunks = jsnums.toRepeatingDecimal(jsnums.numerator(n), jsnums.denominator(n), { limit: 25 });
+									var firstPart = document.createElement("span");
+									firstPart.appendChild(document.createTextNode(chunks[0] + '.' + chunks[1]));
+									repeatingDecimalNode.appendChild(firstPart);
+									if (chunks[2] === '...') {
+													firstPart.appendChild(document.createTextNode(chunks[2]));
+									} else if (chunks[2] !== '0') {
+													var overlineSpan = document.createElement("span");
+													overlineSpan.style.textDecoration = 'overline';
+													overlineSpan.appendChild(document.createTextNode(chunks[2]));
+													repeatingDecimalNode.appendChild(overlineSpan);
+									}
+	
+									var fractionalNode = document.createElement("span");
+									var numeratorNode = document.createElement("sup");
+									numeratorNode.appendChild(document.createTextNode(String(jsnums.numerator(n))));
+									var denominatorNode = document.createElement("sub");
+									denominatorNode.appendChild(document.createTextNode(String(jsnums.denominator(n))));
+									var barNode = document.createElement("span");
+									barNode.appendChild(document.createTextNode("/"));
+	
+									fractionalNode.appendChild(numeratorNode);
+									fractionalNode.appendChild(barNode);
+									fractionalNode.appendChild(denominatorNode);
+	
+									var numberNode = document.createElement("span");
+									numberNode.appendChild(repeatingDecimalNode);
+									numberNode.appendChild(fractionalNode);
+									fractionalNode.style['display'] = 'none';
+	
+									var showingRepeating = true;
+	
+									numberNode.onclick = function (e) {
+													showingRepeating = !showingRepeating;
+													repeatingDecimalNode.style['display'] = showingRepeating ? 'inline' : 'none';
+													fractionalNode.style['display'] = !showingRepeating ? 'inline' : 'none';
+									};
+									numberNode.style['cursor'] = 'pointer';
+									numberNode.className = "wescheme-number Rational";
+									return numberNode;
+					};
+	
+					// Alternative: use <sup> and <sub> tags
+	
+					var isNumber = jsnums.isSchemeNumber;
+					var isComplex = isNumber;
+					var isString = function isString(s) {
+									return typeof s === 'string' || s instanceof Str;
+					};
+	
+					// isEqual: X Y -> boolean
+					// Returns true if the objects are equivalent; otherwise, returns false.
+					var _isEqual = function _isEqual(x, y, aUnionFind) {
+									if (x === y) {
+													return true;
+									}
+	
+									if (isNumber(x) && isNumber(y)) {
+													return jsnums.equals(x, y);
+									}
+	
+									if (isString(x) && isString(y)) {
+													return x.toString() === y.toString();
+									}
+	
+									if (x == undefined || x == null) {
+													return y == undefined || y == null;
+									}
+	
+									if ((typeof x === 'undefined' ? 'undefined' : _typeof(x)) == 'object' && (typeof y === 'undefined' ? 'undefined' : _typeof(y)) == 'object' && x.isEqual && y.isEqual) {
+													if (aUnionFind.find(x) === aUnionFind.find(y)) {
+																	return true;
+													} else {
+																	aUnionFind.merge(x, y);
+																	return x.isEqual(y, aUnionFind);
+													}
+									}
+									return false;
+					};
+	
+					// liftToplevelToFunctionValue: primitive-function string fixnum scheme-value -> scheme-value
+					// Lifts a primitive toplevel or module-bound value to a scheme value.
+					var liftToplevelToFunctionValue = function liftToplevelToFunctionValue(primitiveF, name, minArity, procedureArityDescription) {
+									if (!primitiveF._mobyLiftedFunction) {
+													var lifted = function lifted(args) {
+																	return primitiveF.apply(null, args.slice(0, minArity).concat([args.slice(minArity)]));
+													};
+													lifted.isEqual = function (other, cache) {
+																	return this === other;
+													};
+													lifted.toWrittenString = function (cache) {
+																	return "#<function:" + name + ">";
+													};
+													lifted.toDisplayedString = lifted.toWrittenString;
+													lifted.procedureArity = procedureArityDescription;
+													primitiveF._mobyLiftedFunction = lifted;
+									}
+									return primitiveF._mobyLiftedFunction;
+					};
+	
+					//////////////////////////////////////////////////////////////////////
+					var ThreadCell = function ThreadCell(v, isPreserved) {
+									this.v = v;
+									this.isPreserved = isPreserved || false;
+					};
+	
+					//////////////////////////////////////////////////////////////////////
+	
+					// Wrapper around functions that return multiple values.
+					var ValuesWrapper = function ValuesWrapper(elts) {
+									this.elts = elts;
+					};
+	
+					ValuesWrapper.prototype.toDomNode = function (cache) {
+									var parent = document.createElement("span");
+									parent.style.whiteSpace = "pre";
+									if (this.elts.length > 0) {
+													parent.appendChild(_toDomNode(this.elts[0], cache));
+													for (var i = 1; i < this.elts.length; i++) {
+																	parent.appendChild(document.createTextNode('\n'));
+																	parent.appendChild(_toDomNode(this.elts[i], cache));
+													}
+									}
+									return parent;
+					};
+	
+					var UndefinedValue = function UndefinedValue() {};
+					UndefinedValue.prototype.toString = function () {
+									return "#<undefined>";
+					};
+					var UNDEFINED_VALUE = new UndefinedValue();
+	
+					var VoidValue = function VoidValue() {};
+					VoidValue.prototype.toString = function () {
+									return "#<void>";
+					};
+	
+					var VOID_VALUE = new VoidValue();
+	
+					var EofValue = function EofValue() {};
+					EofValue.prototype.toString = function () {
+									return "#<eof>";
+					};
+	
+					var EOF_VALUE = new EofValue();
+	
+					var ClosureValue = function ClosureValue(name, locs, numParams, paramTypes, isRest, closureVals, body) {
+									this.name = name;
+									this.locs = locs;
+									this.numParams = numParams;
+									this.paramTypes = paramTypes;
+									this.isRest = isRest;
+									this.closureVals = closureVals;
+									this.body = body;
+					};
+	
+					ClosureValue.prototype.toString = function () {
+									if (this.name !== Empty.EMPTY) {
+													return helpers.format("#<function:~a>", [this.name]);
+									} else {
+													return "#<function>";
+									}
+					};
+	
+					var CaseLambdaValue = function CaseLambdaValue(name, closures) {
+									this.name = name;
+									this.closures = closures;
+					};
+	
+					CaseLambdaValue.prototype.toString = function () {
+									if (this.name !== Empty.EMPTY) {
+													return helpers.format("#<case-lambda-procedure:~a>", [this.name]);
+									} else {
+													return "#<case-lambda-procedure>";
+									}
+					};
+	
+					var ContinuationClosureValue = function ContinuationClosureValue(vstack, cstack) {
+									this.name = false;
+									this.vstack = vstack.slice(0);
+									this.cstack = cstack.slice(0);
+					};
+	
+					ContinuationClosureValue.prototype.toString = function () {
+									if (this.name !== Empty.EMPTY) {
+													return helpers.format("#<function:~a>", [this.name]);
+									} else {
+													return "#<function>";
+									}
+					};
+	
+					//////////////////////////////////////////////////////////////////////
+	
+					var PrefixValue = function PrefixValue() {
+									this.slots = [];
+									this.definedMask = [];
+					};
+	
+					PrefixValue.prototype.addSlot = function (v) {
+									if (v === undefined) {
+													this.slots.push(types.UNDEFINED);
+													this.definedMask.push(false);
+									} else {
+													this.slots.push(v);
+													if (v instanceof GlobalBucket) {
+																	if (v.value === types.UNDEFINED) {
+																					this.definedMask.push(false);
+																	} else {
+																					this.definedMask.push(true);
+																	}
+													} else {
+																	this.definedMask.push(true);
+													}
+									}
+					};
+	
+					PrefixValue.prototype.ref = function (n, srcloc) {
+									if (this.slots[n] instanceof GlobalBucket) {
+													if (this.definedMask[n]) {
+																	return this.slots[n].value;
+													} else {
+																	helpers.raise(types.incompleteExn(types.exnFailContractVariable, new Message([new ColoredPart(this.slots[n].name, srcloc), ": this variable is not defined"]), [this.slots[n].name]));
+													}
+									} else {
+													if (this.definedMask[n]) {
+																	return this.slots[n];
+													} else {
+																	helpers.raise(types.incompleteExn(types.exnFailContractVariable, "variable has not been defined", [false]));
+													}
+									}
+					};
+	
+					PrefixValue.prototype.set = function (n, v) {
+									if (this.slots[n] instanceof GlobalBucket) {
+													this.slots[n].value = v;
+													this.definedMask[n] = true;
+									} else {
+													this.slots[n] = v;
+													this.definedMask[n] = true;
+									}
+					};
+	
+					PrefixValue.prototype.length = function () {
+									return this.slots.length;
+					};
+	
+					var GlobalBucket = function GlobalBucket(name, value) {
+									this.name = name;
+									this.value = value;
+					};
+	
+					var ModuleVariableRecord = function ModuleVariableRecord(resolvedModuleName, variableName) {
+									this.resolvedModuleName = resolvedModuleName;
+									this.variableName = variableName;
+					};
+	
+					//////////////////////////////////////////////////////////////////////
+	
+					var VariableReference = function VariableReference(prefix, pos) {
+									this.prefix = prefix;
+									this.pos = pos;
+					};
+	
+					VariableReference.prototype.ref = function () {
+									return this.prefix.ref(this.pos);
+					};
+	
+					VariableReference.prototype.set = function (v) {
+									this.prefix.set(this.pos, v);
+					};
+	
+					//////////////////////////////////////////////////////////////////////
+	
+					// Continuation Marks
+	
+					var ContMarkRecordControl = function ContMarkRecordControl(dict) {
+									this.dict = dict || {};
+					};
+	
+					ContMarkRecordControl.prototype.invoke = function (state) {
+									// No-op: the record will simply pop off the control stack.
+					};
+	
+					ContMarkRecordControl.prototype.update = function (key, val) {
+									/*
+	           var newDict = makeLowLevelEqHash();
+	           // FIXME: what's the javascript idiom for hash key copy?
+	           // Maybe we should use a rbtree instead?
+	           var oldKeys = this.dict.keys();
+	           for (var i = 0; i < oldKeys.length; i++) {
+	            newDict.put( oldKeys[i], this.dict.get(oldKeys[i]) );
+	           }
+	           newDict.put(key, val);
+	           return new ContMarkRecordControl(newDict);
+	         */
+									this.dict[key.val] = val;
+									return this;
+					};
+	
+					var ContinuationMarkSet = function ContinuationMarkSet(dict) {
+									this.dict = dict;
+					};
+	
+					ContinuationMarkSet.prototype.toDomNode = function (cache) {
+									var dom = document.createElement("span");
+									dom.appendChild(document.createTextNode('#<continuation-mark-set>'));
+									return dom;
+					};
+	
+					ContinuationMarkSet.prototype.toWrittenString = function (cache) {
+									return '#<continuation-mark-set>';
+					};
+	
+					ContinuationMarkSet.prototype.toDisplayedString = function (cache) {
+									return '#<continuation-mark-set>';
+					};
+	
+					ContinuationMarkSet.prototype.ref = function (key) {
+									if (this.dict.containsKey(key)) {
+													return this.dict.get(key);
+									}
+									return [];
+					};
+	
+					//////////////////////////////////////////////////////////////////////
+	
+					var ContinuationPrompt = function ContinuationPrompt() {};
+	
+					var defaultContinuationPrompt = new ContinuationPrompt();
+	
+					//////////////////////////////////////////////////////////////////////
+	
+					//////////////////////////////////////////////////////////////////////
+	
+					var PrimProc = function PrimProc(name, numParams, isRest, assignsToValueRegister, impl) {
+									this.name = name;
+									this.numParams = numParams;
+									this.isRest = isRest;
+									this.assignsToValueRegister = assignsToValueRegister;
+									this.impl = impl;
+					};
+	
+					PrimProc.prototype.toString = function () {
+									return "#<function:" + this.name + ">";
+					};
+	
+					PrimProc.prototype.toWrittenString = function (cache) {
+									return "#<function:" + this.name + ">";
+					};
+	
+					PrimProc.prototype.toDisplayedString = function (cache) {
+									return "#<function:" + this.name + ">";
+					};
+	
+					PrimProc.prototype.toDomNode = function (cache) {
+									var node = document.createElement("span");
+									node.className = "wescheme-primproc";
+									node.appendChild(document.createTextNode("#<function:" + this.name + ">"));
+									return node;
+					};
+	
+					var CasePrimitive = function CasePrimitive(name, cases) {
+									this.name = name;
+									this.cases = cases;
+					};
+	
+					CasePrimitive.prototype.toDomNode = function (cache) {
+									var node = document.createElement("span");
+									node.className = "wescheme-caseprimitive";
+									node.appendChild(document.createTextNode("#<function:" + this.name + ">"));
+									return node;
+					};
+	
+					CasePrimitive.prototype.toWrittenString = function (cache) {
+									return "#<function:" + this.name + ">";
+					};
+	
+					CasePrimitive.prototype.toDisplayedString = function (cache) {
+									return "#<function:" + this.name + ">";
+					};
+	
+					/////////////////////////////////////////////////////////////////////
+					// Colored Error Message Support
+	
+					var Message = function Message(args) {
+									this.args = args;
+					};
+	
+					Message.prototype.toString = function () {
+									var toReturn = [];
+									var i;
+									for (i = 0; i < this.args.length; i++) {
+													toReturn.push('' + this.args[i]);
+									}
+	
+									return toReturn.join("");
+					};
+	
+					var isMessage = function isMessage(o) {
+									return o instanceof Message;
+					};
+	
+					var ColoredPart = function ColoredPart(text, location) {
+									this.text = text;
+									this.location = location;
+					};
+	
+					var isColoredPart = function isColoredPart(o) {
+									return o instanceof ColoredPart;
+					};
+	
+					ColoredPart.prototype.toString = function () {
+									return this.text + '';
+					};
+	
+					var GradientPart = function GradientPart(coloredParts) {
+									this.coloredParts = coloredParts;
+					};
+	
+					var isGradientPart = function isGradientPart(o) {
+									return o instanceof GradientPart;
+					};
+	
+					GradientPart.prototype.toString = function () {
+									var i;
+									var resultArray = [];
+									for (i = 0; i < this.coloredParts.length; i++) {
+													resultArray.push(this.coloredParts[i].text + '');
+									}
+									return resultArray.join("");
+					};
+	
+					var MultiPart = function MultiPart(text, locations, solid) {
+									this.text = text;
+									this.locations = locations;
+									this.solid = solid;
+					};
+	
+					var isMultiPart = function isMultiPart(o) {
+									return o instanceof MultiPart;
+					};
+	
+					MultiPart.prototype.toString = function () {
+									return this.text;
+					};
+	
+					//////////////////////////////////////////////////////////////////////
+	
+					var makeList = function makeList(args) {
+									var result = Empty.EMPTY;
+									var i;
+									for (i = args.length - 1; i >= 0; i--) {
+													result = Cons.makeInstance(args[i], result);
+									}
+									return result;
+					};
+	
+					var makeVector = function makeVector(args) {
+									return Vector.makeInstance(args.length, args);
+					};
+	
+					var makeString = function makeString(s) {
+									if (s instanceof Str) {
+													return s;
+									} else if (s instanceof Array) {
+													//		for (var i = 0; i < s.length; i++) {
+													//			if ( typeof s[i] !== 'string' || s[i].length != 1 ) {
+													//				return undefined;
+													//			}
+													//		}
+													return Str.makeInstance(s);
+									} else if (typeof s === 'string') {
+													return Str.fromString(s);
+									} else {
+													throw types.internalError('makeString expects and array of 1-character strings or a string;' + ' given ' + s.toString(), false);
+									}
+					};
+	
+					var makeHashEq = function makeHashEq(lst) {
+									var newHash = new EqHashTable();
+									while (!lst.isEmpty()) {
+													newHash.hash.put(lst.first().first(), lst.first().rest());
+													lst = lst.rest();
+									}
+									return newHash;
+					};
+	
+					var makeHashEqual = function makeHashEqual(lst) {
+									var newHash = new EqualHashTable();
+									while (!lst.isEmpty()) {
+													newHash.hash.put(lst.first().first(), lst.first().rest());
+													lst = lst.rest();
+									}
+									return newHash;
+					};
+	
+					//if there is not enough location information available,
+					//this allows for highlighting to be turned off
+					var NoLocation = makeVector(['<no-location>', 0, 0, 0, 0]);
+	
+					var isNoLocation = function isNoLocation(o) {
+									return o === NoLocation;
+					};
+	
+					var Posn = makeStructureType('posn', false, 2, 0, false, false);
+					var Color = makeStructureType('color', false, 4, 0, false, false);
+					var ArityAtLeast = makeStructureType('arity-at-least', false, 1, 0, false, function (k, n, name) {
+									helpers.check(undefined, n, function (x) {
+													return jsnums.isExact(x) && jsnums.isInteger(x) && jsnums.greaterThanOrEqual(x, 0);
+									}, name, 'exact non-negative integer', 1);
+									k(n);
+					});
+	
+					types.symbol = Symbol.makeInstance;
+					types.rational = jsnums.makeRational;
+					types['float'] = jsnums.makeFloat;
+					types.complex = jsnums.makeComplex;
+					types.bignum = jsnums.makeBignum;
+					types.list = makeList;
+					types.vector = makeVector;
+					types.regexp = function (p) {
+									return new RegularExpression(p);
+					};
+					types.byteRegexp = function (p) {
+									return new ByteRegularExpression(p);
+					};
+					types['char'] = Char.makeInstance;
+					types['string'] = makeString;
+					types.box = function (x) {
+									return new Box(x, true);
+					};
+					types.boxImmutable = function (x) {
+									return new Box(x, false);
+					};
+					types.path = function (x) {
+									return new Path(x);
+					};
+					types.bytes = function (x, mutable) {
+									return new Bytes(x, mutable);
+					};
+					types.keyword = function (k) {
+									return new Keyword(k);
+					};
+					types.pair = function (x, y) {
+									return Cons.makeInstance(x, y);
+					};
+					types.hash = makeHashEqual;
+					types.hashEq = makeHashEq;
+					types.jsObject = function (name, obj) {
+									return new JsObject(name, obj);
+					};
+	
+					types.toWrittenString = _toWrittenString;
+					types.toDisplayedString = toDisplayedString;
+					types.toDomNode = _toDomNode;
+	
+					types.posn = Posn.constructor;
+					types.posnX = function (psn) {
+									return Posn.accessor(psn, 0);
+					};
+					types.posnY = function (psn) {
+									return Posn.accessor(psn, 1);
+					};
+	
+					types.color = function (r, g, b, a) {
+									if (a === undefined) {
+													a = 255;
+									}
+									return Color.constructor(r, g, b, a);
+					};
+					types.colorRed = function (x) {
+									return Color.accessor(x, 0);
+					};
+					types.colorGreen = function (x) {
+									return Color.accessor(x, 1);
+					};
+					types.colorBlue = function (x) {
+									return Color.accessor(x, 2);
+					};
+					types.colorAlpha = function (x) {
+									return Color.accessor(x, 3);
+					};
+	
+					types.arityAtLeast = ArityAtLeast.constructor;
+					types.arityValue = function (arity) {
+									return ArityAtLeast.accessor(arity, 0);
+					};
+	
+					types.FALSE = Logic.FALSE;
+					types.TRUE = Logic.TRUE;
+					types.EMPTY = Empty.EMPTY;
+	
+					types.isEqual = _isEqual;
+					types.isNumber = isNumber;
+					types.isSymbol = function (x) {
+									return x instanceof Symbol;
+					};
+					types.isChar = function (x) {
+									return x instanceof Char;
+					};
+					types.isString = isString;
+					types.isPair = function (x) {
+									return x instanceof Cons;
+					};
+					types.isVector = function (x) {
+									return x instanceof Vector;
+					};
+					types.isBox = function (x) {
+									return x instanceof Box;
+					};
+					types.isHash = function (x) {
+									return x instanceof EqHashTable || x instanceof EqualHashTable;
+					};
+					types.isByteString = function (x) {
+									return x instanceof Bytes;
+					};
+					types.isStruct = function (x) {
+									return x instanceof Struct;
+					};
+					types.isPosn = Posn.predicate;
+					types.isArityAtLeast = ArityAtLeast.predicate;
+					types.isColor = Color.predicate;
+					types.isFunction = function (x) {
+									return x instanceof PrimProc || x instanceof CasePrimitive || x instanceof ClosureValue || x instanceof CaseLambdaValue || x instanceof ContinuationClosureValue;
+					};
+					types.getProcedureType = function (x) {
+									return x instanceof PrimProc ? "PrimProc" : x instanceof CasePrimitive ? "CasePrimitive" : x instanceof ClosureValue ? "ClosureValue" : x instanceof CaseLambdaValue ? "CaseLambdaValue" : x instanceof ContinuationClosureValue ? "ContinuationClosureValue" :
+									/* else */false;
+					};
+	
+					types.isJsObject = function (x) {
+									return x instanceof JsObject;
+					};
+	
+					types.UnionFind = UnionFind;
+					types.cons = Cons.makeInstance;
+	
+					types.UNDEFINED = UNDEFINED_VALUE;
+					types.VOID = VOID_VALUE;
+					types.EOF = EOF_VALUE;
+	
+					types.ValuesWrapper = ValuesWrapper;
+					types.ClosureValue = ClosureValue;
+					types.ContinuationPrompt = ContinuationPrompt;
+					types.defaultContinuationPrompt = defaultContinuationPrompt;
+					types.ContinuationClosureValue = ContinuationClosureValue;
+					types.CaseLambdaValue = CaseLambdaValue;
+					types.PrimProc = PrimProc;
+					types.CasePrimitive = CasePrimitive;
+	
+					types.contMarkRecordControl = function (dict) {
+									return new ContMarkRecordControl(dict);
+					};
+					types.isContMarkRecordControl = function (x) {
+									return x instanceof ContMarkRecordControl;
+					};
+					types.continuationMarkSet = function (dict) {
+									return new ContinuationMarkSet(dict);
+					};
+					types.isContinuationMarkSet = function (x) {
+									return x instanceof ContinuationMarkSet;
+					};
+	
+					types.PrefixValue = PrefixValue;
+					types.GlobalBucket = GlobalBucket;
+					types.ModuleVariableRecord = ModuleVariableRecord;
+					types.VariableReference = VariableReference;
+	
+					types.Box = Box;
+					types.ThreadCell = ThreadCell;
+	
+					types.makeStructureType = makeStructureType;
+					types.isStructType = function (x) {
+									return x instanceof StructType;
+					};
+	
+					types.makeLowLevelEqHash = makeLowLevelEqHash;
+	
+					// Error type exports
+					var InternalError = function InternalError(val, contMarks) {
+									this.val = val;
+									this.contMarks = contMarks ? contMarks : false;
+					};
+					types.internalError = function (v, contMarks) {
+									return new InternalError(v, contMarks);
+					};
+					types.isInternalError = function (x) {
+									return x instanceof InternalError;
+					};
+	
+					var SchemeError = function SchemeError(val) {
+									this.val = val;
+					};
+					types.schemeError = function (v) {
+									return new SchemeError(v);
+					};
+					types.isSchemeError = function (v) {
+									return v instanceof SchemeError;
+					};
+	
+					var IncompleteExn = function IncompleteExn(constructor, msg, otherArgs) {
+									this.constructor = constructor;
+									this.msg = msg;
+									this.otherArgs = otherArgs;
+					};
+					types.incompleteExn = function (constructor, msg, args) {
+									return new IncompleteExn(constructor, msg, args);
+					};
+					types.isIncompleteExn = function (x) {
+									return x instanceof IncompleteExn;
+					};
+	
+					var Exn = makeStructureType('exn', false, 2, 0, false, function (k, msg, contMarks, name) {
+									// helpers.check(msg, isString, name, 'string', 1, [msg, contMarks]);
+									helpers.check(undefined, contMarks, types.isContinuationMarkSet, name, 'continuation mark set', 2);
+									k(new ValuesWrapper([msg, contMarks]));
+					});
+					types.exn = Exn.constructor;
+					types.isExn = Exn.predicate;
+					types.exnMessage = function (exn) {
+									return Exn.accessor(exn, 0);
+					};
+					types.exnContMarks = function (exn) {
+									return Exn.accessor(exn, 1);
+					};
+					types.exnSetContMarks = function (exn, v) {
+									Exn.mutator(exn, 1, v);
+					};
+	
+					// (define-struct (exn:break exn) (continuation))
+					var ExnBreak = makeStructureType('exn:break', Exn, 1, 0, false, function (k, msg, contMarks, cont, name) {
+									// FIXME: what type is a continuation here?
+									//			helpers.check(cont, isContinuation, name, 'continuation', 3);
+									k(new ValuesWrapper([msg, contMarks, cont]));
+					});
+					types.exnBreak = ExnBreak.constructor;
+					types.isExnBreak = ExnBreak.predicate;
+					types.exnBreakContinuation = function (exn) {
+									return ExnBreak.accessor(exn, 0);
+					};
+	
+					var ExnFail = makeStructureType('exn:fail', Exn, 0, 0, false, false);
+					types.exnFail = ExnFail.constructor;
+					types.isExnFail = ExnFail.predicate;
+	
+					var ExnFailContract = makeStructureType('exn:fail:contract', ExnFail, 0, 0, false, false);
+					types.exnFailContract = ExnFailContract.constructor;
+					types.isExnFailContract = ExnFailContract.predicate;
+	
+					var ExnFailContractArity = makeStructureType('exn:fail:contract:arity', ExnFailContract, 0, 0, false, false);
+					types.exnFailContractArity = ExnFailContract.constructor;
+					types.isExnFailContractArity = ExnFailContract.predicate;
+	
+					var ExnFailContractVariable = makeStructureType('exn:fail:contract:variable', ExnFailContract, 1, 0, false, false);
+					types.exnFailContractVariable = ExnFailContract.constructor;
+					types.isExnFailContractVariable = ExnFailContract.predicate;
+					types.exnFailContractVariableId = function (exn) {
+									return ExnFailContractVariable.accessor(exn, 0);
+					};
+	
+					var ExnFailContractDivisionByZero = makeStructureType('exn:fail:contract:division-by-zero', ExnFailContract, 0, 0, false, false);
+					types.exnFailContractDivisionByZero = ExnFailContractDivisionByZero.constructor;
+					types.isExnFailContractDivisionByZero = ExnFailContractDivisionByZero.predicate;
+	
+					var ExnFailContractArityWithPosition = makeStructureType('exn:fail:contract:arity:position', ExnFailContractArity, 1, 0, false, false);
+					types.exnFailContractArityWithPosition = ExnFailContractArityWithPosition.constructor;
+					types.isExnFailContractArityWithPosition = ExnFailContractArityWithPosition.predicate;
+	
+					types.exnFailContractArityWithPositionLocations = function (exn) {
+									return ExnFailContractArityWithPosition.accessor(exn, 0);
+					};
+	
+					///////////////////////////////////////
+					// World-specific exports
+	
+					types.worldConfig = function (startup, shutdown, args) {
+									return new WorldConfig(startup, shutdown, args);
+					};
+					types.isWorldConfig = function (x) {
+									return x instanceof WorldConfig;
+					};
+	
+					types.makeEffectType = makeEffectType;
+					types.isEffectType = function (x) {
+									return x instanceof StructType && x.type.prototype.invokeEffect ? true : false;
+					};
+	
+					types.isEffect = Effect.predicate;
+	
+					//types.EffectDoNothing = makeEffectType('effect:do-nothing',
+					//				       false,
+					//				       0,
+					//				       function(k) { k(); },
+					//				       [],
+					//				       function(k) { k(new ValuesWrapper([])); },
+					//				       function(f, args, k) { f(k); });
+					//types.effectDoNothing = EffectDoNothing.constructor;
+					//types.isEffectDoNothing = EffectDoNothing.predicate;
+	
+					//RenderEffect = makeStructureType('render-effect', false, 2, 0, false,
+					//		function(k, domNode, effects, name) {
+					//			helpers.checkListOf(effects, helpers.procArityContains(0), name, 'procedure (arity 0)', 2);
+					//			k( new ValuesWrapper([domNode, effects]) );
+					//		});
+	
+					types.makeRenderEffectType = makeRenderEffectType;
+					types.isRenderEffectType = function (x) {
+									return x instanceof StructType && x.type.prototype.callImplementation ? true : false;
+					};
+	
+					//types.RenderEffect = RenderEffect;
+					//types.makeRenderEffect = RenderEffect.constructor;
+					types.isRenderEffect = RenderEffect.predicate;
+					//types.renderEffectDomNode = function(x) { return RenderEffect.accessor(x, 0); };
+					//types.renderEffectEffects = function(x) { return RenderEffect.accessor(x, 1); };
+					//types.setRenderEffectEffects = function(x, v) { RenderEffect.mutator(x, 1, v); };
+	
+					types.NoLocation = NoLocation;
+					types.isNoLocation = isNoLocation;
+	
+					types.ColoredPart = ColoredPart;
+					types.Message = Message;
+					types.isColoredPart = isColoredPart;
+					types.isMessage = isMessage;
+					types.GradientPart = GradientPart;
+					types.isGradientPart = isGradientPart;
+					types.MultiPart = MultiPart;
+					types.isMultiPart = isMultiPart;
+					types.Vector = Vector;
+					types.Char = Char;
 	})();
 	
 	module.exports = types;
 
 /***/ },
-/* 233 */
+/* 255 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict'; // Scheme numbers.
@@ -24365,7 +25590,7 @@
 	Numbers['BigInteger'] = BigInteger;Numbers['Rational'] = Rational;Numbers['FloatPoint'] = FloatPoint;Numbers['Complex'] = Complex;Numbers['MIN_FIXNUM'] = MIN_FIXNUM;Numbers['MAX_FIXNUM'] = MAX_FIXNUM;})();
 
 /***/ },
-/* 234 */
+/* 256 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -24615,14 +25840,14 @@
 	module.exports = _Hashtable;
 
 /***/ },
-/* 235 */
+/* 257 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
-	__webpack_require__(231);
-	var jsnums = __webpack_require__(233);
-	var types = __webpack_require__(232);
+	__webpack_require__(253);
+	var jsnums = __webpack_require__(255);
+	var types = __webpack_require__(254);
 	
 	// if not defined, declare the compiler object as part of plt
 	window.plt = window.plt || {};
@@ -24672,7 +25897,7 @@
 	  symbolExpr.prototype.toBytecode = function () {
 	    return 'types.symbol("' + escapeSym(this.val) + '")';
 	  };
-	  Vector.prototype.toBytecode = function () {
+	  types.Vector.prototype.toBytecode = function () {
 	    return 'types.vector([' + this.elts.join(',') + '])';
 	  };
 	  Array.prototype.toBytecode = function (quoted) {
@@ -24695,7 +25920,7 @@
 	  jsnums.Complex.prototype.toBytecode = function () {
 	    return 'types.complex(' + convertToBytecode(this.r) + ', ' + convertToBytecode(this.i) + ')';
 	  };
-	  Char.prototype.toBytecode = function () {
+	  types.Char.prototype.toBytecode = function () {
 	    return 'types[\'char\'](String.fromCharCode(' + this.val.charCodeAt(0) + '))';
 	  };
 	  // STACKREF STRUCTS ////////////////////////////////////////////////////////////////
@@ -25339,17 +26564,15 @@
 	    // collect all the defined names in the local
 	    var definedNames = this.defs.reduce(function (names, d) {
 	      return (d instanceof defVars ? d.names : [d.name]).concat(names);
-	    }, []),
-	
+	    }, []);
 	    // make an environment with those names added to the stack
-	    updatedEnv = definedNames.reduce(pushLocalBoxedFromSym, env),
-	
+	    var updatedEnv = definedNames.reduce(pushLocalBoxedFromSym, env);
 	    // use that env to find all free variables in the body
-	    freeVarsInBody = this.body.freeVariables(acc, updatedEnv),
+	    var freeVarsInBody = this.body.freeVariables(acc, updatedEnv);
 	
 	    // given free variables and a definition, add the free variables from that definition...
 	    // while *also* updating the stack to reflect defined names
-	    addFreeVarsInDef = function addFreeVarsInDef(acc, d) {
+	    var addFreeVarsInDef = function addFreeVarsInDef(acc, d) {
 	      if (d instanceof defFunc) {
 	        var envWithArgs = d.args.reduce(function (env, arg) {
 	          return pushLocalFromSym(env, arg);
@@ -25571,7 +26794,7 @@
 	    var envWithArgs = this.args.map(function (s) {
 	      return s.val;
 	    }).reduce(pushLocal, new plt.compiler.emptyEnv());
-	    freeVarsInBody = this.body.freeVariables([], envWithArgs);
+	    var freeVarsInBody = this.body.freeVariables([], envWithArgs);
 	    // compute the closure information using a COPY of the args array (protect against in-place reversal)
 	    var closureVectorAndEnv = getClosureVectorAndEnv(this.args.slice(0), freeVarsInBody, env),
 	        closureVector = closureVectorAndEnv[0],
@@ -25635,16 +26858,16 @@
 	      }
 	
 	      // compile the first definition in the current environment
-	      var compiledDefAndPInfo = defs[0].compile(env, pinfo),
-	          compiledRhs = compiledDefAndPInfo[0].rhs,
-	          // important: all we need is the rhs!!
+	      var compiledDefAndPInfo = defs[0].compile(env, pinfo);
+	      var compiledRhs = compiledDefAndPInfo[0].rhs; // important: all we need is the rhs!!
 	      pinfo = compiledDefAndPInfo[1];
 	
 	      // figure out how much room we'll need on the stack for this defn
 	      // compile the rest of the definitions, using the new pinfo and stack size
-	      var numToInstall = defs[0] instanceof defVars ? defs[0].names.length : 1,
-	          newBodyAndPinfo = processDefns(defs.slice(1), pinfo, env, numInstalled + numToInstall);
-	      newBody = newBodyAndPinfo[0], pinfo = newBodyAndPinfo[1];
+	      var numToInstall = defs[0] instanceof defVars ? defs[0].names.length : 1;
+	      var newBodyAndPinfo = processDefns(defs.slice(1), pinfo, env, numInstalled + numToInstall);
+	      var newBody = newBodyAndPinfo[0];
+	      pinfo = newBodyAndPinfo[1];
 	
 	      // generate bytecode to install new values for the remaining body
 	      var bytecode = new installValue(numToInstall, numInstalled, true, compiledRhs, newBody);
@@ -25711,7 +26934,7 @@
 	    function unwrapLiterals(v) {
 	      return v instanceof literal ? unwrapLiterals(v.val) : v instanceof Array ? v.map(unwrapLiterals) : v;
 	    }
-	    result = new literal(unwrapLiterals(this.val));
+	    var result = new literal(unwrapLiterals(this.val));
 	    return [result, pinfo];
 	  };
 	
@@ -25818,14 +27041,14 @@
 	module.exports = plt.compiler;
 
 /***/ },
-/* 236 */
+/* 258 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 	
 	// if not defined, declare the compiler object as part of plt
 	window.plt = window.plt || {};
-	plt.compiler = __webpack_require__(231);
+	plt.compiler = __webpack_require__(253);
 	/*
 	 TODO
 	 -
@@ -26046,7 +27269,7 @@
 	module.exports = plt.compiler;
 
 /***/ },
-/* 237 */
+/* 259 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -26058,14 +27281,14 @@
 	exports.provideBindingId = provideBindingId;
 	exports.provideBindingStructId = provideBindingStructId;
 	
-	var _structures = __webpack_require__(231);
+	var _structures = __webpack_require__(253);
 	
 	var structures = _interopRequireWildcard(_structures);
 	
 	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 	
-	__webpack_require__(236);
-	var types = __webpack_require__(232);
+	__webpack_require__(258);
+	var types = __webpack_require__(254);
 	
 	/*
 	 TODO
@@ -26753,11 +27976,11 @@
 	              window.COLLECTIONS = [];
 	            }
 	            // extract the sourcecode
-	            var lexemes = __webpack_require__(230).lex(program.source.src, moduleName);
-	            var AST = __webpack_require__(238).parse(lexemes);
+	            var lexemes = __webpack_require__(252).lex(program.source.src, moduleName);
+	            var AST = __webpack_require__(260).parse(lexemes);
 	            var desugared = desugar(AST)[0]; // includes [AST, pinfo]
 	            var pinfo = analyze(desugared);
-	            var objectCode = __webpack_require__(235).compile(desugared, pinfo);
+	            var objectCode = __webpack_require__(257).compile(desugared, pinfo);
 	            window.COLLECTIONS[moduleName] = {
 	              'name': moduleName,
 	              'bytecode': (0, eval)('(' + objectCode.bytecode + ')'),
@@ -27003,15 +28226,15 @@
 	};
 
 /***/ },
-/* 238 */
+/* 260 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
 	// if not defined, declare the compiler object as part of plt
 	window.plt = window.plt || {};
-	plt.compiler = __webpack_require__(231);
-	var types = __webpack_require__(232);
+	plt.compiler = __webpack_require__(253);
+	var types = __webpack_require__(254);
 	
 	/*
 	 
@@ -27866,6 +29089,12 @@
 	})();
 	
 	module.exports = plt.compiler;
+
+/***/ },
+/* 261 */
+/***/ function(module, exports) {
+
+	module.exports = "; This is a comment\n\n; we can define variables\n(define SOME-FUNC (bitmap/url \"http://world.cs.brown.edu/1/clipart/cow-left.png\"))\n\n; we can have structs\n(define-struct cow (p dir))\n\n; we can define functions with conditionals\n(define (draw-cows aloc scene)\n  (cond\n    [(empty? aloc) scene]\n    [(cons? aloc) (place-image (cond\n                                 [(string=? (cow-dir (first aloc)) \"right\")\n                                  COW-RIGHT]\n                                 [(string=? (cow-dir (first aloc)) \"left\")\n                                  COW-LEFT])\n                               (posn-x (cow-p (first aloc)))\n                               (posn-y (cow-p (first aloc)))\n                               (draw-cows (rest aloc) scene))]))\n\n\n\n(define (draw w)\n  (draw-cows (world-cows w)\n             (draw-ufo (world-ufo w)\n                       BACKGROUND (if (anything-touching-cow? (world-ufo w)\n                                                              HALF-UFO-WIDTH\n                                                              HALF-UFO-HEIGHT\n                                                              (world-cows w)) UFO-CAPTURE UFO))))\n\n; move-ufo-y: world -> world\n; move-ufo-y consumes a world and produces a world with the ufo moved down\n(define (move-ufo-y w)\n  (make-world (make-posn (posn-x (world-ufo w))\n                         (+ UFO-SPEED (posn-y (world-ufo w))))\n              (world-cows w)))\n\n(check-expect (move-ufo-y world-test) (make-world (make-posn 10 15)\n                                                  (list cow0 cow1)))\n\n; move-ufo-x: world key -> world\n; move-ufo-x consumes a world and key and produces a world with the ufo moved by keys\n(define (move-ufo-x w key)\n  (make-world \n   (make-posn  \n    (cond\n      [(and (key=? key \"left\") (not (hitting-wall? (world-ufo w) \"left\")))\n       (- (posn-x (world-ufo w)) UFO-SPEED)]\n      [(and (key=? key \"right\") (not (hitting-wall? (world-ufo w) \"right\")))\n       (+ (posn-x (world-ufo w)) UFO-SPEED)]\n      [else (posn-x (world-ufo w))])\n    (posn-y (world-ufo w)))\n   (world-cows w)))\n\n(check-expect (move-ufo-x world-test \"left\") (make-world (make-posn 5 10) \n                                                         (list cow0 cow1)))\n(check-expect (move-ufo-x world-test \"right\") (make-world (make-posn 15 10) \n                                                          (list cow0 cow1)))\n(check-expect (move-ufo-x world-test \"\") (make-world (make-posn 10 10) \n                                                     (list cow0 cow1)))\n\n;ufo-done? : world -> boolean\n;consumes a world and returns true if the ufo is touching any cow or the ground; otherwise, returns false\n(define (ufo-done? w)\n  (or\n   (anything-touching-cow? (world-ufo w)\n                           HALF-UFO-WIDTH\n                           HALF-UFO-HEIGHT\n                           (world-cows w))\n   (hitting-wall? (world-ufo w) \"down\")))\n\n(check-expect (ufo-done? world-test) false)\n(check-expect (ufo-done? (make-world (make-posn 20 (- SCREEN-HEIGHT 20)) (list (make-cow\n                                                                                (make-posn 20 (- SCREEN-HEIGHT 20))\n                                                                                \"right\"))))\n              true)\n(check-expect (ufo-done? (make-world (make-posn 0 (+ SCREEN-HEIGHT 5)) empty)) true)\n\n;anything-touching-cow? : posn num num list-of-posns -> boolean\n;anything-touching-cow? consumes a posn, an image height, an image width, and a list-of-cows and returns true if the image at the posns is touching any of the cows in the list based on the image height and width, otherwise returns false\n(define (anything-touching-cow? img-p img-w img-h aloc)\n  (cond\n    [(empty? aloc) false]\n    [(cons? aloc)\n     (or \n      (and\n       (or\n        (and (>= (- (posn-x img-p) img-w) (- (posn-x (cow-p (first aloc))) HALF-COW-WIDTH))\n             (<= (- (posn-x img-p) img-w) (+ (posn-x (cow-p (first aloc))) HALF-COW-WIDTH)))\n        (and (>= (+ (posn-x img-p) img-w) (- (posn-x (cow-p (first aloc))) HALF-COW-WIDTH))\n             (<= (+ (posn-x img-p) img-w) (+ (posn-x (cow-p (first aloc))) HALF-COW-WIDTH))))\n       (>= (+ (posn-y img-p) img-h) (- (posn-y (cow-p (first aloc))) HALF-COW-HEIGHT)))\n      (anything-touching-cow? img-p img-w img-h (rest aloc)))]))\n\n(check-expect (anything-touching-cow? (make-posn 0 0) 0 0 empty) false)\n(check-expect (anything-touching-cow? (make-posn (/ SCREEN-WIDTH 2) 20) \n                                      HALF-UFO-WIDTH \n                                      HALF-UFO-HEIGHT \n                                      (list cow0))\n              false)\n(check-expect (anything-touching-cow? (make-posn 20 (- SCREEN-HEIGHT HALF-COW-HEIGHT)) \n                                      HALF-UFO-WIDTH \n                                      HALF-UFO-HEIGHT \n                                      (list cow0))\n              false)\n(check-expect (anything-touching-cow? (make-posn (/ SCREEN-WIDTH 2) (- SCREEN-HEIGHT HALF-COW-HEIGHT)) \n                                      HALF-UFO-WIDTH \n                                      HALF-UFO-HEIGHT \n                                      (list cow0))\n              true)\n\n;remove-cow-from-list : cow list-of-cows -> list-of-cows\n;remove-cow-from-list consumes a cow and a list-of-cows and returns a list-of-cows with cow removed\n(define (remove-cow-from-list c aloc)\n  (cond\n    [(empty? aloc) empty]\n    [(cons? aloc) (cond\n                    [(posn=? (cow-p c) (cow-p (first aloc))) (rest aloc)]\n                    [else (cons (first aloc) (remove-cow-from-list c (rest aloc)))])]))\n\n(check-expect (remove-cow-from-list cow0 empty) empty)\n(check-expect (remove-cow-from-list cow0 (list cow1 cow0 cow2)) (list cow1 cow2))\n\n;process-cows : world  -> world\n;process-cows consumes a world  and produces a world with the cows moved and hit-tested\n(define (process-cows w)\n  (make-world (world-ufo w) (move-cows (new-dirs (world-cows w) (world-cows w)))))\n\n(check-expect (process-cows world-test) (make-world (make-posn 10 10)\n                                                    (list\n                                                     (make-cow (make-posn (+ 2 (/ SCREEN-WIDTH 2))\n                                                                          (- SCREEN-HEIGHT HALF-COW-HEIGHT))\n                                                               \"right\")\n                                                     (make-cow (make-posn (+ 2 (/ SCREEN-WIDTH 4))\n                                                                          (- SCREEN-HEIGHT HALF-COW-HEIGHT))\n                                                               \"right\"))))\n\n;move-all-on-tick : world -> world\n;move-all-on-tick consumes a world and produces a world with all objects inside of it moved every \"tick\" of big-bang\n(define (move-all-on-tick w)\n  (process-cows (move-ufo-y w)))\n\n(check-expect (move-all-on-tick world-test) \n              (make-world (make-posn 10 15) (list\n                                             (make-cow (make-posn (+ 2 (/ SCREEN-WIDTH 2))\n                                                                  (- SCREEN-HEIGHT HALF-COW-HEIGHT)) \"right\")\n                                             (make-cow (make-posn (+ 2 (/ SCREEN-WIDTH 4))\n                                                                  (- SCREEN-HEIGHT HALF-COW-HEIGHT))\"right\"))))\n\n;move-cows : list-of-cows -> list-of-cows\n;move-cows consumes a list-of-cows and produces a list of cows moved to the left or right depending on the cows' directions\n(define (move-cows aloc)\n  (cond\n    [(empty? aloc) empty]\n    [(cons? aloc) (cons\n                   (make-cow\n                    (make-posn\n                     (\n                      (cond\n                        [(string=? (cow-dir (first aloc)) \"right\") +]\n                        [(string=? (cow-dir (first aloc)) \"left\") -])\n                      (posn-x (cow-p (first aloc))) COW-SPEED)\n                     (posn-y (cow-p (first aloc))))\n                    (cow-dir (first aloc))) \n                   (move-cows (rest aloc)))]))\n\n(check-expect (move-cows empty) empty)\n(check-expect (move-cows (list cow0)) (list (make-cow (make-posn (+ 2 (/ SCREEN-WIDTH 2)) (- SCREEN-HEIGHT HALF-COW-HEIGHT)) \"right\")))\n\n;new-dirs : list-of-cows list-of-cows -> list-of-cows\n;consumes two identical lists-of-cows and produces a list-of-cows in which all cows' dirs are updated\n;e.g. changes the cow's direction if it collides with another cow or reaches the edge of the screen, otherwise leaves it unchanged\n(define (new-dirs aloc1 aloc2)\n  (cond\n    [(empty? aloc1) empty]\n    [(cons? aloc1) (cons (make-cow (cow-p (first aloc1))\n                                   (update-dir (first aloc1) aloc2))\n                         (new-dirs (rest aloc1) aloc2))]))\n\n(check-expect (new-dirs empty empty) empty)\n(check-expect (new-dirs (list cow0 cow1) (list cow0 cow1)) (list cow0 cow1))\n(check-expect (new-dirs (list cow0 cow0) (list cow0 cow0)) (list\n                                                            (make-cow (make-posn\n                                                                       (/ SCREEN-WIDTH 2)\n                                                                       (- SCREEN-HEIGHT HALF-COW-HEIGHT))\n                                                                      \"left\")\n                                                            (make-cow (make-posn\n                                                                       (/ SCREEN-WIDTH 2)\n                                                                       (- SCREEN-HEIGHT HALF-COW-HEIGHT))\n                                                                      \"left\")))\n\n;update-dir : cow list-of-cows -> String\n;update-dir consumes a cow and a list-of-cows and changes it's direction if it hits a wall or another cow\n(define (update-dir c aloc)\n  (cond\n    [(hitting-wall? (cow-p c) \"right\") \"left\"]\n    [(hitting-wall? (cow-p c) \"left\") \"right\"]\n    [(anything-touching-cow? (cow-p c) HALF-COW-WIDTH HALF-COW-HEIGHT (remove-cow-from-list c aloc))\n     (cond\n       [(string=? (cow-dir c) \"left\") \"right\"]\n       [(string=? (cow-dir c) \"right\") \"left\"])]\n    [else (cow-dir c)]))\n\n(check-expect (update-dir cow0 (list cow0 cow1)) \"right\")\n(check-expect (update-dir (make-cow (make-posn (+ SCREEN-WIDTH 5) 0) \"right\") (list cow0 cow1)) \"left\") \n(check-expect (update-dir (make-cow (make-posn -5 0) \"left\") (list cow0 cow1)) \"right\")\n(check-expect (update-dir cow0 (list cow0 (make-cow (make-posn (/ SCREEN-WIDTH 2) (- SCREEN-HEIGHT HALF-COW-HEIGHT)) \"left\"))) \"left\")\n\n;hitting-wall? : posn String -> boolean\n;hitting-wall? consumes a posn and a direction and returns true if the posn is past the edge of the screen in that direction\n;otherwise returns false\n(define (hitting-wall? p dir)\n  (cond\n    [(string=? dir \"right\") (> (posn-x p) SCREEN-WIDTH)]\n    [(string=? dir \"left\") (< (posn-x p) 0)]\n    [(string=? dir \"down\") (> (posn-y p) SCREEN-HEIGHT)]))\n\n(check-expect (hitting-wall? (make-posn -5 5) \"left\") true)\n(check-expect (hitting-wall? (make-posn (+ SCREEN-WIDTH 5) 5) \"right\") true)\n(check-expect (hitting-wall? (make-posn 5 (+ SCREEN-HEIGHT 5)) \"down\") true)\n(check-expect (hitting-wall? (make-posn 5 5) \"left\") false)\n\n;posn=? : posn posn -> boolean\n;posn=? consumes two posns and returns true if they are equal, otherwise returns false\n(define (posn=? p1 p2)\n  (and\n   (= (posn-x p1) (posn-x p2))\n   (= (posn-y p1) (posn-y p2))))\n\n(check-expect (posn=? (make-posn 5 5) (make-posn 5 5)) true)\n(check-expect (posn=? (make-posn 5 5) (make-posn 10 10)) false)\n\n;big-bang creates the world\n(js-big-bang world0\n             (to-draw draw)\n             (on-key move-ufo-x)\n             (on-tick move-all-on-tick)\n             (stop-when ufo-done?))\n"
 
 /***/ }
 /******/ ]);
