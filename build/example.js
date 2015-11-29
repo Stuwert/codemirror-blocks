@@ -66,8 +66,8 @@
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
-	__webpack_require__(247);
-	__webpack_require__(249);
+	__webpack_require__(251);
+	__webpack_require__(253);
 	
 	var cm = _CodeMirror2.default.fromTextArea(document.getElementById("code"), { theme: '3024-day' });
 	
@@ -15111,11 +15111,14 @@
 	  _inherits(Literal, _ASTNode4);
 	
 	  function Literal(from, to, value) {
+	    var dataType = arguments.length <= 3 || arguments[3] === undefined ? 'unknown' : arguments[3];
+	
 	    _classCallCheck(this, Literal);
 	
 	    var _this4 = _possibleConstructorReturn(this, Object.getPrototypeOf(Literal).call(this, from, to, 'literal'));
 	
 	    _this4.value = value;
+	    _this4.dataType = dataType;
 	    return _this4;
 	  }
 	
@@ -19251,6 +19254,13 @@
 	var TAB_KEY = 9;
 	var DELETE_KEY = 8;
 	
+	function getLocationFromEl(el) {
+	  return {
+	    line: parseInt(el.getAttribute('line')),
+	    ch: parseInt(el.getAttribute('ch'))
+	  };
+	}
+	
 	var CodeMirrorBlocks = (function () {
 	  function CodeMirrorBlocks(cm, parser) {
 	    var _this = this;
@@ -19419,7 +19429,8 @@
 	      whiteSpaceEl.onkeydown = null;
 	      whiteSpaceEl.contentEditable = false;
 	      whiteSpaceEl.classList.remove('blocks-editing');
-	      this.cm.replaceRange(' ' + whiteSpaceEl.innerText, whiteSpaceEl.location, whiteSpaceEl.location);
+	      var location = getLocationFromEl(whiteSpaceEl);
+	      this.cm.replaceRange(' ' + whiteSpaceEl.innerText, location, location);
 	    }
 	  }, {
 	    key: 'editNode',
@@ -19437,7 +19448,7 @@
 	      };
 	      var range = document.createRange();
 	      range.setStart(nodeEl, 0);
-	      range.setEnd(nodeEl, nodeEl.innerText.length);
+	      range.setEnd(nodeEl, nodeEl.childNodes.length);
 	      window.getSelection().removeAllRanges();
 	      window.getSelection().addRange(range);
 	    }
@@ -19518,7 +19529,7 @@
 	      event.stopPropagation();
 	      var sourceNode = this.ast.nodeMap.get(event.dataTransfer.getData('text/id'));
 	      var sourceNodeText = this.cm.getRange(sourceNode.from, sourceNode.to);
-	      var destination = event.target.location;
+	      var destination = getLocationFromEl(event.target);
 	      if (!destination) {
 	        // event.target probably isn't a drop target, so just get the location from the event
 	        destination = this.cm.coordsChar({ left: event.pageX, top: event.pageY });
@@ -19600,84 +19611,76 @@
 	Object.defineProperty(exports, "__esModule", {
 	  value: true
 	});
+	exports.renderHTMLString = renderHTMLString;
 	exports.default = render;
 	function createFragment(htmlStr) {
+	  var frag = document.createDocumentFragment();
 	  var temp = document.createElement('div');
 	  temp.innerHTML = htmlStr;
-	  return temp.firstChild;
-	}
-	
-	function makeDropTarget(location) {
-	  var dropEl = document.createElement('span');
-	  dropEl.className = 'blocks-drop-target blocks-white-space';
-	  dropEl.appendChild(document.createTextNode(''));
-	  dropEl.location = location;
-	  return dropEl;
+	  frag.appendChild(temp);
+	  return frag;
 	}
 	
 	var nodes = exports.nodes = {
-	  expression: function expression(node, cm, callback) {
-	    var expressionEl = document.createElement('span');
-	    expressionEl.className = 'blocks-expression';
-	    expressionEl.draggable = true;
-	
-	    var operatorEl = document.createElement('span');
-	    operatorEl.className = 'blocks-operator';
-	    operatorEl.appendChild(document.createTextNode(node.func));
-	
-	    expressionEl.appendChild(operatorEl);
-	    expressionEl.appendChild(document.createTextNode(' '));
-	    var argsEl = document.createElement('span');
-	    argsEl.className = 'blocks-args';
-	    var location = Object.assign({}, node.to);
-	    if (node.args.length > 0) {
-	      Object.assign(location, node.args[0].from);
-	    }
-	    argsEl.appendChild(makeDropTarget(location));
-	    for (var i = 0; i < node.args.length; i++) {
-	      argsEl.appendChild(render(node.args[i], cm, callback));
-	      argsEl.appendChild(makeDropTarget({
-	        line: node.args[i].to.line,
-	        ch: node.args[i].to.ch
-	      }));
-	    }
-	    expressionEl.appendChild(argsEl);
-	
-	    cm.markText(node.from, node.to, { replacedWith: expressionEl });
-	
-	    return expressionEl;
-	  },
-	  functionDef: function functionDef(node, cm, callback) {
-	    var template = __webpack_require__(225);
-	    var functionDefEl = createFragment(template({ node: node, cm: cm, callback: callback }));
-	    cm.markText(node.from, node.to, { replacedWith: functionDefEl });
-	    return functionDefEl;
-	  },
-	  struct: function struct(node, cm, callback) {
-	    var template = __webpack_require__(246);
-	    var structEl = createFragment(template({ node: node, cm: cm, callback: callback }));
-	    cm.markText(node.from, node.to, { replacedWith: structEl });
-	    return structEl;
-	  },
-	  literal: function literal(node, cm) {
-	    var literalEl = document.createElement('span');
-	    literalEl.appendChild(document.createTextNode(node.toString()));
-	    literalEl.className = 'blocks-literal';
-	    literalEl.draggable = true;
-	    cm.markText(node.from, node.to, { replacedWith: literalEl, inclusiveRight: false, inclusiveLeft: false });
-	    return literalEl;
-	  }
+	  expression: __webpack_require__(225),
+	  functionDef: __webpack_require__(248),
+	  struct: __webpack_require__(249),
+	  literal: __webpack_require__(250)
 	};
 	
-	function render(node, cm, callback) {
+	var nodesInRenderOrder = [];
+	
+	function renderHTMLString(node) {
 	  if (nodes[node.type] === undefined) {
 	    throw "Don't know how to render node: " + node.type;
 	  }
-	  var nodeEl = nodes[node.type](node, cm, callback);
-	  nodeEl.id = 'block-node-' + node.id;
-	  nodeEl.classList.add('blocks-node');
-	  callback(node, nodeEl);
+	  var nodeEl = nodes[node.type]({ node: node });
+	  nodesInRenderOrder.push(node);
+	  if (typeof nodeEl !== 'string') {
+	    console.warn("AST node renderers should return html strings. node:", node);
+	    var temp = document.createElement('div');
+	    temp.appendChild(nodeEl);
+	    return temp.innerHTML;
+	  }
 	  return nodeEl;
+	}
+	
+	function render(rootNode, cm, callback) {
+	  nodesInRenderOrder = [];
+	  var rootNodeFrag = createFragment(renderHTMLString(rootNode));
+	  var _iteratorNormalCompletion = true;
+	  var _didIteratorError = false;
+	  var _iteratorError = undefined;
+	
+	  try {
+	    for (var _iterator = nodesInRenderOrder[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+	      var node = _step.value;
+	
+	      node.el = rootNodeFrag.getElementById('block-node-' + node.id);
+	      if (!node.el) {
+	        console.warn("!! Didn't find a dom node for node", node);
+	        continue;
+	      }
+	      node.el.draggable = true;
+	      callback(node, node.el);
+	    }
+	  } catch (err) {
+	    _didIteratorError = true;
+	    _iteratorError = err;
+	  } finally {
+	    try {
+	      if (!_iteratorNormalCompletion && _iterator.return) {
+	        _iterator.return();
+	      }
+	    } finally {
+	      if (_didIteratorError) {
+	        throw _iteratorError;
+	      }
+	    }
+	  }
+	
+	  cm.markText(rootNode.from, rootNode.to, { replacedWith: rootNodeFrag.firstChild.firstChild });
+	  return rootNodeFrag;
 	}
 
 /***/ },
@@ -19685,21 +19688,35 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	var Handlebars = __webpack_require__(226);
-	module.exports = (Handlebars["default"] || Handlebars).template({"1":function(container,depth0,helpers,partials,data) {
-	    return "    <span class=\"blocks-literal\">"
-	    + container.escapeExpression(container.lambda(depth0, depth0))
-	    + "</span>\n";
-	},"compiler":[7,">= 4.0.0"],"main":function(container,depth0,helpers,partials,data) {
+	module.exports = (Handlebars["default"] || Handlebars).template({"1":function(container,depth0,helpers,partials,data,blockParams,depths) {
 	    var stack1, alias1=depth0 != null ? depth0 : {};
 	
-	  return "<span class=\"blocks-struct\">\n  <span class=\"blocks-operator\">define</span>\n  <span class=\"blocks-args\">\n    <span class=\"blocks-name\">"
-	    + container.escapeExpression(container.lambda(((stack1 = (depth0 != null ? depth0.node : depth0)) != null ? stack1.name : stack1), depth0))
-	    + "</span>\n"
-	    + ((stack1 = helpers.each.call(alias1,((stack1 = (depth0 != null ? depth0.node : depth0)) != null ? stack1.args : stack1),{"name":"each","hash":{},"fn":container.program(1, data, 0),"inverse":container.noop,"data":data})) != null ? stack1 : "")
-	    + "    "
-	    + ((stack1 = __webpack_require__(245).call(alias1,((stack1 = (depth0 != null ? depth0.node : depth0)) != null ? stack1.body : stack1),{"name":"renderNode","hash":{},"data":data})) != null ? stack1 : "")
-	    + "\n  </span>\n</span>\n";
-	},"useData":true});
+	  return "<span class=\"blocks-operator\">"
+	    + container.escapeExpression(container.lambda(((stack1 = (depth0 != null ? depth0.node : depth0)) != null ? stack1.func : stack1), depth0))
+	    + "</span>\n<span class=\"blocks-args\">\n"
+	    + ((stack1 = helpers["if"].call(alias1,((stack1 = ((stack1 = (depth0 != null ? depth0.node : depth0)) != null ? stack1.args : stack1)) != null ? stack1.length : stack1),{"name":"if","hash":{},"fn":container.program(2, data, 0, blockParams, depths),"inverse":container.program(4, data, 0, blockParams, depths),"data":data})) != null ? stack1 : "")
+	    + ((stack1 = helpers.each.call(alias1,((stack1 = (depth0 != null ? depth0.node : depth0)) != null ? stack1.args : stack1),{"name":"each","hash":{},"fn":container.program(6, data, 0, blockParams, depths),"inverse":container.noop,"data":data})) != null ? stack1 : "")
+	    + "</span>\n";
+	},"2":function(container,depth0,helpers,partials,data) {
+	    var stack1;
+	
+	  return ((stack1 = container.invokePartial(__webpack_require__(245),depth0,{"name":"drop-target","hash":{"location":((stack1 = ((stack1 = ((stack1 = (depth0 != null ? depth0.node : depth0)) != null ? stack1.args : stack1)) != null ? stack1["0"] : stack1)) != null ? stack1.from : stack1)},"data":data,"indent":"  ","helpers":helpers,"partials":partials,"decorators":container.decorators})) != null ? stack1 : "");
+	},"4":function(container,depth0,helpers,partials,data) {
+	    var stack1;
+	
+	  return ((stack1 = container.invokePartial(__webpack_require__(245),depth0,{"name":"drop-target","hash":{"location":((stack1 = (depth0 != null ? depth0.node : depth0)) != null ? stack1.to : stack1)},"data":data,"indent":"  ","helpers":helpers,"partials":partials,"decorators":container.decorators})) != null ? stack1 : "");
+	},"6":function(container,depth0,helpers,partials,data,blockParams,depths) {
+	    var stack1;
+	
+	  return "  "
+	    + ((stack1 = __webpack_require__(246).call(depth0 != null ? depth0 : {},depth0,(depths[1] != null ? depths[1].cm : depths[1]),(depths[1] != null ? depths[1].callback : depths[1]),{"name":"renderNode","hash":{},"data":data})) != null ? stack1 : "")
+	    + "\n"
+	    + ((stack1 = container.invokePartial(__webpack_require__(245),depth0,{"name":"drop-target","hash":{"location":(depth0 != null ? depth0.to : depth0)},"data":data,"indent":"  ","helpers":helpers,"partials":partials,"decorators":container.decorators})) != null ? stack1 : "");
+	},"compiler":[7,">= 4.0.0"],"main":function(container,depth0,helpers,partials,data,blockParams,depths) {
+	    var stack1;
+	
+	  return ((stack1 = container.invokePartial(__webpack_require__(247),depth0,{"name":"node","hash":{"type":"expression"},"fn":container.program(1, data, 0, blockParams, depths),"inverse":container.noop,"data":data,"helpers":helpers,"partials":partials,"decorators":container.decorators})) != null ? stack1 : "");
+	},"usePartial":true,"useData":true,"useDepths":true});
 
 /***/ },
 /* 226 */
@@ -20880,51 +20897,125 @@
 /* 245 */
 /***/ function(module, exports, __webpack_require__) {
 
-	'use strict';
+	var Handlebars = __webpack_require__(226);
+	module.exports = (Handlebars["default"] || Handlebars).template({"compiler":[7,">= 4.0.0"],"main":function(container,depth0,helpers,partials,data) {
+	    var stack1, alias1=container.lambda, alias2=container.escapeExpression;
 	
-	var _render = __webpack_require__(224);
-	
-	var _render2 = _interopRequireDefault(_render);
-	
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-	
-	module.exports = function (node) {
-	  if (!node) {
-	    return '';
-	  }
-	  var nodeEl = (0, _render2.default)(node, this.cm, this.callback);
-	  var temp = document.createElement('div');
-	  temp.appendChild(nodeEl);
-	  return temp.innerHTML;
-	};
+	  return "<span class=\"blocks-drop-target blocks-white-space\"\n      line=\""
+	    + alias2(alias1(((stack1 = (depth0 != null ? depth0.location : depth0)) != null ? stack1.line : stack1), depth0))
+	    + "\"\n      ch=\""
+	    + alias2(alias1(((stack1 = (depth0 != null ? depth0.location : depth0)) != null ? stack1.ch : stack1), depth0))
+	    + "\"></span>\n";
+	},"useData":true});
 
 /***/ },
 /* 246 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var Handlebars = __webpack_require__(226);
-	module.exports = (Handlebars["default"] || Handlebars).template({"1":function(container,depth0,helpers,partials,data) {
-	    return "    <span class=\"blocks-literal\">"
-	    + container.escapeExpression(container.lambda(depth0, depth0))
-	    + "</span>\n";
-	},"compiler":[7,">= 4.0.0"],"main":function(container,depth0,helpers,partials,data) {
-	    var stack1;
+	'use strict';
 	
-	  return "<span class=\"blocks-struct\">\n  <span class=\"blocks-operator\">define-struct</span>\n  <span class=\"blocks-args\">\n    <span class=\"blocks-name\">"
-	    + container.escapeExpression(container.lambda(((stack1 = (depth0 != null ? depth0.node : depth0)) != null ? stack1.name : stack1), depth0))
-	    + "</span>\n"
-	    + ((stack1 = helpers.each.call(depth0 != null ? depth0 : {},((stack1 = (depth0 != null ? depth0.node : depth0)) != null ? stack1.fields : stack1),{"name":"each","hash":{},"fn":container.program(1, data, 0),"inverse":container.noop,"data":data})) != null ? stack1 : "")
-	    + "  </span>\n</span>\n";
-	},"useData":true});
+	var _render = __webpack_require__(224);
+	
+	module.exports = function (node) {
+	  if (!node) {
+	    return '';
+	  }
+	  return (0, _render.renderHTMLString)(node);
+	};
 
 /***/ },
 /* 247 */
 /***/ function(module, exports, __webpack_require__) {
 
+	var Handlebars = __webpack_require__(226);
+	module.exports = (Handlebars["default"] || Handlebars).template({"compiler":[7,">= 4.0.0"],"main":function(container,depth0,helpers,partials,data) {
+	    var stack1, helper, alias1=container.escapeExpression;
+	
+	  return "<span class=\"blocks-node blocks-"
+	    + alias1(((helper = (helper = helpers.type || (depth0 != null ? depth0.type : depth0)) != null ? helper : helpers.helperMissing),(typeof helper === "function" ? helper.call(depth0 != null ? depth0 : {},{"name":"type","hash":{},"data":data}) : helper)))
+	    + "\" id=\"block-node-"
+	    + alias1(container.lambda(((stack1 = (depth0 != null ? depth0.node : depth0)) != null ? stack1.id : stack1), depth0))
+	    + "\">"
+	    + ((stack1 = container.invokePartial(partials["@partial-block"],depth0,{"name":"@partial-block","data":data,"helpers":helpers,"partials":partials,"decorators":container.decorators})) != null ? stack1 : "")
+	    + "</span>\n";
+	},"usePartial":true,"useData":true});
+
+/***/ },
+/* 248 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var Handlebars = __webpack_require__(226);
+	module.exports = (Handlebars["default"] || Handlebars).template({"1":function(container,depth0,helpers,partials,data) {
+	    var stack1, alias1=depth0 != null ? depth0 : {};
+	
+	  return "<span class=\"blocks-operator\">define</span>\n<span class=\"blocks-args\">\n  <span class=\"blocks-name\">"
+	    + container.escapeExpression(container.lambda(((stack1 = (depth0 != null ? depth0.node : depth0)) != null ? stack1.name : stack1), depth0))
+	    + "</span>\n"
+	    + ((stack1 = helpers.each.call(alias1,((stack1 = (depth0 != null ? depth0.node : depth0)) != null ? stack1.args : stack1),{"name":"each","hash":{},"fn":container.program(2, data, 0),"inverse":container.noop,"data":data})) != null ? stack1 : "")
+	    + "  "
+	    + ((stack1 = __webpack_require__(246).call(alias1,((stack1 = (depth0 != null ? depth0.node : depth0)) != null ? stack1.body : stack1),(depth0 != null ? depth0.cm : depth0),(depth0 != null ? depth0.callback : depth0),{"name":"renderNode","hash":{},"data":data})) != null ? stack1 : "")
+	    + "\n</span>\n";
+	},"2":function(container,depth0,helpers,partials,data) {
+	    return "  <span class=\"blocks-literal\">"
+	    + container.escapeExpression(container.lambda(depth0, depth0))
+	    + "</span>\n";
+	},"compiler":[7,">= 4.0.0"],"main":function(container,depth0,helpers,partials,data) {
+	    var stack1;
+	
+	  return ((stack1 = container.invokePartial(__webpack_require__(247),depth0,{"name":"node","hash":{"type":"functionDef"},"fn":container.program(1, data, 0),"inverse":container.noop,"data":data,"helpers":helpers,"partials":partials,"decorators":container.decorators})) != null ? stack1 : "");
+	},"usePartial":true,"useData":true});
+
+/***/ },
+/* 249 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var Handlebars = __webpack_require__(226);
+	module.exports = (Handlebars["default"] || Handlebars).template({"1":function(container,depth0,helpers,partials,data) {
+	    var stack1;
+	
+	  return "<span class=\"blocks-operator\">define-struct</span>\n<span class=\"blocks-args\">\n  <span class=\"blocks-name\">"
+	    + container.escapeExpression(container.lambda(((stack1 = (depth0 != null ? depth0.node : depth0)) != null ? stack1.name : stack1), depth0))
+	    + "</span>\n"
+	    + ((stack1 = helpers.each.call(depth0 != null ? depth0 : {},((stack1 = (depth0 != null ? depth0.node : depth0)) != null ? stack1.fields : stack1),{"name":"each","hash":{},"fn":container.program(2, data, 0),"inverse":container.noop,"data":data})) != null ? stack1 : "")
+	    + "</span>\n";
+	},"2":function(container,depth0,helpers,partials,data) {
+	    return "  <span class=\"blocks-literal\">"
+	    + container.escapeExpression(container.lambda(depth0, depth0))
+	    + "</span>\n";
+	},"compiler":[7,">= 4.0.0"],"main":function(container,depth0,helpers,partials,data) {
+	    var stack1;
+	
+	  return ((stack1 = container.invokePartial(__webpack_require__(247),depth0,{"name":"node","hash":{"type":"struct"},"fn":container.program(1, data, 0),"inverse":container.noop,"data":data,"helpers":helpers,"partials":partials,"decorators":container.decorators})) != null ? stack1 : "");
+	},"usePartial":true,"useData":true});
+
+/***/ },
+/* 250 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var Handlebars = __webpack_require__(226);
+	module.exports = (Handlebars["default"] || Handlebars).template({"1":function(container,depth0,helpers,partials,data) {
+	    var stack1, alias1=container.lambda, alias2=container.escapeExpression;
+	
+	  return "<span class=\"blocks-literal-"
+	    + alias2(alias1(((stack1 = (depth0 != null ? depth0.node : depth0)) != null ? stack1.dataType : stack1), depth0))
+	    + "\">"
+	    + alias2(alias1((depth0 != null ? depth0.node : depth0), depth0))
+	    + "</span>";
+	},"compiler":[7,">= 4.0.0"],"main":function(container,depth0,helpers,partials,data) {
+	    var stack1;
+	
+	  return ((stack1 = container.invokePartial(__webpack_require__(247),depth0,{"name":"node","hash":{"type":"literal"},"fn":container.program(1, data, 0),"inverse":container.noop,"data":data,"helpers":helpers,"partials":partials,"decorators":container.decorators})) != null ? stack1 : "")
+	    + "\n";
+	},"usePartial":true,"useData":true});
+
+/***/ },
+/* 251 */
+/***/ function(module, exports, __webpack_require__) {
+
 	// style-loader: Adds some css to the DOM by adding a <style> tag
 	
 	// load the styles
-	var content = __webpack_require__(248);
+	var content = __webpack_require__(252);
 	if(typeof content === 'string') content = [[module.id, content, '']];
 	// add the styles to the DOM
 	var update = __webpack_require__(195)(content, {});
@@ -20944,7 +21035,7 @@
 	}
 
 /***/ },
-/* 248 */
+/* 252 */
 /***/ function(module, exports, __webpack_require__) {
 
 	exports = module.exports = __webpack_require__(194)();
@@ -20952,19 +21043,19 @@
 	
 	
 	// module
-	exports.push([module.id, ".blocks-struct,\n.blocks-expression {\n  display: inline-flex;\n  align-items: stretch;\n  color: black;\n  border: 2px solid black;\n  border-radius: 15px 0px 0px 15px;\n  margin: 5px;\n  background: #ccc;\n  cursor: default;\n}\n\n.blocks-operator {\n  display: flex;\n  justify-content: center;\n  flex-direction: column;\n  font-weight: bold;\n  border-right: 2px solid black;\n  padding: 5px;\n  min-width: 20px;\n  text-align: center;\n}\n\n.blocks-args {\n  display: inline-flex;\n  flex-wrap: wrap;\n  flex-grow: 1;\n  background: #eee;\n}\n\n.blocks-name,\n.blocks-literal {\n  display: inline-block;\n  color: black;\n  border-radius: 5px;\n  padding: 5px;\n  border: 1px solid transparent;\n}\n\n.blocks-name {\n  color: red;\n}\n\n\n.blocks-expression.blocks-selected {\n  border-color: red;\n}\n.blocks-expression.blocks-selected .blocks-operator {\n  border-color: red;\n}\n.blocks-literal.blocks-selected {\n  border-color: red;\n}\n\n.blocks-editing {\n  outline: 0;\n}\n\n.blocks-literal.blocks-editing {\n  border: 1px solid green;\n}\n\n.blocks-over-target {\n  background-color: red;\n}\n\n.blocks-white-space:before {\n  content: ' ';\n}\n.blocks-white-space {\n  padding: 5px;\n  border: 2px solid transparent;\n  font-weight: bold;\n}\n\n.blocks-white-space:hover {\n  border-color: black;\n  border-radius: 5px;\n}\n.blocks-white-space:hover:before {\n  content: '+';\n}\n\n.blocks-white-space.blocks-editing:before {\n  content: '';\n}\n.blocks-white-space.blocks-editing {\n  font-weight: normal;\n  margin: 15px;\n}", ""]);
+	exports.push([module.id, ".blocks-struct,\n.blocks-functionDef,\n.blocks-expression {\n  display: inline-flex;\n  flex-direction: column;\n  align-items: stretch;\n  color: black;\n  border: 2px solid black;\n  border-radius: 15px;\n  margin: 5px;\n  background: #ccc;\n  cursor: default;\n  overflow: hidden;\n}\n\n.blocks-operator {\n  display: flex;\n  justify-content: center;\n  flex-direction: column;\n  font-weight: bold;\n  padding: 5px;\n  text-align: center;\n  background: black;\n  color: white;\n}\n\n.blocks-args {\n  display: inline-flex;\n  flex-wrap: wrap;\n  flex-grow: 1;\n  background: #eee;\n}\n\n.blocks-name,\n.blocks-literal {\n  display: inline-block;\n  color: black;\n  border-radius: 5px;\n  padding: 5px;\n  border: 1px solid transparent;\n}\n\n.blocks-literal-number {\n  color: blue;\n}\n.blocks-literal-string {\n  color: green;\n}\n.blocks-literal-char {\n  color: lightblue;\n}\n.blocks-literal-boolean {\n  color: purple;\n}\n.blocks-literal-symbol {\n  color: lightblue;\n}\n\n.blocks-name {\n  color: red;\n}\n\n\n.blocks-selected {\n  border-color: orange;\n}\n\n.blocks-editing {\n  outline: 0;\n}\n\n.blocks-literal.blocks-editing {\n  border: 2px solid orange;\n}\n\n.blocks-over-target {\n  background-color: lightblue;\n  border-radius: 15px;\n}\n\n.blocks-white-space:before {\n  content: ' ';\n}\n.blocks-white-space {\n  padding: 5px;\n  border: 2px solid transparent;\n  font-weight: bold;\n}\n\n.blocks-white-space:hover {\n  border-color: black;\n  border-radius: 5px;\n}\n.blocks-white-space:hover:before {\n  content: '+';\n}\n\n.blocks-white-space.blocks-editing:before {\n  content: '';\n}\n.blocks-white-space.blocks-editing {\n  font-weight: normal;\n  margin: 15px;\n}", ""]);
 	
 	// exports
 
 
 /***/ },
-/* 249 */
+/* 253 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// style-loader: Adds some css to the DOM by adding a <style> tag
 	
 	// load the styles
-	var content = __webpack_require__(250);
+	var content = __webpack_require__(254);
 	if(typeof content === 'string') content = [[module.id, content, '']];
 	// add the styles to the DOM
 	var update = __webpack_require__(195)(content, {});
@@ -20984,7 +21075,7 @@
 	}
 
 /***/ },
-/* 250 */
+/* 254 */
 /***/ function(module, exports, __webpack_require__) {
 
 	exports = module.exports = __webpack_require__(194)();

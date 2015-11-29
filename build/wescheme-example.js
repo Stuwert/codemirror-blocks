@@ -60,20 +60,20 @@
 	
 	var _blocks2 = _interopRequireDefault(_blocks);
 	
-	var _weschemeParser = __webpack_require__(251);
+	var _weschemeParser = __webpack_require__(255);
 	
 	var _weschemeParser2 = _interopRequireDefault(_weschemeParser);
 	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
-	__webpack_require__(247);
-	__webpack_require__(249);
+	__webpack_require__(251);
+	__webpack_require__(253);
 	
 	var cm = _CodeMirror2.default.fromTextArea(document.getElementById("code"), { theme: '3024-day' });
 	
 	var cm2 = _CodeMirror2.default.fromTextArea(document.getElementById('code2'), { theme: '3024-day' });
 	
-	var code = __webpack_require__(261);
+	var code = __webpack_require__(265);
 	//var code = require('./cow-game.rkt');
 	//var code = "(sum (+   (- 1 2)  3)\n (*  3  4)\n (/ 5 6))\n(product 5 6 7)"
 	cm.setValue(code);
@@ -14937,11 +14937,14 @@
 	  _inherits(Literal, _ASTNode4);
 	
 	  function Literal(from, to, value) {
+	    var dataType = arguments.length <= 3 || arguments[3] === undefined ? 'unknown' : arguments[3];
+	
 	    _classCallCheck(this, Literal);
 	
 	    var _this4 = _possibleConstructorReturn(this, Object.getPrototypeOf(Literal).call(this, from, to, 'literal'));
 	
 	    _this4.value = value;
+	    _this4.dataType = dataType;
 	    return _this4;
 	  }
 	
@@ -19077,6 +19080,13 @@
 	var TAB_KEY = 9;
 	var DELETE_KEY = 8;
 	
+	function getLocationFromEl(el) {
+	  return {
+	    line: parseInt(el.getAttribute('line')),
+	    ch: parseInt(el.getAttribute('ch'))
+	  };
+	}
+	
 	var CodeMirrorBlocks = (function () {
 	  function CodeMirrorBlocks(cm, parser) {
 	    var _this = this;
@@ -19245,7 +19255,8 @@
 	      whiteSpaceEl.onkeydown = null;
 	      whiteSpaceEl.contentEditable = false;
 	      whiteSpaceEl.classList.remove('blocks-editing');
-	      this.cm.replaceRange(' ' + whiteSpaceEl.innerText, whiteSpaceEl.location, whiteSpaceEl.location);
+	      var location = getLocationFromEl(whiteSpaceEl);
+	      this.cm.replaceRange(' ' + whiteSpaceEl.innerText, location, location);
 	    }
 	  }, {
 	    key: 'editNode',
@@ -19263,7 +19274,7 @@
 	      };
 	      var range = document.createRange();
 	      range.setStart(nodeEl, 0);
-	      range.setEnd(nodeEl, nodeEl.innerText.length);
+	      range.setEnd(nodeEl, nodeEl.childNodes.length);
 	      window.getSelection().removeAllRanges();
 	      window.getSelection().addRange(range);
 	    }
@@ -19344,7 +19355,7 @@
 	      event.stopPropagation();
 	      var sourceNode = this.ast.nodeMap.get(event.dataTransfer.getData('text/id'));
 	      var sourceNodeText = this.cm.getRange(sourceNode.from, sourceNode.to);
-	      var destination = event.target.location;
+	      var destination = getLocationFromEl(event.target);
 	      if (!destination) {
 	        // event.target probably isn't a drop target, so just get the location from the event
 	        destination = this.cm.coordsChar({ left: event.pageX, top: event.pageY });
@@ -19426,84 +19437,76 @@
 	Object.defineProperty(exports, "__esModule", {
 	  value: true
 	});
+	exports.renderHTMLString = renderHTMLString;
 	exports.default = render;
 	function createFragment(htmlStr) {
+	  var frag = document.createDocumentFragment();
 	  var temp = document.createElement('div');
 	  temp.innerHTML = htmlStr;
-	  return temp.firstChild;
-	}
-	
-	function makeDropTarget(location) {
-	  var dropEl = document.createElement('span');
-	  dropEl.className = 'blocks-drop-target blocks-white-space';
-	  dropEl.appendChild(document.createTextNode(''));
-	  dropEl.location = location;
-	  return dropEl;
+	  frag.appendChild(temp);
+	  return frag;
 	}
 	
 	var nodes = exports.nodes = {
-	  expression: function expression(node, cm, callback) {
-	    var expressionEl = document.createElement('span');
-	    expressionEl.className = 'blocks-expression';
-	    expressionEl.draggable = true;
-	
-	    var operatorEl = document.createElement('span');
-	    operatorEl.className = 'blocks-operator';
-	    operatorEl.appendChild(document.createTextNode(node.func));
-	
-	    expressionEl.appendChild(operatorEl);
-	    expressionEl.appendChild(document.createTextNode(' '));
-	    var argsEl = document.createElement('span');
-	    argsEl.className = 'blocks-args';
-	    var location = Object.assign({}, node.to);
-	    if (node.args.length > 0) {
-	      Object.assign(location, node.args[0].from);
-	    }
-	    argsEl.appendChild(makeDropTarget(location));
-	    for (var i = 0; i < node.args.length; i++) {
-	      argsEl.appendChild(render(node.args[i], cm, callback));
-	      argsEl.appendChild(makeDropTarget({
-	        line: node.args[i].to.line,
-	        ch: node.args[i].to.ch
-	      }));
-	    }
-	    expressionEl.appendChild(argsEl);
-	
-	    cm.markText(node.from, node.to, { replacedWith: expressionEl });
-	
-	    return expressionEl;
-	  },
-	  functionDef: function functionDef(node, cm, callback) {
-	    var template = __webpack_require__(225);
-	    var functionDefEl = createFragment(template({ node: node, cm: cm, callback: callback }));
-	    cm.markText(node.from, node.to, { replacedWith: functionDefEl });
-	    return functionDefEl;
-	  },
-	  struct: function struct(node, cm, callback) {
-	    var template = __webpack_require__(246);
-	    var structEl = createFragment(template({ node: node, cm: cm, callback: callback }));
-	    cm.markText(node.from, node.to, { replacedWith: structEl });
-	    return structEl;
-	  },
-	  literal: function literal(node, cm) {
-	    var literalEl = document.createElement('span');
-	    literalEl.appendChild(document.createTextNode(node.toString()));
-	    literalEl.className = 'blocks-literal';
-	    literalEl.draggable = true;
-	    cm.markText(node.from, node.to, { replacedWith: literalEl, inclusiveRight: false, inclusiveLeft: false });
-	    return literalEl;
-	  }
+	  expression: __webpack_require__(225),
+	  functionDef: __webpack_require__(248),
+	  struct: __webpack_require__(249),
+	  literal: __webpack_require__(250)
 	};
 	
-	function render(node, cm, callback) {
+	var nodesInRenderOrder = [];
+	
+	function renderHTMLString(node) {
 	  if (nodes[node.type] === undefined) {
 	    throw "Don't know how to render node: " + node.type;
 	  }
-	  var nodeEl = nodes[node.type](node, cm, callback);
-	  nodeEl.id = 'block-node-' + node.id;
-	  nodeEl.classList.add('blocks-node');
-	  callback(node, nodeEl);
+	  var nodeEl = nodes[node.type]({ node: node });
+	  nodesInRenderOrder.push(node);
+	  if (typeof nodeEl !== 'string') {
+	    console.warn("AST node renderers should return html strings. node:", node);
+	    var temp = document.createElement('div');
+	    temp.appendChild(nodeEl);
+	    return temp.innerHTML;
+	  }
 	  return nodeEl;
+	}
+	
+	function render(rootNode, cm, callback) {
+	  nodesInRenderOrder = [];
+	  var rootNodeFrag = createFragment(renderHTMLString(rootNode));
+	  var _iteratorNormalCompletion = true;
+	  var _didIteratorError = false;
+	  var _iteratorError = undefined;
+	
+	  try {
+	    for (var _iterator = nodesInRenderOrder[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+	      var node = _step.value;
+	
+	      node.el = rootNodeFrag.getElementById('block-node-' + node.id);
+	      if (!node.el) {
+	        console.warn("!! Didn't find a dom node for node", node);
+	        continue;
+	      }
+	      node.el.draggable = true;
+	      callback(node, node.el);
+	    }
+	  } catch (err) {
+	    _didIteratorError = true;
+	    _iteratorError = err;
+	  } finally {
+	    try {
+	      if (!_iteratorNormalCompletion && _iterator.return) {
+	        _iterator.return();
+	      }
+	    } finally {
+	      if (_didIteratorError) {
+	        throw _iteratorError;
+	      }
+	    }
+	  }
+	
+	  cm.markText(rootNode.from, rootNode.to, { replacedWith: rootNodeFrag.firstChild.firstChild });
+	  return rootNodeFrag;
 	}
 
 /***/ },
@@ -19511,21 +19514,35 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	var Handlebars = __webpack_require__(226);
-	module.exports = (Handlebars["default"] || Handlebars).template({"1":function(container,depth0,helpers,partials,data) {
-	    return "    <span class=\"blocks-literal\">"
-	    + container.escapeExpression(container.lambda(depth0, depth0))
-	    + "</span>\n";
-	},"compiler":[7,">= 4.0.0"],"main":function(container,depth0,helpers,partials,data) {
+	module.exports = (Handlebars["default"] || Handlebars).template({"1":function(container,depth0,helpers,partials,data,blockParams,depths) {
 	    var stack1, alias1=depth0 != null ? depth0 : {};
 	
-	  return "<span class=\"blocks-struct\">\n  <span class=\"blocks-operator\">define</span>\n  <span class=\"blocks-args\">\n    <span class=\"blocks-name\">"
-	    + container.escapeExpression(container.lambda(((stack1 = (depth0 != null ? depth0.node : depth0)) != null ? stack1.name : stack1), depth0))
-	    + "</span>\n"
-	    + ((stack1 = helpers.each.call(alias1,((stack1 = (depth0 != null ? depth0.node : depth0)) != null ? stack1.args : stack1),{"name":"each","hash":{},"fn":container.program(1, data, 0),"inverse":container.noop,"data":data})) != null ? stack1 : "")
-	    + "    "
-	    + ((stack1 = __webpack_require__(245).call(alias1,((stack1 = (depth0 != null ? depth0.node : depth0)) != null ? stack1.body : stack1),{"name":"renderNode","hash":{},"data":data})) != null ? stack1 : "")
-	    + "\n  </span>\n</span>\n";
-	},"useData":true});
+	  return "<span class=\"blocks-operator\">"
+	    + container.escapeExpression(container.lambda(((stack1 = (depth0 != null ? depth0.node : depth0)) != null ? stack1.func : stack1), depth0))
+	    + "</span>\n<span class=\"blocks-args\">\n"
+	    + ((stack1 = helpers["if"].call(alias1,((stack1 = ((stack1 = (depth0 != null ? depth0.node : depth0)) != null ? stack1.args : stack1)) != null ? stack1.length : stack1),{"name":"if","hash":{},"fn":container.program(2, data, 0, blockParams, depths),"inverse":container.program(4, data, 0, blockParams, depths),"data":data})) != null ? stack1 : "")
+	    + ((stack1 = helpers.each.call(alias1,((stack1 = (depth0 != null ? depth0.node : depth0)) != null ? stack1.args : stack1),{"name":"each","hash":{},"fn":container.program(6, data, 0, blockParams, depths),"inverse":container.noop,"data":data})) != null ? stack1 : "")
+	    + "</span>\n";
+	},"2":function(container,depth0,helpers,partials,data) {
+	    var stack1;
+	
+	  return ((stack1 = container.invokePartial(__webpack_require__(245),depth0,{"name":"drop-target","hash":{"location":((stack1 = ((stack1 = ((stack1 = (depth0 != null ? depth0.node : depth0)) != null ? stack1.args : stack1)) != null ? stack1["0"] : stack1)) != null ? stack1.from : stack1)},"data":data,"indent":"  ","helpers":helpers,"partials":partials,"decorators":container.decorators})) != null ? stack1 : "");
+	},"4":function(container,depth0,helpers,partials,data) {
+	    var stack1;
+	
+	  return ((stack1 = container.invokePartial(__webpack_require__(245),depth0,{"name":"drop-target","hash":{"location":((stack1 = (depth0 != null ? depth0.node : depth0)) != null ? stack1.to : stack1)},"data":data,"indent":"  ","helpers":helpers,"partials":partials,"decorators":container.decorators})) != null ? stack1 : "");
+	},"6":function(container,depth0,helpers,partials,data,blockParams,depths) {
+	    var stack1;
+	
+	  return "  "
+	    + ((stack1 = __webpack_require__(246).call(depth0 != null ? depth0 : {},depth0,(depths[1] != null ? depths[1].cm : depths[1]),(depths[1] != null ? depths[1].callback : depths[1]),{"name":"renderNode","hash":{},"data":data})) != null ? stack1 : "")
+	    + "\n"
+	    + ((stack1 = container.invokePartial(__webpack_require__(245),depth0,{"name":"drop-target","hash":{"location":(depth0 != null ? depth0.to : depth0)},"data":data,"indent":"  ","helpers":helpers,"partials":partials,"decorators":container.decorators})) != null ? stack1 : "");
+	},"compiler":[7,">= 4.0.0"],"main":function(container,depth0,helpers,partials,data,blockParams,depths) {
+	    var stack1;
+	
+	  return ((stack1 = container.invokePartial(__webpack_require__(247),depth0,{"name":"node","hash":{"type":"expression"},"fn":container.program(1, data, 0, blockParams, depths),"inverse":container.noop,"data":data,"helpers":helpers,"partials":partials,"decorators":container.decorators})) != null ? stack1 : "");
+	},"usePartial":true,"useData":true,"useDepths":true});
 
 /***/ },
 /* 226 */
@@ -20706,51 +20723,125 @@
 /* 245 */
 /***/ function(module, exports, __webpack_require__) {
 
-	'use strict';
+	var Handlebars = __webpack_require__(226);
+	module.exports = (Handlebars["default"] || Handlebars).template({"compiler":[7,">= 4.0.0"],"main":function(container,depth0,helpers,partials,data) {
+	    var stack1, alias1=container.lambda, alias2=container.escapeExpression;
 	
-	var _render = __webpack_require__(224);
-	
-	var _render2 = _interopRequireDefault(_render);
-	
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-	
-	module.exports = function (node) {
-	  if (!node) {
-	    return '';
-	  }
-	  var nodeEl = (0, _render2.default)(node, this.cm, this.callback);
-	  var temp = document.createElement('div');
-	  temp.appendChild(nodeEl);
-	  return temp.innerHTML;
-	};
+	  return "<span class=\"blocks-drop-target blocks-white-space\"\n      line=\""
+	    + alias2(alias1(((stack1 = (depth0 != null ? depth0.location : depth0)) != null ? stack1.line : stack1), depth0))
+	    + "\"\n      ch=\""
+	    + alias2(alias1(((stack1 = (depth0 != null ? depth0.location : depth0)) != null ? stack1.ch : stack1), depth0))
+	    + "\"></span>\n";
+	},"useData":true});
 
 /***/ },
 /* 246 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var Handlebars = __webpack_require__(226);
-	module.exports = (Handlebars["default"] || Handlebars).template({"1":function(container,depth0,helpers,partials,data) {
-	    return "    <span class=\"blocks-literal\">"
-	    + container.escapeExpression(container.lambda(depth0, depth0))
-	    + "</span>\n";
-	},"compiler":[7,">= 4.0.0"],"main":function(container,depth0,helpers,partials,data) {
-	    var stack1;
+	'use strict';
 	
-	  return "<span class=\"blocks-struct\">\n  <span class=\"blocks-operator\">define-struct</span>\n  <span class=\"blocks-args\">\n    <span class=\"blocks-name\">"
-	    + container.escapeExpression(container.lambda(((stack1 = (depth0 != null ? depth0.node : depth0)) != null ? stack1.name : stack1), depth0))
-	    + "</span>\n"
-	    + ((stack1 = helpers.each.call(depth0 != null ? depth0 : {},((stack1 = (depth0 != null ? depth0.node : depth0)) != null ? stack1.fields : stack1),{"name":"each","hash":{},"fn":container.program(1, data, 0),"inverse":container.noop,"data":data})) != null ? stack1 : "")
-	    + "  </span>\n</span>\n";
-	},"useData":true});
+	var _render = __webpack_require__(224);
+	
+	module.exports = function (node) {
+	  if (!node) {
+	    return '';
+	  }
+	  return (0, _render.renderHTMLString)(node);
+	};
 
 /***/ },
 /* 247 */
 /***/ function(module, exports, __webpack_require__) {
 
+	var Handlebars = __webpack_require__(226);
+	module.exports = (Handlebars["default"] || Handlebars).template({"compiler":[7,">= 4.0.0"],"main":function(container,depth0,helpers,partials,data) {
+	    var stack1, helper, alias1=container.escapeExpression;
+	
+	  return "<span class=\"blocks-node blocks-"
+	    + alias1(((helper = (helper = helpers.type || (depth0 != null ? depth0.type : depth0)) != null ? helper : helpers.helperMissing),(typeof helper === "function" ? helper.call(depth0 != null ? depth0 : {},{"name":"type","hash":{},"data":data}) : helper)))
+	    + "\" id=\"block-node-"
+	    + alias1(container.lambda(((stack1 = (depth0 != null ? depth0.node : depth0)) != null ? stack1.id : stack1), depth0))
+	    + "\">"
+	    + ((stack1 = container.invokePartial(partials["@partial-block"],depth0,{"name":"@partial-block","data":data,"helpers":helpers,"partials":partials,"decorators":container.decorators})) != null ? stack1 : "")
+	    + "</span>\n";
+	},"usePartial":true,"useData":true});
+
+/***/ },
+/* 248 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var Handlebars = __webpack_require__(226);
+	module.exports = (Handlebars["default"] || Handlebars).template({"1":function(container,depth0,helpers,partials,data) {
+	    var stack1, alias1=depth0 != null ? depth0 : {};
+	
+	  return "<span class=\"blocks-operator\">define</span>\n<span class=\"blocks-args\">\n  <span class=\"blocks-name\">"
+	    + container.escapeExpression(container.lambda(((stack1 = (depth0 != null ? depth0.node : depth0)) != null ? stack1.name : stack1), depth0))
+	    + "</span>\n"
+	    + ((stack1 = helpers.each.call(alias1,((stack1 = (depth0 != null ? depth0.node : depth0)) != null ? stack1.args : stack1),{"name":"each","hash":{},"fn":container.program(2, data, 0),"inverse":container.noop,"data":data})) != null ? stack1 : "")
+	    + "  "
+	    + ((stack1 = __webpack_require__(246).call(alias1,((stack1 = (depth0 != null ? depth0.node : depth0)) != null ? stack1.body : stack1),(depth0 != null ? depth0.cm : depth0),(depth0 != null ? depth0.callback : depth0),{"name":"renderNode","hash":{},"data":data})) != null ? stack1 : "")
+	    + "\n</span>\n";
+	},"2":function(container,depth0,helpers,partials,data) {
+	    return "  <span class=\"blocks-literal\">"
+	    + container.escapeExpression(container.lambda(depth0, depth0))
+	    + "</span>\n";
+	},"compiler":[7,">= 4.0.0"],"main":function(container,depth0,helpers,partials,data) {
+	    var stack1;
+	
+	  return ((stack1 = container.invokePartial(__webpack_require__(247),depth0,{"name":"node","hash":{"type":"functionDef"},"fn":container.program(1, data, 0),"inverse":container.noop,"data":data,"helpers":helpers,"partials":partials,"decorators":container.decorators})) != null ? stack1 : "");
+	},"usePartial":true,"useData":true});
+
+/***/ },
+/* 249 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var Handlebars = __webpack_require__(226);
+	module.exports = (Handlebars["default"] || Handlebars).template({"1":function(container,depth0,helpers,partials,data) {
+	    var stack1;
+	
+	  return "<span class=\"blocks-operator\">define-struct</span>\n<span class=\"blocks-args\">\n  <span class=\"blocks-name\">"
+	    + container.escapeExpression(container.lambda(((stack1 = (depth0 != null ? depth0.node : depth0)) != null ? stack1.name : stack1), depth0))
+	    + "</span>\n"
+	    + ((stack1 = helpers.each.call(depth0 != null ? depth0 : {},((stack1 = (depth0 != null ? depth0.node : depth0)) != null ? stack1.fields : stack1),{"name":"each","hash":{},"fn":container.program(2, data, 0),"inverse":container.noop,"data":data})) != null ? stack1 : "")
+	    + "</span>\n";
+	},"2":function(container,depth0,helpers,partials,data) {
+	    return "  <span class=\"blocks-literal\">"
+	    + container.escapeExpression(container.lambda(depth0, depth0))
+	    + "</span>\n";
+	},"compiler":[7,">= 4.0.0"],"main":function(container,depth0,helpers,partials,data) {
+	    var stack1;
+	
+	  return ((stack1 = container.invokePartial(__webpack_require__(247),depth0,{"name":"node","hash":{"type":"struct"},"fn":container.program(1, data, 0),"inverse":container.noop,"data":data,"helpers":helpers,"partials":partials,"decorators":container.decorators})) != null ? stack1 : "");
+	},"usePartial":true,"useData":true});
+
+/***/ },
+/* 250 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var Handlebars = __webpack_require__(226);
+	module.exports = (Handlebars["default"] || Handlebars).template({"1":function(container,depth0,helpers,partials,data) {
+	    var stack1, alias1=container.lambda, alias2=container.escapeExpression;
+	
+	  return "<span class=\"blocks-literal-"
+	    + alias2(alias1(((stack1 = (depth0 != null ? depth0.node : depth0)) != null ? stack1.dataType : stack1), depth0))
+	    + "\">"
+	    + alias2(alias1((depth0 != null ? depth0.node : depth0), depth0))
+	    + "</span>";
+	},"compiler":[7,">= 4.0.0"],"main":function(container,depth0,helpers,partials,data) {
+	    var stack1;
+	
+	  return ((stack1 = container.invokePartial(__webpack_require__(247),depth0,{"name":"node","hash":{"type":"literal"},"fn":container.program(1, data, 0),"inverse":container.noop,"data":data,"helpers":helpers,"partials":partials,"decorators":container.decorators})) != null ? stack1 : "")
+	    + "\n";
+	},"usePartial":true,"useData":true});
+
+/***/ },
+/* 251 */
+/***/ function(module, exports, __webpack_require__) {
+
 	// style-loader: Adds some css to the DOM by adding a <style> tag
 	
 	// load the styles
-	var content = __webpack_require__(248);
+	var content = __webpack_require__(252);
 	if(typeof content === 'string') content = [[module.id, content, '']];
 	// add the styles to the DOM
 	var update = __webpack_require__(195)(content, {});
@@ -20770,7 +20861,7 @@
 	}
 
 /***/ },
-/* 248 */
+/* 252 */
 /***/ function(module, exports, __webpack_require__) {
 
 	exports = module.exports = __webpack_require__(194)();
@@ -20778,19 +20869,19 @@
 	
 	
 	// module
-	exports.push([module.id, ".blocks-struct,\n.blocks-expression {\n  display: inline-flex;\n  align-items: stretch;\n  color: black;\n  border: 2px solid black;\n  border-radius: 15px 0px 0px 15px;\n  margin: 5px;\n  background: #ccc;\n  cursor: default;\n}\n\n.blocks-operator {\n  display: flex;\n  justify-content: center;\n  flex-direction: column;\n  font-weight: bold;\n  border-right: 2px solid black;\n  padding: 5px;\n  min-width: 20px;\n  text-align: center;\n}\n\n.blocks-args {\n  display: inline-flex;\n  flex-wrap: wrap;\n  flex-grow: 1;\n  background: #eee;\n}\n\n.blocks-name,\n.blocks-literal {\n  display: inline-block;\n  color: black;\n  border-radius: 5px;\n  padding: 5px;\n  border: 1px solid transparent;\n}\n\n.blocks-name {\n  color: red;\n}\n\n\n.blocks-expression.blocks-selected {\n  border-color: red;\n}\n.blocks-expression.blocks-selected .blocks-operator {\n  border-color: red;\n}\n.blocks-literal.blocks-selected {\n  border-color: red;\n}\n\n.blocks-editing {\n  outline: 0;\n}\n\n.blocks-literal.blocks-editing {\n  border: 1px solid green;\n}\n\n.blocks-over-target {\n  background-color: red;\n}\n\n.blocks-white-space:before {\n  content: ' ';\n}\n.blocks-white-space {\n  padding: 5px;\n  border: 2px solid transparent;\n  font-weight: bold;\n}\n\n.blocks-white-space:hover {\n  border-color: black;\n  border-radius: 5px;\n}\n.blocks-white-space:hover:before {\n  content: '+';\n}\n\n.blocks-white-space.blocks-editing:before {\n  content: '';\n}\n.blocks-white-space.blocks-editing {\n  font-weight: normal;\n  margin: 15px;\n}", ""]);
+	exports.push([module.id, ".blocks-struct,\n.blocks-functionDef,\n.blocks-expression {\n  display: inline-flex;\n  flex-direction: column;\n  align-items: stretch;\n  color: black;\n  border: 2px solid black;\n  border-radius: 15px;\n  margin: 5px;\n  background: #ccc;\n  cursor: default;\n  overflow: hidden;\n}\n\n.blocks-operator {\n  display: flex;\n  justify-content: center;\n  flex-direction: column;\n  font-weight: bold;\n  padding: 5px;\n  text-align: center;\n  background: black;\n  color: white;\n}\n\n.blocks-args {\n  display: inline-flex;\n  flex-wrap: wrap;\n  flex-grow: 1;\n  background: #eee;\n}\n\n.blocks-name,\n.blocks-literal {\n  display: inline-block;\n  color: black;\n  border-radius: 5px;\n  padding: 5px;\n  border: 1px solid transparent;\n}\n\n.blocks-literal-number {\n  color: blue;\n}\n.blocks-literal-string {\n  color: green;\n}\n.blocks-literal-char {\n  color: lightblue;\n}\n.blocks-literal-boolean {\n  color: purple;\n}\n.blocks-literal-symbol {\n  color: lightblue;\n}\n\n.blocks-name {\n  color: red;\n}\n\n\n.blocks-selected {\n  border-color: orange;\n}\n\n.blocks-editing {\n  outline: 0;\n}\n\n.blocks-literal.blocks-editing {\n  border: 2px solid orange;\n}\n\n.blocks-over-target {\n  background-color: lightblue;\n  border-radius: 15px;\n}\n\n.blocks-white-space:before {\n  content: ' ';\n}\n.blocks-white-space {\n  padding: 5px;\n  border: 2px solid transparent;\n  font-weight: bold;\n}\n\n.blocks-white-space:hover {\n  border-color: black;\n  border-radius: 5px;\n}\n.blocks-white-space:hover:before {\n  content: '+';\n}\n\n.blocks-white-space.blocks-editing:before {\n  content: '';\n}\n.blocks-white-space.blocks-editing {\n  font-weight: normal;\n  margin: 15px;\n}", ""]);
 	
 	// exports
 
 
 /***/ },
-/* 249 */
+/* 253 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// style-loader: Adds some css to the DOM by adding a <style> tag
 	
 	// load the styles
-	var content = __webpack_require__(250);
+	var content = __webpack_require__(254);
 	if(typeof content === 'string') content = [[module.id, content, '']];
 	// add the styles to the DOM
 	var update = __webpack_require__(195)(content, {});
@@ -20810,7 +20901,7 @@
 	}
 
 /***/ },
-/* 250 */
+/* 254 */
 /***/ function(module, exports, __webpack_require__) {
 
 	exports = module.exports = __webpack_require__(194)();
@@ -20824,7 +20915,7 @@
 
 
 /***/ },
-/* 251 */
+/* 255 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -20837,17 +20928,21 @@
 	
 	var _ast = __webpack_require__(199);
 	
-	var _lex = __webpack_require__(252);
+	var _lex = __webpack_require__(256);
 	
-	var _parser = __webpack_require__(260);
+	var _parser = __webpack_require__(264);
 	
-	var _structures = __webpack_require__(253);
+	var _structures = __webpack_require__(257);
 	
 	var structures = _interopRequireWildcard(_structures);
 	
 	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 	
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.constructor === Symbol ? "symbol" : typeof obj; }
+	
+	var types = __webpack_require__(258);
 	
 	function parseNode(node) {
 	  var from = {
@@ -20874,9 +20969,18 @@
 	      return symbolNode.stx;
 	    }), parseNode(node.body));
 	  } else if (node instanceof structures.symbolExpr) {
-	    return new _ast.Literal(from, to, node.stx);
+	    return new _ast.Literal(from, to, node.stx, "symbol");
 	  } else if (node instanceof structures.literal) {
-	    return new _ast.Literal(from, to, node.stx);
+	    var dataType = _typeof(node.val);
+	    if (types.isString(node.val)) {
+	      dataType = "string";
+	    } else if (types.isChar(node.val)) {
+	      dataType = "char";
+	    } else if (node.val === types.FALSE || node.val === types.TRUE) {
+	      dataType = "boolean";
+	    }
+	    console.log("type for node", node, "with value", node.val, "is", dataType);
+	    return new _ast.Literal(from, to, node, dataType);
 	  }
 	  console.log("!! No translator for", node);
 	  return null;
@@ -20904,16 +21008,16 @@
 	exports.default = Parser;
 
 /***/ },
-/* 252 */
+/* 256 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
 	// if not defined, declare the compiler object as part of plt
 	window.plt = window.plt || {};
-	plt.compiler = __webpack_require__(253);
-	var types = __webpack_require__(254);
-	var jsnums = __webpack_require__(255);
+	plt.compiler = __webpack_require__(257);
+	var types = __webpack_require__(258);
+	var jsnums = __webpack_require__(259);
 	
 	/*
 	
@@ -21869,7 +21973,7 @@
 	module.exports = plt.compiler;
 
 /***/ },
-/* 253 */
+/* 257 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -21918,7 +22022,7 @@
 	exports.globalEnv = globalEnv;
 	exports.pinfo = pinfo;
 	exports.getBasePinfo = getBasePinfo;
-	var types = __webpack_require__(254);
+	var types = __webpack_require__(258);
 	var Vector = types.Vector;
 	
 	//////////////////////////////////////////////////////////////////////////////
@@ -22466,7 +22570,7 @@
 	function emptyEnv() {
 	  env.call(this);
 	  // TODO: fix this circular dependency
-	  var compiler = __webpack_require__(257);
+	  var compiler = __webpack_require__(261);
 	  this.lookup = function (name, depth) {
 	    return new compiler.unboundStackReference(name);
 	  };
@@ -22490,7 +22594,7 @@
 	  this.lookup = function (name, depth) {
 	
 	    // TODO: fix this circular dependency
-	    var compiler = __webpack_require__(257);
+	    var compiler = __webpack_require__(261);
 	    return name === this.name ? new compiler.localStackReference(name, this.boxed, depth) : this.parent.lookup(name, depth + 1);
 	  };
 	}
@@ -22505,7 +22609,7 @@
 	  this.lookup = function (name, depth) {
 	    var pos = this.names.indexOf(name);
 	    // TODO: fix this circular dependency
-	    var compiler = __webpack_require__(257);
+	    var compiler = __webpack_require__(261);
 	    return pos > -1 ? new compiler.globalStackReference(name, depth, pos) : this.parent.lookup(name, depth + 1);
 	  };
 	}
@@ -22518,7 +22622,7 @@
 	// loop through known modules and see if we know this name
 	var defaultModuleResolver = exports.defaultModuleResolver = function defaultModuleResolver(name) {
 	  // TODO: fix this circular dependency
-	  var modules = __webpack_require__(258);
+	  var modules = __webpack_require__(262);
 	  for (var i = 0; i < modules.knownModules.length; i++) {
 	    if (modules.knownModules[i].name === name) return modules.knownModules[i];
 	  }
@@ -22562,7 +22666,7 @@
 	// loop through known modules and make best suggestion for a given name
 	var moduleGuess = exports.moduleGuess = function moduleGuess(wrongName) {
 	  // TODO: fix this circular dependency
-	  var modules = __webpack_require__(258);
+	  var modules = __webpack_require__(262);
 	  return modules.knownModules.reduce(function (best, module) {
 	    var dist = levenshteinDistance(module.name, wrongName);
 	    return dist < best.distance ? { name: module.name, distance: dist } : best;
@@ -22582,7 +22686,7 @@
 	      collectionName = parts[0],
 	      moduleName = parts.slice(1).join();
 	  // TODO: fix this circular dependency
-	  var modules = __webpack_require__(258);
+	  var modules = __webpack_require__(262);
 	  return modules.knownCollections.indexOf(collectionName) > -1 && defaultModuleResolver(path.toString()) || /^wescheme\/\w+$/.exec(path);
 	};
 	
@@ -22748,7 +22852,7 @@
 	      // if it's a struct provide, return a list containing the constructor and predicate,
 	      // along with all the accessor and mutator functions
 	      // TODO: fix this circular dependency
-	      var analyzer = __webpack_require__(259);
+	      var analyzer = __webpack_require__(263);
 	      if (provideBinding instanceof analyzer.provideBindingStructId) {
 	        return [ref(binding.constructor), ref(binding.predicate)].concat(binding.accessors.map(ref), binding.mutators.map(ref));
 	      } else {
@@ -22773,7 +22877,7 @@
 	    // is really a structure.
 	    function checkBindingCompatibility(binding, exportedBinding) {
 	      // TODO: fix this circular dependency
-	      var analyzer = __webpack_require__(259);
+	      var analyzer = __webpack_require__(263);
 	      if (binding instanceof analyzer.provideBindingStructId && !(exportedBinding instanceof structBinding)) {
 	        throwError(new types.Message(["provided-structure-not-structure: ", exportedBinding.symbl]));
 	      } else {
@@ -22816,7 +22920,7 @@
 	
 	  var info = new pinfo();
 	  // TODO: fix this circular dependency
-	  var modules = __webpack_require__(258);
+	  var modules = __webpack_require__(262);
 	  var topLevelEnv = modules = modules.topLevelModules.reduceRight(function (env, mod) {
 	    return env.extendEnv_moduleBinding(mod);
 	  }, baseConstantsEnv);
@@ -22829,7 +22933,7 @@
 	}
 
 /***/ },
-/* 254 */
+/* 258 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -22839,1000 +22943,956 @@
 	//////////////////////////////////////////////////////////////////////
 	// helper functions
 	
-	var jsnums = __webpack_require__(255);
-	var _Hashtable = __webpack_require__(256);
+	var jsnums = __webpack_require__(259);
+	var _Hashtable = __webpack_require__(260);
 	
 	var types = {};
 	
 	(function () {
 	
-					//////////////////////////////////////////////////////////////////////
-	
-					var appendChild = function appendChild(parent, child) {
-									parent.appendChild(child);
-					};
-	
-					var hasOwnProperty = ({}).hasOwnProperty;
-	
-					//////////////////////////////////////////////////////////////////////
-	
-					var _eqHashCodeCounter = 0;
-					var makeEqHashCode = function makeEqHashCode() {
-									_eqHashCodeCounter++;
-									return _eqHashCodeCounter;
-					};
-	
-					// getHashCode: any -> (or fixnum string)
-					// Produces a hashcode appropriate for eq.
-					var getEqHashCode = function getEqHashCode(x) {
-									if (typeof x == 'string') {
-													return x;
-									}
-									if (x && !x._eqHashCode) {
-													console.log("hashing", x);
-													x._eqHashCode = makeEqHashCode();
-									}
-									if (x && x._eqHashCode) {
-													return x._eqHashCode;
-									}
-									return 0;
-					};
-	
-					// Union/find for circular equality testing.
-	
-					var UnionFind = function UnionFind() {
-									// this.parenMap holds the arrows from an arbitrary pointer
-									// to its parent.
-									this.parentMap = makeLowLevelEqHash();
-					};
-	
-					// find: ptr -> UnionFindNode
-					// Returns the representative for this ptr.
-					UnionFind.prototype.find = function (ptr) {
-									var parent = this.parentMap.containsKey(ptr) ? this.parentMap.get(ptr) : ptr;
-									if (parent === ptr) {
-													return parent;
-									} else {
-													var rep = this.find(parent);
-													// Path compression:
-													this.parentMap.put(ptr, rep);
-													return rep;
-									}
-					};
-	
-					// merge: ptr ptr -> void
-					// Merge the representative nodes for ptr1 and ptr2.
-					UnionFind.prototype.merge = function (ptr1, ptr2) {
-									this.parentMap.put(this.find(ptr1), this.find(ptr2));
-					};
-	
-					function makeLParen() {
-									var node = document.createElement('span');
-									node.appendChild(document.createTextNode("("));
-									node.className = "lParen";
-									return node;
-					}
-	
-					function makeRParen() {
-									var node = document.createElement('span');
-									node.appendChild(document.createTextNode(")"));
-									node.className = "rParen";
-									return node;
-					}
-	
-					//////////////////////////////////////////////////////////////////////
-	
-					var StructType = function StructType(name, type, numberOfArgs, numberOfFields, firstField, constructor, predicate, accessor, mutator) {
-									this.name = name;
-									this.type = type;
-									this.numberOfArgs = numberOfArgs;
-									this.numberOfFields = numberOfFields;
-									this.firstField = firstField;
-	
-									this.constructor = constructor;
-									this.predicate = predicate;
-									this.accessor = accessor;
-									this.mutator = mutator;
-					};
-	
-					StructType.prototype.toString = function () {
-									return '#<struct-type:' + this.name + '>';
-					};
-	
-					StructType.prototype.isEqual = function (other, aUnionFind) {
-									return this === other;
-					};
-	
-					var makeStructureType = function makeStructureType(theName, parentType, initFieldCnt, autoFieldCnt, autoV, guard) {
-									// If no parent type given, then the parent type is Struct
-									if (!parentType) {
-													parentType = { type: Struct,
-																	numberOfArgs: 0,
-																	numberOfFields: 0,
-																	firstField: 0 };
-									}
-									var numParentArgs = parentType.numberOfArgs;
-									var aStruct = function aStruct(name, initArgs) {
-													this.init(name, initArgs);
-									};
-									Object.assign(aStruct.prototype, parentType.type.prototype);
-									aStruct.prototype.init = function (name, initArgs) {
-													// if there's no guard, construct a default one
-	
-													if (!guard) {
-																	guard = function (k) {
-																					if (arguments.length == 3) {
-																									k(arguments[1]);
-																					} else {
-																									var args = [];
-																									var i;
-																									for (i = 1; i < arguments.length - 1; i++) {
-																													args.push(arguments[i]);
-																									}
-																									k(new ValuesWrapper(args));
-																					}
-																	};
-													}
-	
-													var that = this;
-													var cont = function cont(guardRes) {
-																	var guardedArgs;
-																	if (guardRes instanceof ValuesWrapper) {
-																					guardedArgs = guardRes.elts;
-																	} else {
-																					guardedArgs = [guardRes];
-																	}
-	
-																	var parentArgs = guardedArgs.slice(0, numParentArgs);
-																	parentType.type.init.bind(that)(name, parentArgs);
-	
-																	for (var i = 0; i < initFieldCnt; i++) {
-																					that._fields.push(guardedArgs[i + numParentArgs]);
-																	}
-																	for (var i = 0; i < autoFieldCnt; i++) {
-																					that._fields.push(autoV);
-																	}
-													};
-													initArgs.unshift(cont);
-													initArgs.push(Symbol.makeInstance(name));
-													guard.apply(null, initArgs);
-									};
-	
-									// Create a new struct type inheriting from the parent
-									//var aStruct = parentType.type.extend({
-									//  init: function(name, initArgs) {
-									//	  // if there's no guard, construct a default one
-									//
-									//	  if (!guard) {
-									//		  guard = function(k) {
-									//			  if (arguments.length == 3) {
-									//				  k(arguments[1]);
-									//			  }
-									//			  else {
-									//				  var args = [];
-									//				  var i;
-									//				  for(i = 1; i < arguments.length-1; i++) {
-									//					  args.push(arguments[i]);
-									//				  }
-									//				  k(new ValuesWrapper(args));
-									//			  }
-									//		  }
-									//	  }
-									//
-									//	  var that = this;
-									//	  var cont = function(guardRes) {
-									//		  var guardedArgs;
-									//		  if ( guardRes instanceof ValuesWrapper ) {
-									//			  guardedArgs = guardRes.elts;
-									//		  } else {
-									//			  guardedArgs = [guardRes];
-									//		  }
-									//
-									//		  var parentArgs = guardedArgs.slice(0, numParentArgs);
-									//		  that._super(name, parentArgs);
-									//
-									//		  for (var i = 0; i < initFieldCnt; i++) {
-									//			  that._fields.push(guardedArgs[i+numParentArgs]);
-									//		  }
-									//		  for (var i = 0; i < autoFieldCnt; i++) {
-									//			  that._fields.push(autoV);
-									//		  }
-									//	  };
-									//	  initArgs.unshift(cont);
-									//	  initArgs.push(Symbol.makeInstance(name));
-									//	  guard.apply(null, initArgs);
-									//  }
-									//});
-									// Set type, necessary for equality checking
-									aStruct.prototype.type = aStruct;
-	
-									// construct and return the new type
-									return new StructType(theName, aStruct, initFieldCnt + numParentArgs, initFieldCnt + autoFieldCnt, parentType.firstField + parentType.numberOfFields, function () {
-													var args = [];
-													for (var i = 0; i < arguments.length; i++) {
-																	args.push(arguments[i]);
-													}
-													return new aStruct(theName, args);
-									}, function (x) {
-													return x instanceof aStruct;
-									}, function (x, i) {
-													return x._fields[i + this.firstField];
-									}, function (x, i, v) {
-													x._fields[i + this.firstField] = v;
-									});
-					};
-	
-					// Structures.
-					var Struct = function Struct(constructorName, fields) {
-									this.init(constructorName, fields);
-					};
-					Object.assign(Struct.prototype, {
-									init: function init(constructorName, fields) {
-													this._constructorName = constructorName;
-													this._fields = [];
-									},
-									toWrittenString: function toWrittenString(cache) {
-													//    cache.put(this, true);
-													var buffer = [];
-													var i;
-													buffer.push("(");
-													buffer.push(this._constructorName);
-													for (i = 0; i < this._fields.length; i++) {
-																	buffer.push(" ");
-																	buffer.push(_toWrittenString(this._fields[i], cache));
-													}
-													buffer.push(")");
-													return buffer.join("");
-									},
-									toDisplayedString: function toDisplayedString(cache) {
-													return this.toWrittenString(cache);
-									},
-									toDomNode: function toDomNode(cache) {
-													//    cache.put(this, true);
-													var node = document.createElement("div"),
-													    constructor = document.createElement("span");
-													constructor.appendChild(document.createTextNode(this._constructorName));
-													var i;
-													node.appendChild(makeLParen());
-													node.appendChild(constructor);
-													for (i = 0; i < this._fields.length; i++) {
-																	appendChild(node, _toDomNode(this._fields[i], cache));
-													}
-													node.appendChild(makeRParen());
-													return node;
-									},
-									isEqual: function isEqual(other, aUnionFind) {
-													if (other.type == undefined || this.type !== other.type || !(other instanceof this.type)) {
-																	return false;
-													}
-	
-													for (var i = 0; i < this._fields.length; i++) {
-																	if (!_isEqual(this._fields[i], other._fields[i], aUnionFind)) {
-																					return false;
-																	}
-													}
-													return true;
-									}
-					});
-					Struct.prototype.type = Struct;
-	
-					//////////////////////////////////////////////////////////////////////
-	
-					// Regular expressions.
-	
-					var RegularExpression = function RegularExpression(pattern) {
-									this.pattern = pattern;
-					};
-	
-					var ByteRegularExpression = function ByteRegularExpression(pattern) {
-									this.pattern = pattern;
-					};
-	
-					//////////////////////////////////////////////////////////////////////
-	
-					// Paths
-	
-					var Path = function Path(p) {
-									this.path = p;
-					};
-	
-					//////////////////////////////////////////////////////////////////////
-	
-					// Bytes
-	
-					var Bytes = function Bytes(bts, mutable) {
-									this.bytes = bts;
-									this.mutable = mutable === undefined ? false : mutable;
-					};
-	
-					Bytes.prototype.get = function (i) {
-									return this.bytes[i];
-					};
-	
-					Bytes.prototype.set = function (i, b) {
-									if (this.mutable) {
-													this.bytes[i] = b;
-									}
-					};
-	
-					Bytes.prototype.length = function () {
-									return this.bytes.length;
-					};
-	
-					Bytes.prototype.copy = function (mutable) {
-									return new Bytes(this.bytes.slice(0), mutable);
-					};
-	
-					Bytes.prototype.subbytes = function (start, end) {
-									if (end == null || end == undefined) {
-													end = this.bytes.length;
-									}
-	
-									return new Bytes(this.bytes.slice(start, end), true);
-					};
-	
-					Bytes.prototype.toString = function () {
-									var ret = '';
-									for (var i = 0; i < this.bytes.length; i++) {
-													ret += String.fromCharCode(this.bytes[i]);
-									}
-	
-									return ret;
-					};
-	
-					Bytes.prototype.toDisplayedString = Bytes.prototype.toString;
-	
-					Bytes.prototype.toWrittenString = function () {
-									var ret = ['#"'];
-									for (var i = 0; i < this.bytes.length; i++) {
-													ret.push(escapeByte(this.bytes[i]));
-									}
-									ret.push('"');
-									return ret.join('');
-					};
-	
-					var escapeByte = function escapeByte(aByte) {
-									var ret = [];
-									var returnVal;
-									switch (aByte) {
-													case 7:
-																	returnVal = '\\a';break;
-													case 8:
-																	returnVal = '\\b';break;
-													case 9:
-																	returnVal = '\\t';break;
-													case 10:
-																	returnVal = '\\n';break;
-													case 11:
-																	returnVal = '\\v';break;
-													case 12:
-																	returnVal = '\\f';break;
-													case 13:
-																	returnVal = '\\r';break;
-													case 34:
-																	returnVal = '\\"';break;
-													case 92:
-																	returnVal = '\\\\';break;
-													default:
-																	if (val >= 32 && val <= 126) {
-																					returnVal = String.fromCharCode(val);
-																	} else {
-																					ret.push('\\' + val.toString(8));
-																	}
-																	break;
-									}
-									return returnVal;
-					};
-	
-					//////////////////////////////////////////////////////////////////////
-					// Boxes
-	
-					var Box = function Box(x, mutable) {
-									this.val = x;
-									this.mutable = mutable;
-					};
-	
-					Box.prototype.unbox = function () {
-									return this.val;
-					};
-	
-					Box.prototype.set = function (newVal) {
-									if (this.mutable) {
-													this.val = newVal;
-									}
-					};
-	
-					Box.prototype.toString = function () {
-									return "#&" + this.val.toString();
-					};
-	
-					Box.prototype.toWrittenString = function (cache) {
-									return "#&" + _toWrittenString(this.val, cache);
-					};
-	
-					Box.prototype.toDisplayedString = function (cache) {
-									return "#&" + toDisplayedString(this.val, cache);
-					};
-	
-					Box.prototype.toDomNode = function (cache) {
-									var parent = document.createElement("span"),
-									    boxSymbol = document.createElement("span");
-									boxSymbol.appendChild(document.createTextNode("#&"));
-									parent.className = "wescheme-box";
-									parent.appendChild(boxSymbol);
-									parent.appendChild(_toDomNode(this.val, cache));
-									return parent;
-					};
-	
-					//////////////////////////////////////////////////////////////////////
-	
-					// We are reusing the built-in Javascript boolean class here.
-					var Logic = {
-									TRUE: true,
-									FALSE: false
-					};
-	
-					// WARNING
-					// WARNING: we are extending the built-in Javascript boolean class here!
-					// WARNING
-					Boolean.prototype.toWrittenString = function (cache) {
-									if (this.valueOf()) {
-													return "true";
-									}
-									return "false";
-					};
-					Boolean.prototype.toDisplayedString = Boolean.prototype.toWrittenString;
-	
-					Boolean.prototype.toString = function () {
-									return this.valueOf() ? "true" : "false";
-					};
-	
-					Boolean.prototype.isEqual = function (other, aUnionFind) {
-									return this == other;
-					};
-	
-					// Chars
-					// Char: string -> Char
-					var Char = function Char(val) {
-									this.val = val;
-					};
-	
-					Char.makeInstance = function (val) {
-									return new Char(val);
-					};
-	
-					Char.prototype.toString = function () {
-									var code = this.val.charCodeAt(0);
-									var returnVal;
-									switch (code) {
-													case 0:
-																	returnVal = '#\\nul';break;
-													case 8:
-																	returnVal = '#\\backspace';break;
-													case 9:
-																	returnVal = '#\\tab';break;
-													case 10:
-																	returnVal = '#\\newline';break;
-													case 11:
-																	returnVal = '#\\vtab';break;
-													case 12:
-																	returnVal = '#\\page';break;
-													case 13:
-																	returnVal = '#\\return';break;
-													case 20:
-																	returnVal = '#\\space';break;
-													case 127:
-																	returnVal = '#\\rubout';break;
-													default:
-																	if (code >= 32 && code <= 126) {
-																					returnVal = "#\\" + this.val;
-																	} else {
-																					var numStr = code.toString(16).toUpperCase();
-																					while (numStr.length < 4) {
-																									numStr = '0' + numStr;
-																					}
-																					returnVal = '#\\u' + numStr;
-																	}
-																	break;
-									}
-									return returnVal;
-					};
-	
-					Char.prototype.toWrittenString = Char.prototype.toString;
-	
-					Char.prototype.toDisplayedString = function (cache) {
-									return this.val;
-					};
-	
-					Char.prototype.getValue = function () {
-									return this.val;
-					};
-	
-					Char.prototype.isEqual = function (other, aUnionFind) {
-									return other instanceof Char && this.val == other.val;
-					};
-	
-					//////////////////////////////////////////////////////////////////////
-	
-					// Symbols
-	
-					//////////////////////////////////////////////////////////////////////
-					var Symbol = function Symbol(val) {
-									this.val = val;
-					};
-	
-					var symbolCache = {};
-	
-					// makeInstance: string -> Symbol.
-					Symbol.makeInstance = function (val) {
-									// To ensure that we can eq? symbols with equal values.
-									if (!hasOwnProperty.call(symbolCache, val)) {
-													symbolCache[val] = new Symbol(val);
-									}
-									return symbolCache[val];
-					};
-	
-					Symbol.prototype.isEqual = function (other, aUnionFind) {
-									return other instanceof Symbol && this.val == other.val;
-					};
-	
-					Symbol.prototype.toString = function () {
-									return this.val;
-					};
-	
-					Symbol.prototype.toWrittenString = function (cache) {
-									return this.val;
-					};
-	
-					Symbol.prototype.toDisplayedString = function (cache) {
-									return this.val;
-					};
-	
-					Symbol.prototype.toDomNode = function (cache) {
-									var wrapper = document.createElement("span");
-									wrapper.className = "wescheme-symbol";
-									wrapper.style.fontFamily = 'monospace';
-									wrapper.style.whiteSpace = "pre";
-									wrapper.appendChild(document.createTextNode("'" + this.val));
-									return wrapper;
-					};
-	
-					//////////////////////////////////////////////////////////////////////
-	
-					// Keywords
-	
-					var Keyword = function Keyword(val) {
-									this.val = val;
-					};
-	
-					var keywordCache = {};
-	
-					// makeInstance: string -> Keyword.
-					Keyword.makeInstance = function (val) {
-									// To ensure that we can eq? symbols with equal values.
-									if (!hasOwnProperty.call(keywordCache, val)) {
-													keywordCache[val] = new Keyword(val);
-									}
-									return keywordCache[val];
-					};
-	
-					Keyword.prototype.isEqual = function (other, aUnionFind) {
-									return other instanceof Keyword && this.val == other.val;
-					};
-	
-					Keyword.prototype.toString = function () {
-									return this.val;
-					};
-	
-					Keyword.prototype.toWrittenString = function (cache) {
-									return this.val;
-					};
-	
-					Keyword.prototype.toDisplayedString = function (cache) {
-									return this.val;
-					};
-	
-					//////////////////////////////////////////////////////////////////////
-	
-					var Empty = function Empty() {};
-					Empty.EMPTY = new Empty();
-	
-					Empty.prototype.isEqual = function (other, aUnionFind) {
-									return other instanceof Empty;
-					};
-	
-					Empty.prototype.reverse = function () {
-									return this;
-					};
-	
-					Empty.prototype.first = function () {
-									throw new Error("first can't be applied on empty.");
-					};
-					Empty.prototype.rest = function () {
-									throw new Error("rest can't be applied on empty.");
-					};
-					Empty.prototype.isEmpty = function () {
-									return true;
-					};
-					Empty.prototype.toWrittenString = function (cache) {
-									return "empty";
-					};
-					Empty.prototype.toDisplayedString = function (cache) {
-									return "empty";
-					};
-					Empty.prototype.toString = function (cache) {
-									return "()";
-					};
-	
-					// Empty.append: (listof X) -> (listof X)
-					Empty.prototype.append = function (b) {
-									return b;
-					};
-	
-					var Cons = function Cons(f, r) {
-									this.f = f;
-									this.r = r;
-					};
-	
-					Cons.prototype.reverse = function () {
-									var lst = this;
-									var ret = Empty.EMPTY;
-									while (!lst.isEmpty()) {
-													ret = Cons.makeInstance(lst.first(), ret);
-													lst = lst.rest();
-									}
-									return ret;
-					};
-	
-					Cons.makeInstance = function (f, r) {
-									return new Cons(f, r);
-					};
-	
-					// FIXME: can we reduce the recursion on this?
-					Cons.prototype.isEqual = function (other, aUnionFind) {
-									if (!(other instanceof Cons)) {
-													return Logic.FALSE;
-									}
-									return _isEqual(this.first(), other.first(), aUnionFind) && _isEqual(this.rest(), other.rest(), aUnionFind);
-					};
-	
-					Cons.prototype.first = function () {
-									return this.f;
-					};
-	
-					Cons.prototype.rest = function () {
-									return this.r;
-					};
-	
-					Cons.prototype.isEmpty = function () {
-									return false;
-					};
-	
-					// Cons.append: (listof X) -> (listof X)
-					Cons.prototype.append = function (b) {
-									if (b === Empty.EMPTY) return this;
-									var ret = b;
-									var lst = this.reverse();
-									while (!lst.isEmpty()) {
-													ret = Cons.makeInstance(lst.first(), ret);
-													lst = lst.rest();
-									}
-	
-									return ret;
-					};
-	
-					Cons.prototype.toWrittenString = function (cache) {
-									//    cache.put(this, true);
-									var texts = ["list"];
-									var p = this;
-									while (p instanceof Cons) {
-													texts.push(_toWrittenString(p.first(), cache));
-													p = p.rest();
-									}
-									if (p !== Empty.EMPTY) {
-													// If not a list, we've got to switch over to cons pair
-													// representation.
-													return explicitConsString(this, cache, _toWrittenString);
-									}
-									return "(" + texts.join(" ") + ")";
-					};
-	
-					var explicitConsString = function explicitConsString(p, cache, f) {
-									var texts = [];
-									var tails = [];
-									while (p instanceof Cons) {
-													texts.push("(cons ");
-													texts.push(f(p.first(), cache));
-													texts.push(" ");
-	
-													tails.push(")");
-													p = p.rest();
-									}
-									texts.push(f(p, cache));
-									return texts.join("") + tails.join("");
-					};
-	
-					Cons.prototype.toString = Cons.prototype.toWrittenString;
-	
-					Cons.prototype.toDisplayedString = function (cache) {
-									//    cache.put(this, true);
-									var texts = ["list"];
-									var p = this;
-									while (p instanceof Cons) {
-													texts.push(toDisplayedString(p.first(), cache));
-													p = p.rest();
-									}
-									if (p !== Empty.EMPTY) {
-													return explicitConsString(this, cache, toDisplayedString);
-									}
-									//    while (true) {
-									//	if ((!(p instanceof Cons)) && (!(p instanceof Empty))) {
-									//	    texts.push(".");
-									//	    texts.push(toDisplayedString(p, cache));
-									//	    break;
-									//	}
-									//	if (p.isEmpty())
-									//	    break;
-									//	texts.push(toDisplayedString(p.first(), cache));
-									//	p = p.rest();
-									//    }
-									return "(" + texts.join(" ") + ")";
-					};
-	
-					Cons.prototype.toDomNode = function (cache) {
-									//    cache.put(this, true);
-									var node = document.createElement("span"),
-									    abbr = document.createElement("span");
-									node.className = "wescheme-cons";
-									abbr.appendChild(document.createTextNode("list"));
-	
-									node.appendChild(makeLParen());
-									node.appendChild(abbr);
-									var p = this;
-									while (p instanceof Cons) {
-													appendChild(node, _toDomNode(p.first(), cache));
-													p = p.rest();
-									}
-									if (p !== Empty.EMPTY) {
-													return explicitConsDomNode(this, cache);
-									}
-									node.appendChild(makeRParen());
-									return node;
-					};
-	
-					var explicitConsDomNode = function explicitConsDomNode(p, cache) {
-									var topNode = document.createElement("span");
-									var node = topNode,
-									    constructor = document.createElement("span");
-									constructor.appendChild(document.createTextNode("cons"));
-	
-									node.className = "wescheme-cons";
-									while (p instanceof Cons) {
-													node.appendChild(makeLParen());
-													node.appendChild(constructor);
-													appendChild(node, _toDomNode(p.first(), cache));
-	
-													var restSpan = document.createElement("span");
-													node.appendChild(restSpan);
-													node.appendChild(makeRParen());
-													node = restSpan;
-													p = p.rest();
-									}
-									appendChild(node, _toDomNode(p, cache));
-									return topNode;
-					};
-	
-					//////////////////////////////////////////////////////////////////////
-	
-					var Vector = function Vector(n, initialElements) {
-									this.elts = new Array(n);
-									if (initialElements) {
-													for (var i = 0; i < n; i++) {
-																	this.elts[i] = initialElements[i];
-													}
-									} else {
-													for (var i = 0; i < n; i++) {
-																	this.elts[i] = undefined;
-													}
-									}
-									this.mutable = true;
-					};
-					Vector.makeInstance = function (n, elts) {
-									return new Vector(n, elts);
-					};
-					Vector.prototype.length = function () {
-									return this.elts.length;
-					};
-					Vector.prototype.ref = function (k) {
-									return this.elts[k];
-					};
-					Vector.prototype.set = function (k, v) {
-									this.elts[k] = v;
-					};
-	
-					Vector.prototype.isEqual = function (other, aUnionFind) {
-									if (other != null && other != undefined && other instanceof Vector) {
-													if (other.length() != this.length()) {
-																	return false;
-													}
-													for (var i = 0; i < this.length(); i++) {
-																	if (!_isEqual(this.elts[i], other.elts[i], aUnionFind)) {
-																					return false;
-																	}
-													}
-													return true;
-									} else {
-													return false;
-									}
-					};
-	
-					Vector.prototype.toList = function () {
-									var ret = Empty.EMPTY;
-									for (var i = this.length() - 1; i >= 0; i--) {
-													ret = Cons.makeInstance(this.elts[i], ret);
-									}
-									return ret;
-					};
-	
-					Vector.prototype.toWrittenString = function (cache) {
-									//    cache.put(this, true);
-									var texts = [];
-									for (var i = 0; i < this.length(); i++) {
-													texts.push(_toWrittenString(this.ref(i), cache));
-									}
-									return "#(" + texts.join(" ") + ")";
-					};
-	
-					Vector.prototype.toDisplayedString = function (cache) {
-									//    cache.put(this, true);
-									var texts = [];
-									for (var i = 0; i < this.length(); i++) {
-													texts.push(toDisplayedString(this.ref(i), cache));
-									}
-									return "#(" + texts.join(" ") + ")";
-					};
-	
-					Vector.prototype.toDomNode = function (cache) {
-									//    cache.put(this, true);
-									var node = document.createElement("span"),
-									    lVect = document.createElement("span"),
-									    rVect = document.createElement("span");
-									lVect.appendChild(document.createTextNode("#("));
-									lVect.className = "lParen";
-									rVect.appendChild(document.createTextNode(")"));
-									rVect.className = "rParen";
-									node.className = "wescheme-vector";
-									node.appendChild(lVect);
-									for (var i = 0; i < this.length(); i++) {
-													appendChild(node, _toDomNode(this.ref(i), cache));
-									}
-									node.appendChild(rVect);
-									return node;
-					};
-	
-					//////////////////////////////////////////////////////////////////////
-	
-					// Now using mutable strings
-					var Str = function Str(chars) {
-									this.chars = chars;
-									this.length = chars.length;
-									this.mutable = true;
-					};
-	
-					Str.makeInstance = function (chars) {
-									return new Str(chars);
-					};
-	
-					Str.fromString = function (s) {
-									return Str.makeInstance(s.split(""));
-					};
-	
-					Str.prototype.toString = function () {
-									return this.chars.join("");
-					};
-	
-					Str.prototype.toWrittenString = function (cache) {
-									return escapeString(this.toString());
-					};
-	
-					Str.prototype.toDisplayedString = Str.prototype.toString;
-	
-					Str.prototype.copy = function () {
-									return Str.makeInstance(this.chars.slice(0));
-					};
-	
-					Str.prototype.substring = function (start, end) {
-									if (end == null || end == undefined) {
-													end = this.length;
-									}
-	
-									return Str.makeInstance(this.chars.slice(start, end));
-					};
-	
-					Str.prototype.charAt = function (index) {
-									return this.chars[index];
-					};
-	
-					Str.prototype.charCodeAt = function (index) {
-									return this.chars[index].charCodeAt(0);
-					};
-	
-					Str.prototype.replace = function (expr, newStr) {
-									return Str.fromString(this.toString().replace(expr, newStr));
-					};
-	
-					Str.prototype.isEqual = function (other, aUnionFind) {
-									if (!(other instanceof Str || typeof other == 'string')) {
-													return false;
-									}
-									return this.toString() === other.toString();
-					};
-	
-					Str.prototype.set = function (i, c) {
-									this.chars[i] = c;
-					};
-	
-					Str.prototype.toUpperCase = function () {
-									return Str.fromString(this.chars.join("").toUpperCase());
-					};
-	
-					Str.prototype.toLowerCase = function () {
-									return Str.fromString(this.chars.join("").toLowerCase());
-					};
-	
-					Str.prototype.match = function (regexpr) {
-									return this.toString().match(regexpr);
-					};
-	
-					//var _quoteReplacingRegexp = new RegExp("[\"\\\\]", "g");
-					var escapeString = function escapeString(s) {
-									return '"' + replaceUnprintableStringChars(s) + '"';
-									//    return '"' + s.replace(_quoteReplacingRegexp,
-									//			      function(match, submatch, index) {
-									//				  return "\\" + match;
-									//			      }) + '"';
-					};
-	
-					var replaceUnprintableStringChars = function replaceUnprintableStringChars(s) {
-									var ret = [];
-									for (var i = 0; i < s.length; i++) {
-													var val = s.charCodeAt(i);
-													switch (val) {
-																	case 7:
-																					ret.push('\\a');break;
-																	case 8:
-																					ret.push('\\b');break;
-																	case 9:
-																					ret.push('\\t');break;
-																	case 10:
-																					ret.push('\\n');break;
-																	case 11:
-																					ret.push('\\v');break;
-																	case 12:
-																					ret.push('\\f');break;
-																	case 13:
-																					ret.push('\\r');break;
-																	case 34:
-																					ret.push('\\"');break;
-																	case 92:
-																					ret.push('\\\\');break;
-																	default:
-																					if (val >= 32 && val <= 126) {
-																									ret.push(s.charAt(i));
-																					} else {
-																									var numStr = val.toString(16).toUpperCase();
-																									while (numStr.length < 4) {
-																													numStr = '0' + numStr;
-																									}
-																									ret.push('\\u' + numStr);
-																					}
-																					break;
-													}
-									}
-									return ret.join('');
-					};
-	
-					/*
+	    //////////////////////////////////////////////////////////////////////
+	
+	    var appendChild = function appendChild(parent, child) {
+	        parent.appendChild(child);
+	    };
+	
+	    var hasOwnProperty = ({}).hasOwnProperty;
+	
+	    //////////////////////////////////////////////////////////////////////
+	
+	    var _eqHashCodeCounter = 0;
+	    var makeEqHashCode = function makeEqHashCode() {
+	        _eqHashCodeCounter++;
+	        return _eqHashCodeCounter;
+	    };
+	
+	    // getHashCode: any -> (or fixnum string)
+	    // Produces a hashcode appropriate for eq.
+	    var getEqHashCode = function getEqHashCode(x) {
+	        if (typeof x == 'string') {
+	            return x;
+	        }
+	        if (x && !x._eqHashCode) {
+	            console.log("hashing", x);
+	            x._eqHashCode = makeEqHashCode();
+	        }
+	        if (x && x._eqHashCode) {
+	            return x._eqHashCode;
+	        }
+	        return 0;
+	    };
+	
+	    // Union/find for circular equality testing.
+	
+	    var UnionFind = function UnionFind() {
+	        // this.parenMap holds the arrows from an arbitrary pointer
+	        // to its parent.
+	        this.parentMap = makeLowLevelEqHash();
+	    };
+	
+	    // find: ptr -> UnionFindNode
+	    // Returns the representative for this ptr.
+	    UnionFind.prototype.find = function (ptr) {
+	        var parent = this.parentMap.containsKey(ptr) ? this.parentMap.get(ptr) : ptr;
+	        if (parent === ptr) {
+	            return parent;
+	        } else {
+	            var rep = this.find(parent);
+	            // Path compression:
+	            this.parentMap.put(ptr, rep);
+	            return rep;
+	        }
+	    };
+	
+	    // merge: ptr ptr -> void
+	    // Merge the representative nodes for ptr1 and ptr2.
+	    UnionFind.prototype.merge = function (ptr1, ptr2) {
+	        this.parentMap.put(this.find(ptr1), this.find(ptr2));
+	    };
+	
+	    function makeLParen() {
+	        var node = document.createElement('span');
+	        node.appendChild(document.createTextNode("("));
+	        node.className = "lParen";
+	        return node;
+	    }
+	
+	    function makeRParen() {
+	        var node = document.createElement('span');
+	        node.appendChild(document.createTextNode(")"));
+	        node.className = "rParen";
+	        return node;
+	    }
+	
+	    //////////////////////////////////////////////////////////////////////
+	
+	    var StructType = function StructType(name, type, numberOfArgs, numberOfFields, firstField, constructor, predicate, accessor, mutator) {
+	        this.name = name;
+	        this.type = type;
+	        this.numberOfArgs = numberOfArgs;
+	        this.numberOfFields = numberOfFields;
+	        this.firstField = firstField;
+	
+	        this.constructor = constructor;
+	        this.predicate = predicate;
+	        this.accessor = accessor;
+	        this.mutator = mutator;
+	    };
+	
+	    StructType.prototype.toString = function () {
+	        return '#<struct-type:' + this.name + '>';
+	    };
+	
+	    StructType.prototype.isEqual = function (other, aUnionFind) {
+	        return this === other;
+	    };
+	
+	    var makeStructureType = function makeStructureType(theName, parentType, initFieldCnt, autoFieldCnt, autoV, guard) {
+	        // If no parent type given, then the parent type is Struct
+	        if (!parentType) {
+	            parentType = { type: Struct,
+	                numberOfArgs: 0,
+	                numberOfFields: 0,
+	                firstField: 0 };
+	        }
+	        var numParentArgs = parentType.numberOfArgs;
+	        // Create a new struct type inheriting from the parent
+	        var aStruct = function aStruct(name, initArgs) {
+	            this.init(name, initArgs);
+	        };
+	        Object.assign(aStruct.prototype, parentType.type.prototype);
+	        aStruct.prototype.init = function (name, initArgs) {
+	            // if there's no guard, construct a default one
+	
+	            if (!guard) {
+	                guard = function (k) {
+	                    if (arguments.length == 3) {
+	                        k(arguments[1]);
+	                    } else {
+	                        var args = [];
+	                        var i;
+	                        for (i = 1; i < arguments.length - 1; i++) {
+	                            args.push(arguments[i]);
+	                        }
+	                        k(new ValuesWrapper(args));
+	                    }
+	                };
+	            }
+	
+	            var that = this;
+	            var cont = function cont(guardRes) {
+	                var guardedArgs;
+	                if (guardRes instanceof ValuesWrapper) {
+	                    guardedArgs = guardRes.elts;
+	                } else {
+	                    guardedArgs = [guardRes];
+	                }
+	
+	                var parentArgs = guardedArgs.slice(0, numParentArgs);
+	                parentType.type.init.bind(that)(name, parentArgs);
+	
+	                for (var i = 0; i < initFieldCnt; i++) {
+	                    that._fields.push(guardedArgs[i + numParentArgs]);
+	                }
+	                for (var i = 0; i < autoFieldCnt; i++) {
+	                    that._fields.push(autoV);
+	                }
+	            };
+	            initArgs.unshift(cont);
+	            initArgs.push(Symbol.makeInstance(name));
+	            guard.apply(null, initArgs);
+	        };
+	
+	        // Set type, necessary for equality checking
+	        aStruct.prototype.type = aStruct;
+	
+	        // construct and return the new type
+	        return new StructType(theName, aStruct, initFieldCnt + numParentArgs, initFieldCnt + autoFieldCnt, parentType.firstField + parentType.numberOfFields, function () {
+	            var args = [];
+	            for (var i = 0; i < arguments.length; i++) {
+	                args.push(arguments[i]);
+	            }
+	            return new aStruct(theName, args);
+	        }, function (x) {
+	            return x instanceof aStruct;
+	        }, function (x, i) {
+	            return x._fields[i + this.firstField];
+	        }, function (x, i, v) {
+	            x._fields[i + this.firstField] = v;
+	        });
+	    };
+	
+	    // Structures.
+	    var Struct = function Struct(constructorName, fields) {
+	        this.init(constructorName, fields);
+	    };
+	    Object.assign(Struct.prototype, {
+	        init: function init(constructorName, fields) {
+	            this._constructorName = constructorName;
+	            this._fields = [];
+	        },
+	        toWrittenString: function toWrittenString(cache) {
+	            //    cache.put(this, true);
+	            var buffer = [];
+	            var i;
+	            buffer.push("(");
+	            buffer.push(this._constructorName);
+	            for (i = 0; i < this._fields.length; i++) {
+	                buffer.push(" ");
+	                buffer.push(_toWrittenString(this._fields[i], cache));
+	            }
+	            buffer.push(")");
+	            return buffer.join("");
+	        },
+	        toDisplayedString: function toDisplayedString(cache) {
+	            return this.toWrittenString(cache);
+	        },
+	        toDomNode: function toDomNode(cache) {
+	            //    cache.put(this, true);
+	            var node = document.createElement("div"),
+	                constructor = document.createElement("span");
+	            constructor.appendChild(document.createTextNode(this._constructorName));
+	            var i;
+	            node.appendChild(makeLParen());
+	            node.appendChild(constructor);
+	            for (i = 0; i < this._fields.length; i++) {
+	                appendChild(node, _toDomNode(this._fields[i], cache));
+	            }
+	            node.appendChild(makeRParen());
+	            return node;
+	        },
+	        isEqual: function isEqual(other, aUnionFind) {
+	            if (other.type == undefined || this.type !== other.type || !(other instanceof this.type)) {
+	                return false;
+	            }
+	
+	            for (var i = 0; i < this._fields.length; i++) {
+	                if (!_isEqual(this._fields[i], other._fields[i], aUnionFind)) {
+	                    return false;
+	                }
+	            }
+	            return true;
+	        }
+	    });
+	    Struct.prototype.type = Struct;
+	
+	    //////////////////////////////////////////////////////////////////////
+	
+	    // Regular expressions.
+	
+	    var RegularExpression = function RegularExpression(pattern) {
+	        this.pattern = pattern;
+	    };
+	
+	    var ByteRegularExpression = function ByteRegularExpression(pattern) {
+	        this.pattern = pattern;
+	    };
+	
+	    //////////////////////////////////////////////////////////////////////
+	
+	    // Paths
+	
+	    var Path = function Path(p) {
+	        this.path = p;
+	    };
+	
+	    //////////////////////////////////////////////////////////////////////
+	
+	    // Bytes
+	
+	    var Bytes = function Bytes(bts, mutable) {
+	        this.bytes = bts;
+	        this.mutable = mutable === undefined ? false : mutable;
+	    };
+	
+	    Bytes.prototype.get = function (i) {
+	        return this.bytes[i];
+	    };
+	
+	    Bytes.prototype.set = function (i, b) {
+	        if (this.mutable) {
+	            this.bytes[i] = b;
+	        }
+	    };
+	
+	    Bytes.prototype.length = function () {
+	        return this.bytes.length;
+	    };
+	
+	    Bytes.prototype.copy = function (mutable) {
+	        return new Bytes(this.bytes.slice(0), mutable);
+	    };
+	
+	    Bytes.prototype.subbytes = function (start, end) {
+	        if (end == null || end == undefined) {
+	            end = this.bytes.length;
+	        }
+	
+	        return new Bytes(this.bytes.slice(start, end), true);
+	    };
+	
+	    Bytes.prototype.toString = function () {
+	        var ret = '';
+	        for (var i = 0; i < this.bytes.length; i++) {
+	            ret += String.fromCharCode(this.bytes[i]);
+	        }
+	
+	        return ret;
+	    };
+	
+	    Bytes.prototype.toDisplayedString = Bytes.prototype.toString;
+	
+	    Bytes.prototype.toWrittenString = function () {
+	        var ret = ['#"'];
+	        for (var i = 0; i < this.bytes.length; i++) {
+	            ret.push(escapeByte(this.bytes[i]));
+	        }
+	        ret.push('"');
+	        return ret.join('');
+	    };
+	
+	    var escapeByte = function escapeByte(aByte) {
+	        var ret = [];
+	        var returnVal;
+	        switch (aByte) {
+	            case 7:
+	                returnVal = '\\a';break;
+	            case 8:
+	                returnVal = '\\b';break;
+	            case 9:
+	                returnVal = '\\t';break;
+	            case 10:
+	                returnVal = '\\n';break;
+	            case 11:
+	                returnVal = '\\v';break;
+	            case 12:
+	                returnVal = '\\f';break;
+	            case 13:
+	                returnVal = '\\r';break;
+	            case 34:
+	                returnVal = '\\"';break;
+	            case 92:
+	                returnVal = '\\\\';break;
+	            default:
+	                if (val >= 32 && val <= 126) {
+	                    returnVal = String.fromCharCode(val);
+	                } else {
+	                    ret.push('\\' + val.toString(8));
+	                }
+	                break;
+	        }
+	        return returnVal;
+	    };
+	
+	    //////////////////////////////////////////////////////////////////////
+	    // Boxes
+	
+	    var Box = function Box(x, mutable) {
+	        this.val = x;
+	        this.mutable = mutable;
+	    };
+	
+	    Box.prototype.unbox = function () {
+	        return this.val;
+	    };
+	
+	    Box.prototype.set = function (newVal) {
+	        if (this.mutable) {
+	            this.val = newVal;
+	        }
+	    };
+	
+	    Box.prototype.toString = function () {
+	        return "#&" + this.val.toString();
+	    };
+	
+	    Box.prototype.toWrittenString = function (cache) {
+	        return "#&" + _toWrittenString(this.val, cache);
+	    };
+	
+	    Box.prototype.toDisplayedString = function (cache) {
+	        return "#&" + toDisplayedString(this.val, cache);
+	    };
+	
+	    Box.prototype.toDomNode = function (cache) {
+	        var parent = document.createElement("span"),
+	            boxSymbol = document.createElement("span");
+	        boxSymbol.appendChild(document.createTextNode("#&"));
+	        parent.className = "wescheme-box";
+	        parent.appendChild(boxSymbol);
+	        parent.appendChild(_toDomNode(this.val, cache));
+	        return parent;
+	    };
+	
+	    //////////////////////////////////////////////////////////////////////
+	
+	    // We are reusing the built-in Javascript boolean class here.
+	    var Logic = {
+	        TRUE: true,
+	        FALSE: false
+	    };
+	
+	    // WARNING
+	    // WARNING: we are extending the built-in Javascript boolean class here!
+	    // WARNING
+	    Boolean.prototype.toWrittenString = function (cache) {
+	        if (this.valueOf()) {
+	            return "true";
+	        }
+	        return "false";
+	    };
+	    Boolean.prototype.toDisplayedString = Boolean.prototype.toWrittenString;
+	
+	    Boolean.prototype.toString = function () {
+	        return this.valueOf() ? "true" : "false";
+	    };
+	
+	    Boolean.prototype.isEqual = function (other, aUnionFind) {
+	        return this == other;
+	    };
+	
+	    // Chars
+	    // Char: string -> Char
+	    var Char = function Char(val) {
+	        this.val = val;
+	    };
+	
+	    Char.makeInstance = function (val) {
+	        return new Char(val);
+	    };
+	
+	    Char.prototype.toString = function () {
+	        var code = this.val.charCodeAt(0);
+	        var returnVal;
+	        switch (code) {
+	            case 0:
+	                returnVal = '#\\nul';break;
+	            case 8:
+	                returnVal = '#\\backspace';break;
+	            case 9:
+	                returnVal = '#\\tab';break;
+	            case 10:
+	                returnVal = '#\\newline';break;
+	            case 11:
+	                returnVal = '#\\vtab';break;
+	            case 12:
+	                returnVal = '#\\page';break;
+	            case 13:
+	                returnVal = '#\\return';break;
+	            case 20:
+	                returnVal = '#\\space';break;
+	            case 127:
+	                returnVal = '#\\rubout';break;
+	            default:
+	                if (code >= 32 && code <= 126) {
+	                    returnVal = "#\\" + this.val;
+	                } else {
+	                    var numStr = code.toString(16).toUpperCase();
+	                    while (numStr.length < 4) {
+	                        numStr = '0' + numStr;
+	                    }
+	                    returnVal = '#\\u' + numStr;
+	                }
+	                break;
+	        }
+	        return returnVal;
+	    };
+	
+	    Char.prototype.toWrittenString = Char.prototype.toString;
+	
+	    Char.prototype.toDisplayedString = function (cache) {
+	        return this.val;
+	    };
+	
+	    Char.prototype.getValue = function () {
+	        return this.val;
+	    };
+	
+	    Char.prototype.isEqual = function (other, aUnionFind) {
+	        return other instanceof Char && this.val == other.val;
+	    };
+	
+	    //////////////////////////////////////////////////////////////////////
+	
+	    // Symbols
+	
+	    //////////////////////////////////////////////////////////////////////
+	    var Symbol = function Symbol(val) {
+	        this.val = val;
+	    };
+	
+	    var symbolCache = {};
+	
+	    // makeInstance: string -> Symbol.
+	    Symbol.makeInstance = function (val) {
+	        // To ensure that we can eq? symbols with equal values.
+	        if (!hasOwnProperty.call(symbolCache, val)) {
+	            symbolCache[val] = new Symbol(val);
+	        }
+	        return symbolCache[val];
+	    };
+	
+	    Symbol.prototype.isEqual = function (other, aUnionFind) {
+	        return other instanceof Symbol && this.val == other.val;
+	    };
+	
+	    Symbol.prototype.toString = function () {
+	        return this.val;
+	    };
+	
+	    Symbol.prototype.toWrittenString = function (cache) {
+	        return this.val;
+	    };
+	
+	    Symbol.prototype.toDisplayedString = function (cache) {
+	        return this.val;
+	    };
+	
+	    Symbol.prototype.toDomNode = function (cache) {
+	        var wrapper = document.createElement("span");
+	        wrapper.className = "wescheme-symbol";
+	        wrapper.style.fontFamily = 'monospace';
+	        wrapper.style.whiteSpace = "pre";
+	        wrapper.appendChild(document.createTextNode("'" + this.val));
+	        return wrapper;
+	    };
+	
+	    //////////////////////////////////////////////////////////////////////
+	
+	    // Keywords
+	
+	    var Keyword = function Keyword(val) {
+	        this.val = val;
+	    };
+	
+	    var keywordCache = {};
+	
+	    // makeInstance: string -> Keyword.
+	    Keyword.makeInstance = function (val) {
+	        // To ensure that we can eq? symbols with equal values.
+	        if (!hasOwnProperty.call(keywordCache, val)) {
+	            keywordCache[val] = new Keyword(val);
+	        }
+	        return keywordCache[val];
+	    };
+	
+	    Keyword.prototype.isEqual = function (other, aUnionFind) {
+	        return other instanceof Keyword && this.val == other.val;
+	    };
+	
+	    Keyword.prototype.toString = function () {
+	        return this.val;
+	    };
+	
+	    Keyword.prototype.toWrittenString = function (cache) {
+	        return this.val;
+	    };
+	
+	    Keyword.prototype.toDisplayedString = function (cache) {
+	        return this.val;
+	    };
+	
+	    //////////////////////////////////////////////////////////////////////
+	
+	    var Empty = function Empty() {};
+	    Empty.EMPTY = new Empty();
+	
+	    Empty.prototype.isEqual = function (other, aUnionFind) {
+	        return other instanceof Empty;
+	    };
+	
+	    Empty.prototype.reverse = function () {
+	        return this;
+	    };
+	
+	    Empty.prototype.first = function () {
+	        throw new Error("first can't be applied on empty.");
+	    };
+	    Empty.prototype.rest = function () {
+	        throw new Error("rest can't be applied on empty.");
+	    };
+	    Empty.prototype.isEmpty = function () {
+	        return true;
+	    };
+	    Empty.prototype.toWrittenString = function (cache) {
+	        return "empty";
+	    };
+	    Empty.prototype.toDisplayedString = function (cache) {
+	        return "empty";
+	    };
+	    Empty.prototype.toString = function (cache) {
+	        return "()";
+	    };
+	
+	    // Empty.append: (listof X) -> (listof X)
+	    Empty.prototype.append = function (b) {
+	        return b;
+	    };
+	
+	    var Cons = function Cons(f, r) {
+	        this.f = f;
+	        this.r = r;
+	    };
+	
+	    Cons.prototype.reverse = function () {
+	        var lst = this;
+	        var ret = Empty.EMPTY;
+	        while (!lst.isEmpty()) {
+	            ret = Cons.makeInstance(lst.first(), ret);
+	            lst = lst.rest();
+	        }
+	        return ret;
+	    };
+	
+	    Cons.makeInstance = function (f, r) {
+	        return new Cons(f, r);
+	    };
+	
+	    // FIXME: can we reduce the recursion on this?
+	    Cons.prototype.isEqual = function (other, aUnionFind) {
+	        if (!(other instanceof Cons)) {
+	            return Logic.FALSE;
+	        }
+	        return _isEqual(this.first(), other.first(), aUnionFind) && _isEqual(this.rest(), other.rest(), aUnionFind);
+	    };
+	
+	    Cons.prototype.first = function () {
+	        return this.f;
+	    };
+	
+	    Cons.prototype.rest = function () {
+	        return this.r;
+	    };
+	
+	    Cons.prototype.isEmpty = function () {
+	        return false;
+	    };
+	
+	    // Cons.append: (listof X) -> (listof X)
+	    Cons.prototype.append = function (b) {
+	        if (b === Empty.EMPTY) return this;
+	        var ret = b;
+	        var lst = this.reverse();
+	        while (!lst.isEmpty()) {
+	            ret = Cons.makeInstance(lst.first(), ret);
+	            lst = lst.rest();
+	        }
+	
+	        return ret;
+	    };
+	
+	    Cons.prototype.toWrittenString = function (cache) {
+	        //    cache.put(this, true);
+	        var texts = ["list"];
+	        var p = this;
+	        while (p instanceof Cons) {
+	            texts.push(_toWrittenString(p.first(), cache));
+	            p = p.rest();
+	        }
+	        if (p !== Empty.EMPTY) {
+	            // If not a list, we've got to switch over to cons pair
+	            // representation.
+	            return explicitConsString(this, cache, _toWrittenString);
+	        }
+	        return "(" + texts.join(" ") + ")";
+	    };
+	
+	    var explicitConsString = function explicitConsString(p, cache, f) {
+	        var texts = [];
+	        var tails = [];
+	        while (p instanceof Cons) {
+	            texts.push("(cons ");
+	            texts.push(f(p.first(), cache));
+	            texts.push(" ");
+	
+	            tails.push(")");
+	            p = p.rest();
+	        }
+	        texts.push(f(p, cache));
+	        return texts.join("") + tails.join("");
+	    };
+	
+	    Cons.prototype.toString = Cons.prototype.toWrittenString;
+	
+	    Cons.prototype.toDisplayedString = function (cache) {
+	        //    cache.put(this, true);
+	        var texts = ["list"];
+	        var p = this;
+	        while (p instanceof Cons) {
+	            texts.push(toDisplayedString(p.first(), cache));
+	            p = p.rest();
+	        }
+	        if (p !== Empty.EMPTY) {
+	            return explicitConsString(this, cache, toDisplayedString);
+	        }
+	        //    while (true) {
+	        //	if ((!(p instanceof Cons)) && (!(p instanceof Empty))) {
+	        //	    texts.push(".");
+	        //	    texts.push(toDisplayedString(p, cache));
+	        //	    break;
+	        //	}
+	        //	if (p.isEmpty())
+	        //	    break;
+	        //	texts.push(toDisplayedString(p.first(), cache));
+	        //	p = p.rest();
+	        //    }
+	        return "(" + texts.join(" ") + ")";
+	    };
+	
+	    Cons.prototype.toDomNode = function (cache) {
+	        //    cache.put(this, true);
+	        var node = document.createElement("span"),
+	            abbr = document.createElement("span");
+	        node.className = "wescheme-cons";
+	        abbr.appendChild(document.createTextNode("list"));
+	
+	        node.appendChild(makeLParen());
+	        node.appendChild(abbr);
+	        var p = this;
+	        while (p instanceof Cons) {
+	            appendChild(node, _toDomNode(p.first(), cache));
+	            p = p.rest();
+	        }
+	        if (p !== Empty.EMPTY) {
+	            return explicitConsDomNode(this, cache);
+	        }
+	        node.appendChild(makeRParen());
+	        return node;
+	    };
+	
+	    var explicitConsDomNode = function explicitConsDomNode(p, cache) {
+	        var topNode = document.createElement("span");
+	        var node = topNode,
+	            constructor = document.createElement("span");
+	        constructor.appendChild(document.createTextNode("cons"));
+	
+	        node.className = "wescheme-cons";
+	        while (p instanceof Cons) {
+	            node.appendChild(makeLParen());
+	            node.appendChild(constructor);
+	            appendChild(node, _toDomNode(p.first(), cache));
+	
+	            var restSpan = document.createElement("span");
+	            node.appendChild(restSpan);
+	            node.appendChild(makeRParen());
+	            node = restSpan;
+	            p = p.rest();
+	        }
+	        appendChild(node, _toDomNode(p, cache));
+	        return topNode;
+	    };
+	
+	    //////////////////////////////////////////////////////////////////////
+	
+	    var Vector = function Vector(n, initialElements) {
+	        this.elts = new Array(n);
+	        if (initialElements) {
+	            for (var i = 0; i < n; i++) {
+	                this.elts[i] = initialElements[i];
+	            }
+	        } else {
+	            for (var i = 0; i < n; i++) {
+	                this.elts[i] = undefined;
+	            }
+	        }
+	        this.mutable = true;
+	    };
+	    Vector.makeInstance = function (n, elts) {
+	        return new Vector(n, elts);
+	    };
+	    Vector.prototype.length = function () {
+	        return this.elts.length;
+	    };
+	    Vector.prototype.ref = function (k) {
+	        return this.elts[k];
+	    };
+	    Vector.prototype.set = function (k, v) {
+	        this.elts[k] = v;
+	    };
+	
+	    Vector.prototype.isEqual = function (other, aUnionFind) {
+	        if (other != null && other != undefined && other instanceof Vector) {
+	            if (other.length() != this.length()) {
+	                return false;
+	            }
+	            for (var i = 0; i < this.length(); i++) {
+	                if (!_isEqual(this.elts[i], other.elts[i], aUnionFind)) {
+	                    return false;
+	                }
+	            }
+	            return true;
+	        } else {
+	            return false;
+	        }
+	    };
+	
+	    Vector.prototype.toList = function () {
+	        var ret = Empty.EMPTY;
+	        for (var i = this.length() - 1; i >= 0; i--) {
+	            ret = Cons.makeInstance(this.elts[i], ret);
+	        }
+	        return ret;
+	    };
+	
+	    Vector.prototype.toWrittenString = function (cache) {
+	        //    cache.put(this, true);
+	        var texts = [];
+	        for (var i = 0; i < this.length(); i++) {
+	            texts.push(_toWrittenString(this.ref(i), cache));
+	        }
+	        return "#(" + texts.join(" ") + ")";
+	    };
+	
+	    Vector.prototype.toDisplayedString = function (cache) {
+	        //    cache.put(this, true);
+	        var texts = [];
+	        for (var i = 0; i < this.length(); i++) {
+	            texts.push(toDisplayedString(this.ref(i), cache));
+	        }
+	        return "#(" + texts.join(" ") + ")";
+	    };
+	
+	    Vector.prototype.toDomNode = function (cache) {
+	        //    cache.put(this, true);
+	        var node = document.createElement("span"),
+	            lVect = document.createElement("span"),
+	            rVect = document.createElement("span");
+	        lVect.appendChild(document.createTextNode("#("));
+	        lVect.className = "lParen";
+	        rVect.appendChild(document.createTextNode(")"));
+	        rVect.className = "rParen";
+	        node.className = "wescheme-vector";
+	        node.appendChild(lVect);
+	        for (var i = 0; i < this.length(); i++) {
+	            appendChild(node, _toDomNode(this.ref(i), cache));
+	        }
+	        node.appendChild(rVect);
+	        return node;
+	    };
+	
+	    //////////////////////////////////////////////////////////////////////
+	
+	    // Now using mutable strings
+	    var Str = function Str(chars) {
+	        this.chars = chars;
+	        this.length = chars.length;
+	        this.mutable = true;
+	    };
+	
+	    Str.makeInstance = function (chars) {
+	        return new Str(chars);
+	    };
+	
+	    Str.fromString = function (s) {
+	        return Str.makeInstance(s.split(""));
+	    };
+	
+	    Str.prototype.toString = function () {
+	        return this.chars.join("");
+	    };
+	
+	    Str.prototype.toWrittenString = function (cache) {
+	        return escapeString(this.toString());
+	    };
+	
+	    Str.prototype.toDisplayedString = Str.prototype.toString;
+	
+	    Str.prototype.copy = function () {
+	        return Str.makeInstance(this.chars.slice(0));
+	    };
+	
+	    Str.prototype.substring = function (start, end) {
+	        if (end == null || end == undefined) {
+	            end = this.length;
+	        }
+	
+	        return Str.makeInstance(this.chars.slice(start, end));
+	    };
+	
+	    Str.prototype.charAt = function (index) {
+	        return this.chars[index];
+	    };
+	
+	    Str.prototype.charCodeAt = function (index) {
+	        return this.chars[index].charCodeAt(0);
+	    };
+	
+	    Str.prototype.replace = function (expr, newStr) {
+	        return Str.fromString(this.toString().replace(expr, newStr));
+	    };
+	
+	    Str.prototype.isEqual = function (other, aUnionFind) {
+	        if (!(other instanceof Str || typeof other == 'string')) {
+	            return false;
+	        }
+	        return this.toString() === other.toString();
+	    };
+	
+	    Str.prototype.set = function (i, c) {
+	        this.chars[i] = c;
+	    };
+	
+	    Str.prototype.toUpperCase = function () {
+	        return Str.fromString(this.chars.join("").toUpperCase());
+	    };
+	
+	    Str.prototype.toLowerCase = function () {
+	        return Str.fromString(this.chars.join("").toLowerCase());
+	    };
+	
+	    Str.prototype.match = function (regexpr) {
+	        return this.toString().match(regexpr);
+	    };
+	
+	    //var _quoteReplacingRegexp = new RegExp("[\"\\\\]", "g");
+	    var escapeString = function escapeString(s) {
+	        return '"' + replaceUnprintableStringChars(s) + '"';
+	        //    return '"' + s.replace(_quoteReplacingRegexp,
+	        //			      function(match, submatch, index) {
+	        //				  return "\\" + match;
+	        //			      }) + '"';
+	    };
+	
+	    var replaceUnprintableStringChars = function replaceUnprintableStringChars(s) {
+	        var ret = [];
+	        for (var i = 0; i < s.length; i++) {
+	            var val = s.charCodeAt(i);
+	            switch (val) {
+	                case 7:
+	                    ret.push('\\a');break;
+	                case 8:
+	                    ret.push('\\b');break;
+	                case 9:
+	                    ret.push('\\t');break;
+	                case 10:
+	                    ret.push('\\n');break;
+	                case 11:
+	                    ret.push('\\v');break;
+	                case 12:
+	                    ret.push('\\f');break;
+	                case 13:
+	                    ret.push('\\r');break;
+	                case 34:
+	                    ret.push('\\"');break;
+	                case 92:
+	                    ret.push('\\\\');break;
+	                default:
+	                    if (val >= 32 && val <= 126) {
+	                        ret.push(s.charAt(i));
+	                    } else {
+	                        var numStr = val.toString(16).toUpperCase();
+	                        while (numStr.length < 4) {
+	                            numStr = '0' + numStr;
+	                        }
+	                        ret.push('\\u' + numStr);
+	                    }
+	                    break;
+	            }
+	        }
+	        return ret.join('');
+	    };
+	
+	    /*
 	    // Strings
 	    // For the moment, we just reuse Javascript strings.
 	    String = String;
@@ -23861,682 +23921,682 @@
 	    };
 	    */
 	
-					//////////////////////////////////////////////////////////////////////
-	
-					// makeLowLevelEqHash: -> hashtable
-					// Constructs an eq hashtable that uses Moby's getEqHashCode function.
-					var makeLowLevelEqHash = function makeLowLevelEqHash() {
-									return new _Hashtable(function (x) {
-													return getEqHashCode(x);
-									}, function (x, y) {
-													return x === y;
-									});
-					};
-	
-					//////////////////////////////////////////////////////////////////////
-					// Hashtables
-					var EqHashTable = function EqHashTable(inputHash) {
-									this.hash = makeLowLevelEqHash();
-									this.mutable = true;
-					};
-					EqHashTable = EqHashTable;
-	
-					EqHashTable.prototype.toWrittenString = function (cache) {
-									var keys = this.hash.keys();
-									var ret = [];
-									for (var i = 0; i < keys.length; i++) {
-													var keyStr = types.toWrittenString(keys[i], cache);
-													var valStr = types.toWrittenString(this.hash.get(keys[i]), cache);
-													ret.push('(' + keyStr + ' . ' + valStr + ')');
-									}
-									return '#hasheq(' + ret.join(' ') + ')';
-					};
-	
-					EqHashTable.prototype.toDisplayedString = function (cache) {
-									var keys = this.hash.keys();
-									var ret = [];
-									for (var i = 0; i < keys.length; i++) {
-													var keyStr = types.toDisplayedString(keys[i], cache);
-													var valStr = types.toDisplayedString(this.hash.get(keys[i]), cache);
-													ret.push('(' + keyStr + ' . ' + valStr + ')');
-									}
-									return '#hasheq(' + ret.join(' ') + ')';
-					};
-	
-					EqHashTable.prototype.isEqual = function (other, aUnionFind) {
-									if (!(other instanceof EqHashTable)) {
-													return false;
-									}
-	
-									if (this.hash.keys().length != other.hash.keys().length) {
-													return false;
-									}
-	
-									var keys = this.hash.keys();
-									for (var i = 0; i < keys.length; i++) {
-													if (!(other.hash.containsKey(keys[i]) && _isEqual(this.hash.get(keys[i]), other.hash.get(keys[i]), aUnionFind))) {
-																	return false;
-													}
-									}
-									return true;
-					};
-	
-					var EqualHashTable = function EqualHashTable(inputHash) {
-									this.hash = new _Hashtable(function (x) {
-													return _toWrittenString(x);
-									}, function (x, y) {
-													return _isEqual(x, y, new UnionFind());
-									});
-									this.mutable = true;
-					};
-	
-					EqualHashTable = EqualHashTable;
-	
-					EqualHashTable.prototype.toWrittenString = function (cache) {
-									var keys = this.hash.keys();
-									var ret = [];
-									for (var i = 0; i < keys.length; i++) {
-													var keyStr = types.toWrittenString(keys[i], cache);
-													var valStr = types.toWrittenString(this.hash.get(keys[i]), cache);
-													ret.push('(' + keyStr + ' . ' + valStr + ')');
-									}
-									return '#hash(' + ret.join(' ') + ')';
-					};
-					EqualHashTable.prototype.toDisplayedString = function (cache) {
-									var keys = this.hash.keys();
-									var ret = [];
-									for (var i = 0; i < keys.length; i++) {
-													var keyStr = types.toDisplayedString(keys[i], cache);
-													var valStr = types.toDisplayedString(this.hash.get(keys[i]), cache);
-													ret.push('(' + keyStr + ' . ' + valStr + ')');
-									}
-									return '#hash(' + ret.join(' ') + ')';
-					};
-	
-					EqualHashTable.prototype.isEqual = function (other, aUnionFind) {
-									if (!(other instanceof EqualHashTable)) {
-													return false;
-									}
-	
-									if (this.hash.keys().length != other.hash.keys().length) {
-													return false;
-									}
-	
-									var keys = this.hash.keys();
-									for (var i = 0; i < keys.length; i++) {
-													if (!(other.hash.containsKey(keys[i]) && _isEqual(this.hash.get(keys[i]), other.hash.get(keys[i]), aUnionFind))) {
-																	return false;
-													}
-									}
-									return true;
-					};
-	
-					//////////////////////////////////////////////////////////////////////
-	
-					var JsObject = function JsObject(name, obj) {
-									this.name = name;
-									this.obj = obj;
-					};
-	
-					JsObject.prototype.toString = function () {
-									return '#<js-object:' + _typeof(this.obj) + ':' + this.name + '>';
-					};
-	
-					JsObject.prototype.isEqual = function (other, aUnionFind) {
-									return this.obj === other.obj;
-					};
-	
-					//////////////////////////////////////////////////////////////////////
-	
-					var WorldConfig = function WorldConfig(startup, shutdown, args) {
-									this.startup = startup;
-									this.shutdown = shutdown;
-									this.startupArgs = args;
-									this.shutdownArg = undefined;
-					};
-	
-					WorldConfig.prototype.toString = function () {
-									return '#<world-config>';
-					};
-	
-					WorldConfig.prototype.isEqual = function (other, aUnionFind) {
-									if (!_isEqual(this.startup, other.startup, aUnionFind) || !_isEqual(this.shutdown, other.shutdown, aUnionFind) || this.startupArgs.length != other.startupArgs.length || !_isEqual(this.shutdownArg, other.shutdownArg, aUnionFind)) {
-													return false;
-									}
-	
-									for (var i = 0; i < args.length; i++) {
-													if (!_isEqual(this.startupArgs[i], other.startupArgs[i], aUnionFind)) return false;
-									}
-									return true;
-					};
-	
-					var Effect = makeStructureType('effect', false, 0, 0, false, false);
-					Effect.type.prototype.invokeEffect = function (k) {
-									helpers.raise(types.incompleteExn(types.exnFail, 'effect type created without using make-effect-type', []));
-					};
-					//Effect.handlerIndices = [];
-	
-					//var wrapHandler = function(handler, caller, changeWorld) {
-					//	return types.jsObject('function', function() {
-					//		var externalArgs = arguments;
-					//		changeWorld(function(w, k) {
-					//			var args = helpers.map(helpers.wrapJsObject, externalArgs);
-					//			args.unshift(w);
-					//			caller(handler, args, k);
-					//		});
-					//	});
-					//};
-	
-					var makeEffectType = function makeEffectType(name, superType, initFieldCnt, impl, guard, caller) {
-									if (!superType) {
-													superType = Effect;
-									}
-	
-									var newType = makeStructureType(name, superType, initFieldCnt, 0, false, guard);
-									var lastFieldIndex = newType.firstField + newType.numberOfFields;
-	
-									newType.type.prototype.invokeEffect = function (changeWorld, k) {
-													var schemeChangeWorld = new PrimProc('update-world', 1, false, true, function (aState, worldUpdater) {
-																	helpers.check(aState, worldUpdater, helpers.procArityContains(1), 'update-world', 'procedure (arity 1)', 1);
-	
-																	changeWorld(function (w, k2) {
-																					interpret.call(aState, worldUpdater, [w], k2, function (e) {
-																									throw e;
-																					});
-																	}, function () {
-																					aState.v = VOID_VALUE;
-																	});
-													});
-	
-													var args = this._fields.slice(0, lastFieldIndex);
-													args.unshift(schemeChangeWorld);
-													caller(impl, args, k);
-									};
-	
-									return newType;
-					};
-	
-					var RenderEffect = makeStructureType('render-effect', false, 0, 0, false, false);
-					RenderEffect.type.prototype.callImplementation = function (caller, k) {
-									helpers.raise(types.incompleteExn(types.exnFail, 'render effect created without using make-render-effect-type', []));
-					};
-	
-					var makeRenderEffectType = function makeRenderEffectType(name, superType, initFieldCnt, impl, guard) {
-									if (!superType) {
-													superType = RenderEffect;
-									}
-	
-									var newType = makeStructureType(name, superType, initFieldCnt, 0, false, guard);
-									var lastFieldIndex = newType.firstField + newType.numberOfFields;
-	
-									newType.type.prototype.callImplementation = function (caller, k) {
-													var args = this._fields.slice(0, lastFieldIndex);
-													caller(impl, args, k);
-									};
-	
-									return newType;
-					};
-	
-					//////////////////////////////////////////////////////////////////////
-	
-					//////////////////////////////////////////////////////////////////////
-	
-					var _toWrittenString = function _toWrittenString(x, cache) {
-									if (!cache) {
-													cache = makeLowLevelEqHash();
-									}
-	
-									if ((typeof x === 'undefined' ? 'undefined' : _typeof(x)) == 'object') {
-													if (cache.containsKey(x)) {
-																	return "...";
-													} else {
-																	cache.put(x, true);
-													}
-									}
-	
-									if (x == undefined || x == null) {
-													return "#<undefined>";
-									}
-									if (typeof x == 'string') {
-													return escapeString(x.toString());
-									}
-									if ((typeof x === 'undefined' ? 'undefined' : _typeof(x)) != 'object' && typeof x != 'function') {
-													return x.toString();
-									}
-	
-									var returnVal;
-									if (typeof x.toWrittenString !== 'undefined') {
-													returnVal = x.toWrittenString(cache);
-									} else if (typeof x.toDisplayedString !== 'undefined') {
-													returnVal = x.toDisplayedString(cache);
-									} else {
-													returnVal = x.toString();
-									}
-									cache.remove(x);
-									return returnVal;
-					};
-	
-					var toDisplayedString = function toDisplayedString(x, cache) {
-									if (!cache) {
-													cache = makeLowLevelEqHash();
-									}
-									if ((typeof x === 'undefined' ? 'undefined' : _typeof(x)) == 'object') {
-													if (cache.containsKey(x)) {
-																	return "...";
-													}
-													cache.put(x, true);
-									}
-	
-									if (x == undefined || x == null) {
-													return "#<undefined>";
-									}
-									if (typeof x == 'string') {
-													return x;
-									}
-									if ((typeof x === 'undefined' ? 'undefined' : _typeof(x)) != 'object' && typeof x != 'function') {
-													return x.toString();
-									}
-	
-									var returnVal;
-									if (typeof x.toDisplayedString !== 'undefined') {
-													returnVal = x.toDisplayedString(cache);
-									} else if (typeof x.toWrittenString !== 'undefined') {
-													returnVal = x.toWrittenString(cache);
-									} else {
-													returnVal = x.toString();
-									}
-									cache.remove(x);
-									return returnVal;
-					};
-	
-					// toDomNode: scheme-value -> dom-node
-					var _toDomNode = function _toDomNode(x, cache) {
-									if (!cache) {
-													cache = makeLowLevelEqHash();
-									}
-	
-									if (isNumber(x)) {
-													return numberToDomNode(x);
-									}
-	
-									if ((typeof x === 'undefined' ? 'undefined' : _typeof(x)) == 'object') {
-													if (cache.containsKey(x)) {
-																	var node = document.createElement("span");
-																	node.style['font-family'] = 'monospace';
-																	node.appendChild(document.createTextNode("..."));
-																	return node;
-													}
-													cache.put(x, true);
-									}
-	
-									if (x == undefined || x == null) {
-													var node = document.createElement("span");
-													node.style['font-family'] = 'monospace';
-													node.appendChild(document.createTextNode("#<undefined>"));
-													return node;
-									}
-									if (typeof x == 'string') {
-													return textToDomNode(_toWrittenString(x));
-									}
-									if ((typeof x === 'undefined' ? 'undefined' : _typeof(x)) != 'object' && typeof x != 'function') {
-													return textToDomNode(x.toString());
-									}
-	
-									var returnVal;
-									if (x.nodeType) {
-													returnVal = x;
-									} else if (typeof x.toDomNode !== 'undefined') {
-													returnVal = x.toDomNode(cache);
-									} else if (typeof x.toWrittenString !== 'undefined') {
-													returnVal = textToDomNode(x.toWrittenString(cache));
-									} else if (typeof x.toDisplayedString !== 'undefined') {
-													returnVal = textToDomNode(x.toDisplayedString(cache));
-									} else {
-													returnVal = textToDomNode(x.toString());
-									}
-									cache.remove(x);
-									return returnVal;
-					};
-	
-					var textToDomNode = function textToDomNode(text) {
-									var chunks = text.split("\n");
-									var i;
-									var wrapper = document.createElement("span");
-									var newlineDiv;
-									wrapper.className = text === "true" || text === "false" ? "wescheme-boolean" : "wescheme-string";
-									wrapper.style.fontFamily = 'monospace';
-									wrapper.style.whiteSpace = "pre";
-									if (chunks.length > 0) {
-													wrapper.appendChild(document.createTextNode(chunks[0]));
-									}
-									for (i = 1; i < chunks.length; i++) {
-													newlineDiv = document.createElement("br");
-													newlineDiv.style.clear = 'left';
-													wrapper.appendChild(newlineDiv);
-													wrapper.appendChild(document.createTextNode(chunks[i]));
-									}
-									return wrapper;
-					};
-	
-					// numberToDomNode: jsnum -> dom
-					// Given a jsnum, produces a dom-node representation.
-					var numberToDomNode = function numberToDomNode(n) {
-									var node;
-									if (jsnums.isExact(n)) {
-													if (jsnums.isInteger(n)) {
-																	node = document.createElement("span");
-																	node.className = "wescheme-number Integer";
-																	node.appendChild(document.createTextNode(n.toString()));
-																	return node;
-													} else if (jsnums.isRational(n)) {
-																	return rationalToDomNode(n);
-													} else if (isComplex(n)) {
-																	node = document.createElement("span");
-																	node.className = "wescheme-number Complex";
-																	node.appendChild(document.createTextNode(n.toString()));
-																	return node;
-													} else {
-																	node = document.createElement("span");
-																	node.className = "wescheme-number";
-																	node.appendChild(document.createTextNode(n.toString()));
-																	return node;
-													}
-									} else {
-													node = document.createElement("span");
-													node.className = "wescheme-number";
-													node.appendChild(document.createTextNode(n.toString()));
-													return node;
-									}
-					};
-	
-					// rationalToDomNode: rational -> dom-node
-					var rationalToDomNode = function rationalToDomNode(n) {
-									var repeatingDecimalNode = document.createElement("span");
-									var chunks = jsnums.toRepeatingDecimal(jsnums.numerator(n), jsnums.denominator(n), { limit: 25 });
-									var firstPart = document.createElement("span");
-									firstPart.appendChild(document.createTextNode(chunks[0] + '.' + chunks[1]));
-									repeatingDecimalNode.appendChild(firstPart);
-									if (chunks[2] === '...') {
-													firstPart.appendChild(document.createTextNode(chunks[2]));
-									} else if (chunks[2] !== '0') {
-													var overlineSpan = document.createElement("span");
-													overlineSpan.style.textDecoration = 'overline';
-													overlineSpan.appendChild(document.createTextNode(chunks[2]));
-													repeatingDecimalNode.appendChild(overlineSpan);
-									}
-	
-									var fractionalNode = document.createElement("span");
-									var numeratorNode = document.createElement("sup");
-									numeratorNode.appendChild(document.createTextNode(String(jsnums.numerator(n))));
-									var denominatorNode = document.createElement("sub");
-									denominatorNode.appendChild(document.createTextNode(String(jsnums.denominator(n))));
-									var barNode = document.createElement("span");
-									barNode.appendChild(document.createTextNode("/"));
-	
-									fractionalNode.appendChild(numeratorNode);
-									fractionalNode.appendChild(barNode);
-									fractionalNode.appendChild(denominatorNode);
-	
-									var numberNode = document.createElement("span");
-									numberNode.appendChild(repeatingDecimalNode);
-									numberNode.appendChild(fractionalNode);
-									fractionalNode.style['display'] = 'none';
-	
-									var showingRepeating = true;
-	
-									numberNode.onclick = function (e) {
-													showingRepeating = !showingRepeating;
-													repeatingDecimalNode.style['display'] = showingRepeating ? 'inline' : 'none';
-													fractionalNode.style['display'] = !showingRepeating ? 'inline' : 'none';
-									};
-									numberNode.style['cursor'] = 'pointer';
-									numberNode.className = "wescheme-number Rational";
-									return numberNode;
-					};
-	
-					// Alternative: use <sup> and <sub> tags
-	
-					var isNumber = jsnums.isSchemeNumber;
-					var isComplex = isNumber;
-					var isString = function isString(s) {
-									return typeof s === 'string' || s instanceof Str;
-					};
-	
-					// isEqual: X Y -> boolean
-					// Returns true if the objects are equivalent; otherwise, returns false.
-					var _isEqual = function _isEqual(x, y, aUnionFind) {
-									if (x === y) {
-													return true;
-									}
-	
-									if (isNumber(x) && isNumber(y)) {
-													return jsnums.equals(x, y);
-									}
-	
-									if (isString(x) && isString(y)) {
-													return x.toString() === y.toString();
-									}
-	
-									if (x == undefined || x == null) {
-													return y == undefined || y == null;
-									}
-	
-									if ((typeof x === 'undefined' ? 'undefined' : _typeof(x)) == 'object' && (typeof y === 'undefined' ? 'undefined' : _typeof(y)) == 'object' && x.isEqual && y.isEqual) {
-													if (aUnionFind.find(x) === aUnionFind.find(y)) {
-																	return true;
-													} else {
-																	aUnionFind.merge(x, y);
-																	return x.isEqual(y, aUnionFind);
-													}
-									}
-									return false;
-					};
-	
-					// liftToplevelToFunctionValue: primitive-function string fixnum scheme-value -> scheme-value
-					// Lifts a primitive toplevel or module-bound value to a scheme value.
-					var liftToplevelToFunctionValue = function liftToplevelToFunctionValue(primitiveF, name, minArity, procedureArityDescription) {
-									if (!primitiveF._mobyLiftedFunction) {
-													var lifted = function lifted(args) {
-																	return primitiveF.apply(null, args.slice(0, minArity).concat([args.slice(minArity)]));
-													};
-													lifted.isEqual = function (other, cache) {
-																	return this === other;
-													};
-													lifted.toWrittenString = function (cache) {
-																	return "#<function:" + name + ">";
-													};
-													lifted.toDisplayedString = lifted.toWrittenString;
-													lifted.procedureArity = procedureArityDescription;
-													primitiveF._mobyLiftedFunction = lifted;
-									}
-									return primitiveF._mobyLiftedFunction;
-					};
-	
-					//////////////////////////////////////////////////////////////////////
-					var ThreadCell = function ThreadCell(v, isPreserved) {
-									this.v = v;
-									this.isPreserved = isPreserved || false;
-					};
-	
-					//////////////////////////////////////////////////////////////////////
-	
-					// Wrapper around functions that return multiple values.
-					var ValuesWrapper = function ValuesWrapper(elts) {
-									this.elts = elts;
-					};
-	
-					ValuesWrapper.prototype.toDomNode = function (cache) {
-									var parent = document.createElement("span");
-									parent.style.whiteSpace = "pre";
-									if (this.elts.length > 0) {
-													parent.appendChild(_toDomNode(this.elts[0], cache));
-													for (var i = 1; i < this.elts.length; i++) {
-																	parent.appendChild(document.createTextNode('\n'));
-																	parent.appendChild(_toDomNode(this.elts[i], cache));
-													}
-									}
-									return parent;
-					};
-	
-					var UndefinedValue = function UndefinedValue() {};
-					UndefinedValue.prototype.toString = function () {
-									return "#<undefined>";
-					};
-					var UNDEFINED_VALUE = new UndefinedValue();
-	
-					var VoidValue = function VoidValue() {};
-					VoidValue.prototype.toString = function () {
-									return "#<void>";
-					};
-	
-					var VOID_VALUE = new VoidValue();
-	
-					var EofValue = function EofValue() {};
-					EofValue.prototype.toString = function () {
-									return "#<eof>";
-					};
-	
-					var EOF_VALUE = new EofValue();
-	
-					var ClosureValue = function ClosureValue(name, locs, numParams, paramTypes, isRest, closureVals, body) {
-									this.name = name;
-									this.locs = locs;
-									this.numParams = numParams;
-									this.paramTypes = paramTypes;
-									this.isRest = isRest;
-									this.closureVals = closureVals;
-									this.body = body;
-					};
-	
-					ClosureValue.prototype.toString = function () {
-									if (this.name !== Empty.EMPTY) {
-													return helpers.format("#<function:~a>", [this.name]);
-									} else {
-													return "#<function>";
-									}
-					};
-	
-					var CaseLambdaValue = function CaseLambdaValue(name, closures) {
-									this.name = name;
-									this.closures = closures;
-					};
-	
-					CaseLambdaValue.prototype.toString = function () {
-									if (this.name !== Empty.EMPTY) {
-													return helpers.format("#<case-lambda-procedure:~a>", [this.name]);
-									} else {
-													return "#<case-lambda-procedure>";
-									}
-					};
-	
-					var ContinuationClosureValue = function ContinuationClosureValue(vstack, cstack) {
-									this.name = false;
-									this.vstack = vstack.slice(0);
-									this.cstack = cstack.slice(0);
-					};
-	
-					ContinuationClosureValue.prototype.toString = function () {
-									if (this.name !== Empty.EMPTY) {
-													return helpers.format("#<function:~a>", [this.name]);
-									} else {
-													return "#<function>";
-									}
-					};
-	
-					//////////////////////////////////////////////////////////////////////
-	
-					var PrefixValue = function PrefixValue() {
-									this.slots = [];
-									this.definedMask = [];
-					};
-	
-					PrefixValue.prototype.addSlot = function (v) {
-									if (v === undefined) {
-													this.slots.push(types.UNDEFINED);
-													this.definedMask.push(false);
-									} else {
-													this.slots.push(v);
-													if (v instanceof GlobalBucket) {
-																	if (v.value === types.UNDEFINED) {
-																					this.definedMask.push(false);
-																	} else {
-																					this.definedMask.push(true);
-																	}
-													} else {
-																	this.definedMask.push(true);
-													}
-									}
-					};
-	
-					PrefixValue.prototype.ref = function (n, srcloc) {
-									if (this.slots[n] instanceof GlobalBucket) {
-													if (this.definedMask[n]) {
-																	return this.slots[n].value;
-													} else {
-																	helpers.raise(types.incompleteExn(types.exnFailContractVariable, new Message([new ColoredPart(this.slots[n].name, srcloc), ": this variable is not defined"]), [this.slots[n].name]));
-													}
-									} else {
-													if (this.definedMask[n]) {
-																	return this.slots[n];
-													} else {
-																	helpers.raise(types.incompleteExn(types.exnFailContractVariable, "variable has not been defined", [false]));
-													}
-									}
-					};
-	
-					PrefixValue.prototype.set = function (n, v) {
-									if (this.slots[n] instanceof GlobalBucket) {
-													this.slots[n].value = v;
-													this.definedMask[n] = true;
-									} else {
-													this.slots[n] = v;
-													this.definedMask[n] = true;
-									}
-					};
-	
-					PrefixValue.prototype.length = function () {
-									return this.slots.length;
-					};
-	
-					var GlobalBucket = function GlobalBucket(name, value) {
-									this.name = name;
-									this.value = value;
-					};
-	
-					var ModuleVariableRecord = function ModuleVariableRecord(resolvedModuleName, variableName) {
-									this.resolvedModuleName = resolvedModuleName;
-									this.variableName = variableName;
-					};
-	
-					//////////////////////////////////////////////////////////////////////
-	
-					var VariableReference = function VariableReference(prefix, pos) {
-									this.prefix = prefix;
-									this.pos = pos;
-					};
-	
-					VariableReference.prototype.ref = function () {
-									return this.prefix.ref(this.pos);
-					};
-	
-					VariableReference.prototype.set = function (v) {
-									this.prefix.set(this.pos, v);
-					};
-	
-					//////////////////////////////////////////////////////////////////////
-	
-					// Continuation Marks
-	
-					var ContMarkRecordControl = function ContMarkRecordControl(dict) {
-									this.dict = dict || {};
-					};
-	
-					ContMarkRecordControl.prototype.invoke = function (state) {
-									// No-op: the record will simply pop off the control stack.
-					};
-	
-					ContMarkRecordControl.prototype.update = function (key, val) {
-									/*
+	    //////////////////////////////////////////////////////////////////////
+	
+	    // makeLowLevelEqHash: -> hashtable
+	    // Constructs an eq hashtable that uses Moby's getEqHashCode function.
+	    var makeLowLevelEqHash = function makeLowLevelEqHash() {
+	        return new _Hashtable(function (x) {
+	            return getEqHashCode(x);
+	        }, function (x, y) {
+	            return x === y;
+	        });
+	    };
+	
+	    //////////////////////////////////////////////////////////////////////
+	    // Hashtables
+	    var EqHashTable = function EqHashTable(inputHash) {
+	        this.hash = makeLowLevelEqHash();
+	        this.mutable = true;
+	    };
+	    EqHashTable = EqHashTable;
+	
+	    EqHashTable.prototype.toWrittenString = function (cache) {
+	        var keys = this.hash.keys();
+	        var ret = [];
+	        for (var i = 0; i < keys.length; i++) {
+	            var keyStr = types.toWrittenString(keys[i], cache);
+	            var valStr = types.toWrittenString(this.hash.get(keys[i]), cache);
+	            ret.push('(' + keyStr + ' . ' + valStr + ')');
+	        }
+	        return '#hasheq(' + ret.join(' ') + ')';
+	    };
+	
+	    EqHashTable.prototype.toDisplayedString = function (cache) {
+	        var keys = this.hash.keys();
+	        var ret = [];
+	        for (var i = 0; i < keys.length; i++) {
+	            var keyStr = types.toDisplayedString(keys[i], cache);
+	            var valStr = types.toDisplayedString(this.hash.get(keys[i]), cache);
+	            ret.push('(' + keyStr + ' . ' + valStr + ')');
+	        }
+	        return '#hasheq(' + ret.join(' ') + ')';
+	    };
+	
+	    EqHashTable.prototype.isEqual = function (other, aUnionFind) {
+	        if (!(other instanceof EqHashTable)) {
+	            return false;
+	        }
+	
+	        if (this.hash.keys().length != other.hash.keys().length) {
+	            return false;
+	        }
+	
+	        var keys = this.hash.keys();
+	        for (var i = 0; i < keys.length; i++) {
+	            if (!(other.hash.containsKey(keys[i]) && _isEqual(this.hash.get(keys[i]), other.hash.get(keys[i]), aUnionFind))) {
+	                return false;
+	            }
+	        }
+	        return true;
+	    };
+	
+	    var EqualHashTable = function EqualHashTable(inputHash) {
+	        this.hash = new _Hashtable(function (x) {
+	            return _toWrittenString(x);
+	        }, function (x, y) {
+	            return _isEqual(x, y, new UnionFind());
+	        });
+	        this.mutable = true;
+	    };
+	
+	    EqualHashTable = EqualHashTable;
+	
+	    EqualHashTable.prototype.toWrittenString = function (cache) {
+	        var keys = this.hash.keys();
+	        var ret = [];
+	        for (var i = 0; i < keys.length; i++) {
+	            var keyStr = types.toWrittenString(keys[i], cache);
+	            var valStr = types.toWrittenString(this.hash.get(keys[i]), cache);
+	            ret.push('(' + keyStr + ' . ' + valStr + ')');
+	        }
+	        return '#hash(' + ret.join(' ') + ')';
+	    };
+	    EqualHashTable.prototype.toDisplayedString = function (cache) {
+	        var keys = this.hash.keys();
+	        var ret = [];
+	        for (var i = 0; i < keys.length; i++) {
+	            var keyStr = types.toDisplayedString(keys[i], cache);
+	            var valStr = types.toDisplayedString(this.hash.get(keys[i]), cache);
+	            ret.push('(' + keyStr + ' . ' + valStr + ')');
+	        }
+	        return '#hash(' + ret.join(' ') + ')';
+	    };
+	
+	    EqualHashTable.prototype.isEqual = function (other, aUnionFind) {
+	        if (!(other instanceof EqualHashTable)) {
+	            return false;
+	        }
+	
+	        if (this.hash.keys().length != other.hash.keys().length) {
+	            return false;
+	        }
+	
+	        var keys = this.hash.keys();
+	        for (var i = 0; i < keys.length; i++) {
+	            if (!(other.hash.containsKey(keys[i]) && _isEqual(this.hash.get(keys[i]), other.hash.get(keys[i]), aUnionFind))) {
+	                return false;
+	            }
+	        }
+	        return true;
+	    };
+	
+	    //////////////////////////////////////////////////////////////////////
+	
+	    var JsObject = function JsObject(name, obj) {
+	        this.name = name;
+	        this.obj = obj;
+	    };
+	
+	    JsObject.prototype.toString = function () {
+	        return '#<js-object:' + _typeof(this.obj) + ':' + this.name + '>';
+	    };
+	
+	    JsObject.prototype.isEqual = function (other, aUnionFind) {
+	        return this.obj === other.obj;
+	    };
+	
+	    //////////////////////////////////////////////////////////////////////
+	
+	    var WorldConfig = function WorldConfig(startup, shutdown, args) {
+	        this.startup = startup;
+	        this.shutdown = shutdown;
+	        this.startupArgs = args;
+	        this.shutdownArg = undefined;
+	    };
+	
+	    WorldConfig.prototype.toString = function () {
+	        return '#<world-config>';
+	    };
+	
+	    WorldConfig.prototype.isEqual = function (other, aUnionFind) {
+	        if (!_isEqual(this.startup, other.startup, aUnionFind) || !_isEqual(this.shutdown, other.shutdown, aUnionFind) || this.startupArgs.length != other.startupArgs.length || !_isEqual(this.shutdownArg, other.shutdownArg, aUnionFind)) {
+	            return false;
+	        }
+	
+	        for (var i = 0; i < args.length; i++) {
+	            if (!_isEqual(this.startupArgs[i], other.startupArgs[i], aUnionFind)) return false;
+	        }
+	        return true;
+	    };
+	
+	    var Effect = makeStructureType('effect', false, 0, 0, false, false);
+	    Effect.type.prototype.invokeEffect = function (k) {
+	        helpers.raise(types.incompleteExn(types.exnFail, 'effect type created without using make-effect-type', []));
+	    };
+	    //Effect.handlerIndices = [];
+	
+	    //var wrapHandler = function(handler, caller, changeWorld) {
+	    //	return types.jsObject('function', function() {
+	    //		var externalArgs = arguments;
+	    //		changeWorld(function(w, k) {
+	    //			var args = helpers.map(helpers.wrapJsObject, externalArgs);
+	    //			args.unshift(w);
+	    //			caller(handler, args, k);
+	    //		});
+	    //	});
+	    //};
+	
+	    var makeEffectType = function makeEffectType(name, superType, initFieldCnt, impl, guard, caller) {
+	        if (!superType) {
+	            superType = Effect;
+	        }
+	
+	        var newType = makeStructureType(name, superType, initFieldCnt, 0, false, guard);
+	        var lastFieldIndex = newType.firstField + newType.numberOfFields;
+	
+	        newType.type.prototype.invokeEffect = function (changeWorld, k) {
+	            var schemeChangeWorld = new PrimProc('update-world', 1, false, true, function (aState, worldUpdater) {
+	                helpers.check(aState, worldUpdater, helpers.procArityContains(1), 'update-world', 'procedure (arity 1)', 1);
+	
+	                changeWorld(function (w, k2) {
+	                    interpret.call(aState, worldUpdater, [w], k2, function (e) {
+	                        throw e;
+	                    });
+	                }, function () {
+	                    aState.v = VOID_VALUE;
+	                });
+	            });
+	
+	            var args = this._fields.slice(0, lastFieldIndex);
+	            args.unshift(schemeChangeWorld);
+	            caller(impl, args, k);
+	        };
+	
+	        return newType;
+	    };
+	
+	    var RenderEffect = makeStructureType('render-effect', false, 0, 0, false, false);
+	    RenderEffect.type.prototype.callImplementation = function (caller, k) {
+	        helpers.raise(types.incompleteExn(types.exnFail, 'render effect created without using make-render-effect-type', []));
+	    };
+	
+	    var makeRenderEffectType = function makeRenderEffectType(name, superType, initFieldCnt, impl, guard) {
+	        if (!superType) {
+	            superType = RenderEffect;
+	        }
+	
+	        var newType = makeStructureType(name, superType, initFieldCnt, 0, false, guard);
+	        var lastFieldIndex = newType.firstField + newType.numberOfFields;
+	
+	        newType.type.prototype.callImplementation = function (caller, k) {
+	            var args = this._fields.slice(0, lastFieldIndex);
+	            caller(impl, args, k);
+	        };
+	
+	        return newType;
+	    };
+	
+	    //////////////////////////////////////////////////////////////////////
+	
+	    //////////////////////////////////////////////////////////////////////
+	
+	    var _toWrittenString = function _toWrittenString(x, cache) {
+	        if (!cache) {
+	            cache = makeLowLevelEqHash();
+	        }
+	
+	        if ((typeof x === 'undefined' ? 'undefined' : _typeof(x)) == 'object') {
+	            if (cache.containsKey(x)) {
+	                return "...";
+	            } else {
+	                cache.put(x, true);
+	            }
+	        }
+	
+	        if (x == undefined || x == null) {
+	            return "#<undefined>";
+	        }
+	        if (typeof x == 'string') {
+	            return escapeString(x.toString());
+	        }
+	        if ((typeof x === 'undefined' ? 'undefined' : _typeof(x)) != 'object' && typeof x != 'function') {
+	            return x.toString();
+	        }
+	
+	        var returnVal;
+	        if (typeof x.toWrittenString !== 'undefined') {
+	            returnVal = x.toWrittenString(cache);
+	        } else if (typeof x.toDisplayedString !== 'undefined') {
+	            returnVal = x.toDisplayedString(cache);
+	        } else {
+	            returnVal = x.toString();
+	        }
+	        cache.remove(x);
+	        return returnVal;
+	    };
+	
+	    var toDisplayedString = function toDisplayedString(x, cache) {
+	        if (!cache) {
+	            cache = makeLowLevelEqHash();
+	        }
+	        if ((typeof x === 'undefined' ? 'undefined' : _typeof(x)) == 'object') {
+	            if (cache.containsKey(x)) {
+	                return "...";
+	            }
+	            cache.put(x, true);
+	        }
+	
+	        if (x == undefined || x == null) {
+	            return "#<undefined>";
+	        }
+	        if (typeof x == 'string') {
+	            return x;
+	        }
+	        if ((typeof x === 'undefined' ? 'undefined' : _typeof(x)) != 'object' && typeof x != 'function') {
+	            return x.toString();
+	        }
+	
+	        var returnVal;
+	        if (typeof x.toDisplayedString !== 'undefined') {
+	            returnVal = x.toDisplayedString(cache);
+	        } else if (typeof x.toWrittenString !== 'undefined') {
+	            returnVal = x.toWrittenString(cache);
+	        } else {
+	            returnVal = x.toString();
+	        }
+	        cache.remove(x);
+	        return returnVal;
+	    };
+	
+	    // toDomNode: scheme-value -> dom-node
+	    var _toDomNode = function _toDomNode(x, cache) {
+	        if (!cache) {
+	            cache = makeLowLevelEqHash();
+	        }
+	
+	        if (isNumber(x)) {
+	            return numberToDomNode(x);
+	        }
+	
+	        if ((typeof x === 'undefined' ? 'undefined' : _typeof(x)) == 'object') {
+	            if (cache.containsKey(x)) {
+	                var node = document.createElement("span");
+	                node.style['font-family'] = 'monospace';
+	                node.appendChild(document.createTextNode("..."));
+	                return node;
+	            }
+	            cache.put(x, true);
+	        }
+	
+	        if (x == undefined || x == null) {
+	            var node = document.createElement("span");
+	            node.style['font-family'] = 'monospace';
+	            node.appendChild(document.createTextNode("#<undefined>"));
+	            return node;
+	        }
+	        if (typeof x == 'string') {
+	            return textToDomNode(_toWrittenString(x));
+	        }
+	        if ((typeof x === 'undefined' ? 'undefined' : _typeof(x)) != 'object' && typeof x != 'function') {
+	            return textToDomNode(x.toString());
+	        }
+	
+	        var returnVal;
+	        if (x.nodeType) {
+	            returnVal = x;
+	        } else if (typeof x.toDomNode !== 'undefined') {
+	            returnVal = x.toDomNode(cache);
+	        } else if (typeof x.toWrittenString !== 'undefined') {
+	            returnVal = textToDomNode(x.toWrittenString(cache));
+	        } else if (typeof x.toDisplayedString !== 'undefined') {
+	            returnVal = textToDomNode(x.toDisplayedString(cache));
+	        } else {
+	            returnVal = textToDomNode(x.toString());
+	        }
+	        cache.remove(x);
+	        return returnVal;
+	    };
+	
+	    var textToDomNode = function textToDomNode(text) {
+	        var chunks = text.split("\n");
+	        var i;
+	        var wrapper = document.createElement("span");
+	        var newlineDiv;
+	        wrapper.className = text === "true" || text === "false" ? "wescheme-boolean" : "wescheme-string";
+	        wrapper.style.fontFamily = 'monospace';
+	        wrapper.style.whiteSpace = "pre";
+	        if (chunks.length > 0) {
+	            wrapper.appendChild(document.createTextNode(chunks[0]));
+	        }
+	        for (i = 1; i < chunks.length; i++) {
+	            newlineDiv = document.createElement("br");
+	            newlineDiv.style.clear = 'left';
+	            wrapper.appendChild(newlineDiv);
+	            wrapper.appendChild(document.createTextNode(chunks[i]));
+	        }
+	        return wrapper;
+	    };
+	
+	    // numberToDomNode: jsnum -> dom
+	    // Given a jsnum, produces a dom-node representation.
+	    var numberToDomNode = function numberToDomNode(n) {
+	        var node;
+	        if (jsnums.isExact(n)) {
+	            if (jsnums.isInteger(n)) {
+	                node = document.createElement("span");
+	                node.className = "wescheme-number Integer";
+	                node.appendChild(document.createTextNode(n.toString()));
+	                return node;
+	            } else if (jsnums.isRational(n)) {
+	                return rationalToDomNode(n);
+	            } else if (isComplex(n)) {
+	                node = document.createElement("span");
+	                node.className = "wescheme-number Complex";
+	                node.appendChild(document.createTextNode(n.toString()));
+	                return node;
+	            } else {
+	                node = document.createElement("span");
+	                node.className = "wescheme-number";
+	                node.appendChild(document.createTextNode(n.toString()));
+	                return node;
+	            }
+	        } else {
+	            node = document.createElement("span");
+	            node.className = "wescheme-number";
+	            node.appendChild(document.createTextNode(n.toString()));
+	            return node;
+	        }
+	    };
+	
+	    // rationalToDomNode: rational -> dom-node
+	    var rationalToDomNode = function rationalToDomNode(n) {
+	        var repeatingDecimalNode = document.createElement("span");
+	        var chunks = jsnums.toRepeatingDecimal(jsnums.numerator(n), jsnums.denominator(n), { limit: 25 });
+	        var firstPart = document.createElement("span");
+	        firstPart.appendChild(document.createTextNode(chunks[0] + '.' + chunks[1]));
+	        repeatingDecimalNode.appendChild(firstPart);
+	        if (chunks[2] === '...') {
+	            firstPart.appendChild(document.createTextNode(chunks[2]));
+	        } else if (chunks[2] !== '0') {
+	            var overlineSpan = document.createElement("span");
+	            overlineSpan.style.textDecoration = 'overline';
+	            overlineSpan.appendChild(document.createTextNode(chunks[2]));
+	            repeatingDecimalNode.appendChild(overlineSpan);
+	        }
+	
+	        var fractionalNode = document.createElement("span");
+	        var numeratorNode = document.createElement("sup");
+	        numeratorNode.appendChild(document.createTextNode(String(jsnums.numerator(n))));
+	        var denominatorNode = document.createElement("sub");
+	        denominatorNode.appendChild(document.createTextNode(String(jsnums.denominator(n))));
+	        var barNode = document.createElement("span");
+	        barNode.appendChild(document.createTextNode("/"));
+	
+	        fractionalNode.appendChild(numeratorNode);
+	        fractionalNode.appendChild(barNode);
+	        fractionalNode.appendChild(denominatorNode);
+	
+	        var numberNode = document.createElement("span");
+	        numberNode.appendChild(repeatingDecimalNode);
+	        numberNode.appendChild(fractionalNode);
+	        fractionalNode.style['display'] = 'none';
+	
+	        var showingRepeating = true;
+	
+	        numberNode.onclick = function (e) {
+	            showingRepeating = !showingRepeating;
+	            repeatingDecimalNode.style['display'] = showingRepeating ? 'inline' : 'none';
+	            fractionalNode.style['display'] = !showingRepeating ? 'inline' : 'none';
+	        };
+	        numberNode.style['cursor'] = 'pointer';
+	        numberNode.className = "wescheme-number Rational";
+	        return numberNode;
+	    };
+	
+	    // Alternative: use <sup> and <sub> tags
+	
+	    var isNumber = jsnums.isSchemeNumber;
+	    var isComplex = isNumber;
+	    var isString = function isString(s) {
+	        return typeof s === 'string' || s instanceof Str;
+	    };
+	
+	    // isEqual: X Y -> boolean
+	    // Returns true if the objects are equivalent; otherwise, returns false.
+	    var _isEqual = function _isEqual(x, y, aUnionFind) {
+	        if (x === y) {
+	            return true;
+	        }
+	
+	        if (isNumber(x) && isNumber(y)) {
+	            return jsnums.equals(x, y);
+	        }
+	
+	        if (isString(x) && isString(y)) {
+	            return x.toString() === y.toString();
+	        }
+	
+	        if (x == undefined || x == null) {
+	            return y == undefined || y == null;
+	        }
+	
+	        if ((typeof x === 'undefined' ? 'undefined' : _typeof(x)) == 'object' && (typeof y === 'undefined' ? 'undefined' : _typeof(y)) == 'object' && x.isEqual && y.isEqual) {
+	            if (aUnionFind.find(x) === aUnionFind.find(y)) {
+	                return true;
+	            } else {
+	                aUnionFind.merge(x, y);
+	                return x.isEqual(y, aUnionFind);
+	            }
+	        }
+	        return false;
+	    };
+	
+	    // liftToplevelToFunctionValue: primitive-function string fixnum scheme-value -> scheme-value
+	    // Lifts a primitive toplevel or module-bound value to a scheme value.
+	    var liftToplevelToFunctionValue = function liftToplevelToFunctionValue(primitiveF, name, minArity, procedureArityDescription) {
+	        if (!primitiveF._mobyLiftedFunction) {
+	            var lifted = function lifted(args) {
+	                return primitiveF.apply(null, args.slice(0, minArity).concat([args.slice(minArity)]));
+	            };
+	            lifted.isEqual = function (other, cache) {
+	                return this === other;
+	            };
+	            lifted.toWrittenString = function (cache) {
+	                return "#<function:" + name + ">";
+	            };
+	            lifted.toDisplayedString = lifted.toWrittenString;
+	            lifted.procedureArity = procedureArityDescription;
+	            primitiveF._mobyLiftedFunction = lifted;
+	        }
+	        return primitiveF._mobyLiftedFunction;
+	    };
+	
+	    //////////////////////////////////////////////////////////////////////
+	    var ThreadCell = function ThreadCell(v, isPreserved) {
+	        this.v = v;
+	        this.isPreserved = isPreserved || false;
+	    };
+	
+	    //////////////////////////////////////////////////////////////////////
+	
+	    // Wrapper around functions that return multiple values.
+	    var ValuesWrapper = function ValuesWrapper(elts) {
+	        this.elts = elts;
+	    };
+	
+	    ValuesWrapper.prototype.toDomNode = function (cache) {
+	        var parent = document.createElement("span");
+	        parent.style.whiteSpace = "pre";
+	        if (this.elts.length > 0) {
+	            parent.appendChild(_toDomNode(this.elts[0], cache));
+	            for (var i = 1; i < this.elts.length; i++) {
+	                parent.appendChild(document.createTextNode('\n'));
+	                parent.appendChild(_toDomNode(this.elts[i], cache));
+	            }
+	        }
+	        return parent;
+	    };
+	
+	    var UndefinedValue = function UndefinedValue() {};
+	    UndefinedValue.prototype.toString = function () {
+	        return "#<undefined>";
+	    };
+	    var UNDEFINED_VALUE = new UndefinedValue();
+	
+	    var VoidValue = function VoidValue() {};
+	    VoidValue.prototype.toString = function () {
+	        return "#<void>";
+	    };
+	
+	    var VOID_VALUE = new VoidValue();
+	
+	    var EofValue = function EofValue() {};
+	    EofValue.prototype.toString = function () {
+	        return "#<eof>";
+	    };
+	
+	    var EOF_VALUE = new EofValue();
+	
+	    var ClosureValue = function ClosureValue(name, locs, numParams, paramTypes, isRest, closureVals, body) {
+	        this.name = name;
+	        this.locs = locs;
+	        this.numParams = numParams;
+	        this.paramTypes = paramTypes;
+	        this.isRest = isRest;
+	        this.closureVals = closureVals;
+	        this.body = body;
+	    };
+	
+	    ClosureValue.prototype.toString = function () {
+	        if (this.name !== Empty.EMPTY) {
+	            return helpers.format("#<function:~a>", [this.name]);
+	        } else {
+	            return "#<function>";
+	        }
+	    };
+	
+	    var CaseLambdaValue = function CaseLambdaValue(name, closures) {
+	        this.name = name;
+	        this.closures = closures;
+	    };
+	
+	    CaseLambdaValue.prototype.toString = function () {
+	        if (this.name !== Empty.EMPTY) {
+	            return helpers.format("#<case-lambda-procedure:~a>", [this.name]);
+	        } else {
+	            return "#<case-lambda-procedure>";
+	        }
+	    };
+	
+	    var ContinuationClosureValue = function ContinuationClosureValue(vstack, cstack) {
+	        this.name = false;
+	        this.vstack = vstack.slice(0);
+	        this.cstack = cstack.slice(0);
+	    };
+	
+	    ContinuationClosureValue.prototype.toString = function () {
+	        if (this.name !== Empty.EMPTY) {
+	            return helpers.format("#<function:~a>", [this.name]);
+	        } else {
+	            return "#<function>";
+	        }
+	    };
+	
+	    //////////////////////////////////////////////////////////////////////
+	
+	    var PrefixValue = function PrefixValue() {
+	        this.slots = [];
+	        this.definedMask = [];
+	    };
+	
+	    PrefixValue.prototype.addSlot = function (v) {
+	        if (v === undefined) {
+	            this.slots.push(types.UNDEFINED);
+	            this.definedMask.push(false);
+	        } else {
+	            this.slots.push(v);
+	            if (v instanceof GlobalBucket) {
+	                if (v.value === types.UNDEFINED) {
+	                    this.definedMask.push(false);
+	                } else {
+	                    this.definedMask.push(true);
+	                }
+	            } else {
+	                this.definedMask.push(true);
+	            }
+	        }
+	    };
+	
+	    PrefixValue.prototype.ref = function (n, srcloc) {
+	        if (this.slots[n] instanceof GlobalBucket) {
+	            if (this.definedMask[n]) {
+	                return this.slots[n].value;
+	            } else {
+	                helpers.raise(types.incompleteExn(types.exnFailContractVariable, new Message([new ColoredPart(this.slots[n].name, srcloc), ": this variable is not defined"]), [this.slots[n].name]));
+	            }
+	        } else {
+	            if (this.definedMask[n]) {
+	                return this.slots[n];
+	            } else {
+	                helpers.raise(types.incompleteExn(types.exnFailContractVariable, "variable has not been defined", [false]));
+	            }
+	        }
+	    };
+	
+	    PrefixValue.prototype.set = function (n, v) {
+	        if (this.slots[n] instanceof GlobalBucket) {
+	            this.slots[n].value = v;
+	            this.definedMask[n] = true;
+	        } else {
+	            this.slots[n] = v;
+	            this.definedMask[n] = true;
+	        }
+	    };
+	
+	    PrefixValue.prototype.length = function () {
+	        return this.slots.length;
+	    };
+	
+	    var GlobalBucket = function GlobalBucket(name, value) {
+	        this.name = name;
+	        this.value = value;
+	    };
+	
+	    var ModuleVariableRecord = function ModuleVariableRecord(resolvedModuleName, variableName) {
+	        this.resolvedModuleName = resolvedModuleName;
+	        this.variableName = variableName;
+	    };
+	
+	    //////////////////////////////////////////////////////////////////////
+	
+	    var VariableReference = function VariableReference(prefix, pos) {
+	        this.prefix = prefix;
+	        this.pos = pos;
+	    };
+	
+	    VariableReference.prototype.ref = function () {
+	        return this.prefix.ref(this.pos);
+	    };
+	
+	    VariableReference.prototype.set = function (v) {
+	        this.prefix.set(this.pos, v);
+	    };
+	
+	    //////////////////////////////////////////////////////////////////////
+	
+	    // Continuation Marks
+	
+	    var ContMarkRecordControl = function ContMarkRecordControl(dict) {
+	        this.dict = dict || {};
+	    };
+	
+	    ContMarkRecordControl.prototype.invoke = function (state) {
+	        // No-op: the record will simply pop off the control stack.
+	    };
+	
+	    ContMarkRecordControl.prototype.update = function (key, val) {
+	        /*
 	           var newDict = makeLowLevelEqHash();
 	           // FIXME: what's the javascript idiom for hash key copy?
 	           // Maybe we should use a rbtree instead?
@@ -24547,547 +24607,547 @@
 	           newDict.put(key, val);
 	           return new ContMarkRecordControl(newDict);
 	         */
-									this.dict[key.val] = val;
-									return this;
-					};
-	
-					var ContinuationMarkSet = function ContinuationMarkSet(dict) {
-									this.dict = dict;
-					};
-	
-					ContinuationMarkSet.prototype.toDomNode = function (cache) {
-									var dom = document.createElement("span");
-									dom.appendChild(document.createTextNode('#<continuation-mark-set>'));
-									return dom;
-					};
-	
-					ContinuationMarkSet.prototype.toWrittenString = function (cache) {
-									return '#<continuation-mark-set>';
-					};
-	
-					ContinuationMarkSet.prototype.toDisplayedString = function (cache) {
-									return '#<continuation-mark-set>';
-					};
-	
-					ContinuationMarkSet.prototype.ref = function (key) {
-									if (this.dict.containsKey(key)) {
-													return this.dict.get(key);
-									}
-									return [];
-					};
-	
-					//////////////////////////////////////////////////////////////////////
-	
-					var ContinuationPrompt = function ContinuationPrompt() {};
-	
-					var defaultContinuationPrompt = new ContinuationPrompt();
-	
-					//////////////////////////////////////////////////////////////////////
-	
-					//////////////////////////////////////////////////////////////////////
-	
-					var PrimProc = function PrimProc(name, numParams, isRest, assignsToValueRegister, impl) {
-									this.name = name;
-									this.numParams = numParams;
-									this.isRest = isRest;
-									this.assignsToValueRegister = assignsToValueRegister;
-									this.impl = impl;
-					};
-	
-					PrimProc.prototype.toString = function () {
-									return "#<function:" + this.name + ">";
-					};
-	
-					PrimProc.prototype.toWrittenString = function (cache) {
-									return "#<function:" + this.name + ">";
-					};
-	
-					PrimProc.prototype.toDisplayedString = function (cache) {
-									return "#<function:" + this.name + ">";
-					};
-	
-					PrimProc.prototype.toDomNode = function (cache) {
-									var node = document.createElement("span");
-									node.className = "wescheme-primproc";
-									node.appendChild(document.createTextNode("#<function:" + this.name + ">"));
-									return node;
-					};
-	
-					var CasePrimitive = function CasePrimitive(name, cases) {
-									this.name = name;
-									this.cases = cases;
-					};
-	
-					CasePrimitive.prototype.toDomNode = function (cache) {
-									var node = document.createElement("span");
-									node.className = "wescheme-caseprimitive";
-									node.appendChild(document.createTextNode("#<function:" + this.name + ">"));
-									return node;
-					};
-	
-					CasePrimitive.prototype.toWrittenString = function (cache) {
-									return "#<function:" + this.name + ">";
-					};
-	
-					CasePrimitive.prototype.toDisplayedString = function (cache) {
-									return "#<function:" + this.name + ">";
-					};
-	
-					/////////////////////////////////////////////////////////////////////
-					// Colored Error Message Support
-	
-					var Message = function Message(args) {
-									this.args = args;
-					};
-	
-					Message.prototype.toString = function () {
-									var toReturn = [];
-									var i;
-									for (i = 0; i < this.args.length; i++) {
-													toReturn.push('' + this.args[i]);
-									}
-	
-									return toReturn.join("");
-					};
-	
-					var isMessage = function isMessage(o) {
-									return o instanceof Message;
-					};
-	
-					var ColoredPart = function ColoredPart(text, location) {
-									this.text = text;
-									this.location = location;
-					};
-	
-					var isColoredPart = function isColoredPart(o) {
-									return o instanceof ColoredPart;
-					};
-	
-					ColoredPart.prototype.toString = function () {
-									return this.text + '';
-					};
-	
-					var GradientPart = function GradientPart(coloredParts) {
-									this.coloredParts = coloredParts;
-					};
-	
-					var isGradientPart = function isGradientPart(o) {
-									return o instanceof GradientPart;
-					};
-	
-					GradientPart.prototype.toString = function () {
-									var i;
-									var resultArray = [];
-									for (i = 0; i < this.coloredParts.length; i++) {
-													resultArray.push(this.coloredParts[i].text + '');
-									}
-									return resultArray.join("");
-					};
-	
-					var MultiPart = function MultiPart(text, locations, solid) {
-									this.text = text;
-									this.locations = locations;
-									this.solid = solid;
-					};
-	
-					var isMultiPart = function isMultiPart(o) {
-									return o instanceof MultiPart;
-					};
-	
-					MultiPart.prototype.toString = function () {
-									return this.text;
-					};
-	
-					//////////////////////////////////////////////////////////////////////
-	
-					var makeList = function makeList(args) {
-									var result = Empty.EMPTY;
-									var i;
-									for (i = args.length - 1; i >= 0; i--) {
-													result = Cons.makeInstance(args[i], result);
-									}
-									return result;
-					};
-	
-					var makeVector = function makeVector(args) {
-									return Vector.makeInstance(args.length, args);
-					};
-	
-					var makeString = function makeString(s) {
-									if (s instanceof Str) {
-													return s;
-									} else if (s instanceof Array) {
-													//		for (var i = 0; i < s.length; i++) {
-													//			if ( typeof s[i] !== 'string' || s[i].length != 1 ) {
-													//				return undefined;
-													//			}
-													//		}
-													return Str.makeInstance(s);
-									} else if (typeof s === 'string') {
-													return Str.fromString(s);
-									} else {
-													throw types.internalError('makeString expects and array of 1-character strings or a string;' + ' given ' + s.toString(), false);
-									}
-					};
-	
-					var makeHashEq = function makeHashEq(lst) {
-									var newHash = new EqHashTable();
-									while (!lst.isEmpty()) {
-													newHash.hash.put(lst.first().first(), lst.first().rest());
-													lst = lst.rest();
-									}
-									return newHash;
-					};
-	
-					var makeHashEqual = function makeHashEqual(lst) {
-									var newHash = new EqualHashTable();
-									while (!lst.isEmpty()) {
-													newHash.hash.put(lst.first().first(), lst.first().rest());
-													lst = lst.rest();
-									}
-									return newHash;
-					};
-	
-					//if there is not enough location information available,
-					//this allows for highlighting to be turned off
-					var NoLocation = makeVector(['<no-location>', 0, 0, 0, 0]);
-	
-					var isNoLocation = function isNoLocation(o) {
-									return o === NoLocation;
-					};
-	
-					var Posn = makeStructureType('posn', false, 2, 0, false, false);
-					var Color = makeStructureType('color', false, 4, 0, false, false);
-					var ArityAtLeast = makeStructureType('arity-at-least', false, 1, 0, false, function (k, n, name) {
-									helpers.check(undefined, n, function (x) {
-													return jsnums.isExact(x) && jsnums.isInteger(x) && jsnums.greaterThanOrEqual(x, 0);
-									}, name, 'exact non-negative integer', 1);
-									k(n);
-					});
-	
-					types.symbol = Symbol.makeInstance;
-					types.rational = jsnums.makeRational;
-					types['float'] = jsnums.makeFloat;
-					types.complex = jsnums.makeComplex;
-					types.bignum = jsnums.makeBignum;
-					types.list = makeList;
-					types.vector = makeVector;
-					types.regexp = function (p) {
-									return new RegularExpression(p);
-					};
-					types.byteRegexp = function (p) {
-									return new ByteRegularExpression(p);
-					};
-					types['char'] = Char.makeInstance;
-					types['string'] = makeString;
-					types.box = function (x) {
-									return new Box(x, true);
-					};
-					types.boxImmutable = function (x) {
-									return new Box(x, false);
-					};
-					types.path = function (x) {
-									return new Path(x);
-					};
-					types.bytes = function (x, mutable) {
-									return new Bytes(x, mutable);
-					};
-					types.keyword = function (k) {
-									return new Keyword(k);
-					};
-					types.pair = function (x, y) {
-									return Cons.makeInstance(x, y);
-					};
-					types.hash = makeHashEqual;
-					types.hashEq = makeHashEq;
-					types.jsObject = function (name, obj) {
-									return new JsObject(name, obj);
-					};
-	
-					types.toWrittenString = _toWrittenString;
-					types.toDisplayedString = toDisplayedString;
-					types.toDomNode = _toDomNode;
-	
-					types.posn = Posn.constructor;
-					types.posnX = function (psn) {
-									return Posn.accessor(psn, 0);
-					};
-					types.posnY = function (psn) {
-									return Posn.accessor(psn, 1);
-					};
-	
-					types.color = function (r, g, b, a) {
-									if (a === undefined) {
-													a = 255;
-									}
-									return Color.constructor(r, g, b, a);
-					};
-					types.colorRed = function (x) {
-									return Color.accessor(x, 0);
-					};
-					types.colorGreen = function (x) {
-									return Color.accessor(x, 1);
-					};
-					types.colorBlue = function (x) {
-									return Color.accessor(x, 2);
-					};
-					types.colorAlpha = function (x) {
-									return Color.accessor(x, 3);
-					};
-	
-					types.arityAtLeast = ArityAtLeast.constructor;
-					types.arityValue = function (arity) {
-									return ArityAtLeast.accessor(arity, 0);
-					};
-	
-					types.FALSE = Logic.FALSE;
-					types.TRUE = Logic.TRUE;
-					types.EMPTY = Empty.EMPTY;
-	
-					types.isEqual = _isEqual;
-					types.isNumber = isNumber;
-					types.isSymbol = function (x) {
-									return x instanceof Symbol;
-					};
-					types.isChar = function (x) {
-									return x instanceof Char;
-					};
-					types.isString = isString;
-					types.isPair = function (x) {
-									return x instanceof Cons;
-					};
-					types.isVector = function (x) {
-									return x instanceof Vector;
-					};
-					types.isBox = function (x) {
-									return x instanceof Box;
-					};
-					types.isHash = function (x) {
-									return x instanceof EqHashTable || x instanceof EqualHashTable;
-					};
-					types.isByteString = function (x) {
-									return x instanceof Bytes;
-					};
-					types.isStruct = function (x) {
-									return x instanceof Struct;
-					};
-					types.isPosn = Posn.predicate;
-					types.isArityAtLeast = ArityAtLeast.predicate;
-					types.isColor = Color.predicate;
-					types.isFunction = function (x) {
-									return x instanceof PrimProc || x instanceof CasePrimitive || x instanceof ClosureValue || x instanceof CaseLambdaValue || x instanceof ContinuationClosureValue;
-					};
-					types.getProcedureType = function (x) {
-									return x instanceof PrimProc ? "PrimProc" : x instanceof CasePrimitive ? "CasePrimitive" : x instanceof ClosureValue ? "ClosureValue" : x instanceof CaseLambdaValue ? "CaseLambdaValue" : x instanceof ContinuationClosureValue ? "ContinuationClosureValue" :
-									/* else */false;
-					};
-	
-					types.isJsObject = function (x) {
-									return x instanceof JsObject;
-					};
-	
-					types.UnionFind = UnionFind;
-					types.cons = Cons.makeInstance;
-	
-					types.UNDEFINED = UNDEFINED_VALUE;
-					types.VOID = VOID_VALUE;
-					types.EOF = EOF_VALUE;
-	
-					types.ValuesWrapper = ValuesWrapper;
-					types.ClosureValue = ClosureValue;
-					types.ContinuationPrompt = ContinuationPrompt;
-					types.defaultContinuationPrompt = defaultContinuationPrompt;
-					types.ContinuationClosureValue = ContinuationClosureValue;
-					types.CaseLambdaValue = CaseLambdaValue;
-					types.PrimProc = PrimProc;
-					types.CasePrimitive = CasePrimitive;
-	
-					types.contMarkRecordControl = function (dict) {
-									return new ContMarkRecordControl(dict);
-					};
-					types.isContMarkRecordControl = function (x) {
-									return x instanceof ContMarkRecordControl;
-					};
-					types.continuationMarkSet = function (dict) {
-									return new ContinuationMarkSet(dict);
-					};
-					types.isContinuationMarkSet = function (x) {
-									return x instanceof ContinuationMarkSet;
-					};
-	
-					types.PrefixValue = PrefixValue;
-					types.GlobalBucket = GlobalBucket;
-					types.ModuleVariableRecord = ModuleVariableRecord;
-					types.VariableReference = VariableReference;
-	
-					types.Box = Box;
-					types.ThreadCell = ThreadCell;
-	
-					types.makeStructureType = makeStructureType;
-					types.isStructType = function (x) {
-									return x instanceof StructType;
-					};
-	
-					types.makeLowLevelEqHash = makeLowLevelEqHash;
-	
-					// Error type exports
-					var InternalError = function InternalError(val, contMarks) {
-									this.val = val;
-									this.contMarks = contMarks ? contMarks : false;
-					};
-					types.internalError = function (v, contMarks) {
-									return new InternalError(v, contMarks);
-					};
-					types.isInternalError = function (x) {
-									return x instanceof InternalError;
-					};
-	
-					var SchemeError = function SchemeError(val) {
-									this.val = val;
-					};
-					types.schemeError = function (v) {
-									return new SchemeError(v);
-					};
-					types.isSchemeError = function (v) {
-									return v instanceof SchemeError;
-					};
-	
-					var IncompleteExn = function IncompleteExn(constructor, msg, otherArgs) {
-									this.constructor = constructor;
-									this.msg = msg;
-									this.otherArgs = otherArgs;
-					};
-					types.incompleteExn = function (constructor, msg, args) {
-									return new IncompleteExn(constructor, msg, args);
-					};
-					types.isIncompleteExn = function (x) {
-									return x instanceof IncompleteExn;
-					};
-	
-					var Exn = makeStructureType('exn', false, 2, 0, false, function (k, msg, contMarks, name) {
-									// helpers.check(msg, isString, name, 'string', 1, [msg, contMarks]);
-									helpers.check(undefined, contMarks, types.isContinuationMarkSet, name, 'continuation mark set', 2);
-									k(new ValuesWrapper([msg, contMarks]));
-					});
-					types.exn = Exn.constructor;
-					types.isExn = Exn.predicate;
-					types.exnMessage = function (exn) {
-									return Exn.accessor(exn, 0);
-					};
-					types.exnContMarks = function (exn) {
-									return Exn.accessor(exn, 1);
-					};
-					types.exnSetContMarks = function (exn, v) {
-									Exn.mutator(exn, 1, v);
-					};
-	
-					// (define-struct (exn:break exn) (continuation))
-					var ExnBreak = makeStructureType('exn:break', Exn, 1, 0, false, function (k, msg, contMarks, cont, name) {
-									// FIXME: what type is a continuation here?
-									//			helpers.check(cont, isContinuation, name, 'continuation', 3);
-									k(new ValuesWrapper([msg, contMarks, cont]));
-					});
-					types.exnBreak = ExnBreak.constructor;
-					types.isExnBreak = ExnBreak.predicate;
-					types.exnBreakContinuation = function (exn) {
-									return ExnBreak.accessor(exn, 0);
-					};
-	
-					var ExnFail = makeStructureType('exn:fail', Exn, 0, 0, false, false);
-					types.exnFail = ExnFail.constructor;
-					types.isExnFail = ExnFail.predicate;
-	
-					var ExnFailContract = makeStructureType('exn:fail:contract', ExnFail, 0, 0, false, false);
-					types.exnFailContract = ExnFailContract.constructor;
-					types.isExnFailContract = ExnFailContract.predicate;
-	
-					var ExnFailContractArity = makeStructureType('exn:fail:contract:arity', ExnFailContract, 0, 0, false, false);
-					types.exnFailContractArity = ExnFailContract.constructor;
-					types.isExnFailContractArity = ExnFailContract.predicate;
-	
-					var ExnFailContractVariable = makeStructureType('exn:fail:contract:variable', ExnFailContract, 1, 0, false, false);
-					types.exnFailContractVariable = ExnFailContract.constructor;
-					types.isExnFailContractVariable = ExnFailContract.predicate;
-					types.exnFailContractVariableId = function (exn) {
-									return ExnFailContractVariable.accessor(exn, 0);
-					};
-	
-					var ExnFailContractDivisionByZero = makeStructureType('exn:fail:contract:division-by-zero', ExnFailContract, 0, 0, false, false);
-					types.exnFailContractDivisionByZero = ExnFailContractDivisionByZero.constructor;
-					types.isExnFailContractDivisionByZero = ExnFailContractDivisionByZero.predicate;
-	
-					var ExnFailContractArityWithPosition = makeStructureType('exn:fail:contract:arity:position', ExnFailContractArity, 1, 0, false, false);
-					types.exnFailContractArityWithPosition = ExnFailContractArityWithPosition.constructor;
-					types.isExnFailContractArityWithPosition = ExnFailContractArityWithPosition.predicate;
-	
-					types.exnFailContractArityWithPositionLocations = function (exn) {
-									return ExnFailContractArityWithPosition.accessor(exn, 0);
-					};
-	
-					///////////////////////////////////////
-					// World-specific exports
-	
-					types.worldConfig = function (startup, shutdown, args) {
-									return new WorldConfig(startup, shutdown, args);
-					};
-					types.isWorldConfig = function (x) {
-									return x instanceof WorldConfig;
-					};
-	
-					types.makeEffectType = makeEffectType;
-					types.isEffectType = function (x) {
-									return x instanceof StructType && x.type.prototype.invokeEffect ? true : false;
-					};
-	
-					types.isEffect = Effect.predicate;
-	
-					//types.EffectDoNothing = makeEffectType('effect:do-nothing',
-					//				       false,
-					//				       0,
-					//				       function(k) { k(); },
-					//				       [],
-					//				       function(k) { k(new ValuesWrapper([])); },
-					//				       function(f, args, k) { f(k); });
-					//types.effectDoNothing = EffectDoNothing.constructor;
-					//types.isEffectDoNothing = EffectDoNothing.predicate;
-	
-					//RenderEffect = makeStructureType('render-effect', false, 2, 0, false,
-					//		function(k, domNode, effects, name) {
-					//			helpers.checkListOf(effects, helpers.procArityContains(0), name, 'procedure (arity 0)', 2);
-					//			k( new ValuesWrapper([domNode, effects]) );
-					//		});
-	
-					types.makeRenderEffectType = makeRenderEffectType;
-					types.isRenderEffectType = function (x) {
-									return x instanceof StructType && x.type.prototype.callImplementation ? true : false;
-					};
-	
-					//types.RenderEffect = RenderEffect;
-					//types.makeRenderEffect = RenderEffect.constructor;
-					types.isRenderEffect = RenderEffect.predicate;
-					//types.renderEffectDomNode = function(x) { return RenderEffect.accessor(x, 0); };
-					//types.renderEffectEffects = function(x) { return RenderEffect.accessor(x, 1); };
-					//types.setRenderEffectEffects = function(x, v) { RenderEffect.mutator(x, 1, v); };
-	
-					types.NoLocation = NoLocation;
-					types.isNoLocation = isNoLocation;
-	
-					types.ColoredPart = ColoredPart;
-					types.Message = Message;
-					types.isColoredPart = isColoredPart;
-					types.isMessage = isMessage;
-					types.GradientPart = GradientPart;
-					types.isGradientPart = isGradientPart;
-					types.MultiPart = MultiPart;
-					types.isMultiPart = isMultiPart;
-					types.Vector = Vector;
-					types.Char = Char;
+	        this.dict[key.val] = val;
+	        return this;
+	    };
+	
+	    var ContinuationMarkSet = function ContinuationMarkSet(dict) {
+	        this.dict = dict;
+	    };
+	
+	    ContinuationMarkSet.prototype.toDomNode = function (cache) {
+	        var dom = document.createElement("span");
+	        dom.appendChild(document.createTextNode('#<continuation-mark-set>'));
+	        return dom;
+	    };
+	
+	    ContinuationMarkSet.prototype.toWrittenString = function (cache) {
+	        return '#<continuation-mark-set>';
+	    };
+	
+	    ContinuationMarkSet.prototype.toDisplayedString = function (cache) {
+	        return '#<continuation-mark-set>';
+	    };
+	
+	    ContinuationMarkSet.prototype.ref = function (key) {
+	        if (this.dict.containsKey(key)) {
+	            return this.dict.get(key);
+	        }
+	        return [];
+	    };
+	
+	    //////////////////////////////////////////////////////////////////////
+	
+	    var ContinuationPrompt = function ContinuationPrompt() {};
+	
+	    var defaultContinuationPrompt = new ContinuationPrompt();
+	
+	    //////////////////////////////////////////////////////////////////////
+	
+	    //////////////////////////////////////////////////////////////////////
+	
+	    var PrimProc = function PrimProc(name, numParams, isRest, assignsToValueRegister, impl) {
+	        this.name = name;
+	        this.numParams = numParams;
+	        this.isRest = isRest;
+	        this.assignsToValueRegister = assignsToValueRegister;
+	        this.impl = impl;
+	    };
+	
+	    PrimProc.prototype.toString = function () {
+	        return "#<function:" + this.name + ">";
+	    };
+	
+	    PrimProc.prototype.toWrittenString = function (cache) {
+	        return "#<function:" + this.name + ">";
+	    };
+	
+	    PrimProc.prototype.toDisplayedString = function (cache) {
+	        return "#<function:" + this.name + ">";
+	    };
+	
+	    PrimProc.prototype.toDomNode = function (cache) {
+	        var node = document.createElement("span");
+	        node.className = "wescheme-primproc";
+	        node.appendChild(document.createTextNode("#<function:" + this.name + ">"));
+	        return node;
+	    };
+	
+	    var CasePrimitive = function CasePrimitive(name, cases) {
+	        this.name = name;
+	        this.cases = cases;
+	    };
+	
+	    CasePrimitive.prototype.toDomNode = function (cache) {
+	        var node = document.createElement("span");
+	        node.className = "wescheme-caseprimitive";
+	        node.appendChild(document.createTextNode("#<function:" + this.name + ">"));
+	        return node;
+	    };
+	
+	    CasePrimitive.prototype.toWrittenString = function (cache) {
+	        return "#<function:" + this.name + ">";
+	    };
+	
+	    CasePrimitive.prototype.toDisplayedString = function (cache) {
+	        return "#<function:" + this.name + ">";
+	    };
+	
+	    /////////////////////////////////////////////////////////////////////
+	    // Colored Error Message Support
+	
+	    var Message = function Message(args) {
+	        this.args = args;
+	    };
+	
+	    Message.prototype.toString = function () {
+	        var toReturn = [];
+	        var i;
+	        for (i = 0; i < this.args.length; i++) {
+	            toReturn.push('' + this.args[i]);
+	        }
+	
+	        return toReturn.join("");
+	    };
+	
+	    var isMessage = function isMessage(o) {
+	        return o instanceof Message;
+	    };
+	
+	    var ColoredPart = function ColoredPart(text, location) {
+	        this.text = text;
+	        this.location = location;
+	    };
+	
+	    var isColoredPart = function isColoredPart(o) {
+	        return o instanceof ColoredPart;
+	    };
+	
+	    ColoredPart.prototype.toString = function () {
+	        return this.text + '';
+	    };
+	
+	    var GradientPart = function GradientPart(coloredParts) {
+	        this.coloredParts = coloredParts;
+	    };
+	
+	    var isGradientPart = function isGradientPart(o) {
+	        return o instanceof GradientPart;
+	    };
+	
+	    GradientPart.prototype.toString = function () {
+	        var i;
+	        var resultArray = [];
+	        for (i = 0; i < this.coloredParts.length; i++) {
+	            resultArray.push(this.coloredParts[i].text + '');
+	        }
+	        return resultArray.join("");
+	    };
+	
+	    var MultiPart = function MultiPart(text, locations, solid) {
+	        this.text = text;
+	        this.locations = locations;
+	        this.solid = solid;
+	    };
+	
+	    var isMultiPart = function isMultiPart(o) {
+	        return o instanceof MultiPart;
+	    };
+	
+	    MultiPart.prototype.toString = function () {
+	        return this.text;
+	    };
+	
+	    //////////////////////////////////////////////////////////////////////
+	
+	    var makeList = function makeList(args) {
+	        var result = Empty.EMPTY;
+	        var i;
+	        for (i = args.length - 1; i >= 0; i--) {
+	            result = Cons.makeInstance(args[i], result);
+	        }
+	        return result;
+	    };
+	
+	    var makeVector = function makeVector(args) {
+	        return Vector.makeInstance(args.length, args);
+	    };
+	
+	    var makeString = function makeString(s) {
+	        if (s instanceof Str) {
+	            return s;
+	        } else if (s instanceof Array) {
+	            //		for (var i = 0; i < s.length; i++) {
+	            //			if ( typeof s[i] !== 'string' || s[i].length != 1 ) {
+	            //				return undefined;
+	            //			}
+	            //		}
+	            return Str.makeInstance(s);
+	        } else if (typeof s === 'string') {
+	            return Str.fromString(s);
+	        } else {
+	            throw types.internalError('makeString expects and array of 1-character strings or a string;' + ' given ' + s.toString(), false);
+	        }
+	    };
+	
+	    var makeHashEq = function makeHashEq(lst) {
+	        var newHash = new EqHashTable();
+	        while (!lst.isEmpty()) {
+	            newHash.hash.put(lst.first().first(), lst.first().rest());
+	            lst = lst.rest();
+	        }
+	        return newHash;
+	    };
+	
+	    var makeHashEqual = function makeHashEqual(lst) {
+	        var newHash = new EqualHashTable();
+	        while (!lst.isEmpty()) {
+	            newHash.hash.put(lst.first().first(), lst.first().rest());
+	            lst = lst.rest();
+	        }
+	        return newHash;
+	    };
+	
+	    //if there is not enough location information available,
+	    //this allows for highlighting to be turned off
+	    var NoLocation = makeVector(['<no-location>', 0, 0, 0, 0]);
+	
+	    var isNoLocation = function isNoLocation(o) {
+	        return o === NoLocation;
+	    };
+	
+	    var Posn = makeStructureType('posn', false, 2, 0, false, false);
+	    var Color = makeStructureType('color', false, 4, 0, false, false);
+	    var ArityAtLeast = makeStructureType('arity-at-least', false, 1, 0, false, function (k, n, name) {
+	        helpers.check(undefined, n, function (x) {
+	            return jsnums.isExact(x) && jsnums.isInteger(x) && jsnums.greaterThanOrEqual(x, 0);
+	        }, name, 'exact non-negative integer', 1);
+	        k(n);
+	    });
+	
+	    types.symbol = Symbol.makeInstance;
+	    types.rational = jsnums.makeRational;
+	    types['float'] = jsnums.makeFloat;
+	    types.complex = jsnums.makeComplex;
+	    types.bignum = jsnums.makeBignum;
+	    types.list = makeList;
+	    types.vector = makeVector;
+	    types.regexp = function (p) {
+	        return new RegularExpression(p);
+	    };
+	    types.byteRegexp = function (p) {
+	        return new ByteRegularExpression(p);
+	    };
+	    types['char'] = Char.makeInstance;
+	    types['string'] = makeString;
+	    types.box = function (x) {
+	        return new Box(x, true);
+	    };
+	    types.boxImmutable = function (x) {
+	        return new Box(x, false);
+	    };
+	    types.path = function (x) {
+	        return new Path(x);
+	    };
+	    types.bytes = function (x, mutable) {
+	        return new Bytes(x, mutable);
+	    };
+	    types.keyword = function (k) {
+	        return new Keyword(k);
+	    };
+	    types.pair = function (x, y) {
+	        return Cons.makeInstance(x, y);
+	    };
+	    types.hash = makeHashEqual;
+	    types.hashEq = makeHashEq;
+	    types.jsObject = function (name, obj) {
+	        return new JsObject(name, obj);
+	    };
+	
+	    types.toWrittenString = _toWrittenString;
+	    types.toDisplayedString = toDisplayedString;
+	    types.toDomNode = _toDomNode;
+	
+	    types.posn = Posn.constructor;
+	    types.posnX = function (psn) {
+	        return Posn.accessor(psn, 0);
+	    };
+	    types.posnY = function (psn) {
+	        return Posn.accessor(psn, 1);
+	    };
+	
+	    types.color = function (r, g, b, a) {
+	        if (a === undefined) {
+	            a = 255;
+	        }
+	        return Color.constructor(r, g, b, a);
+	    };
+	    types.colorRed = function (x) {
+	        return Color.accessor(x, 0);
+	    };
+	    types.colorGreen = function (x) {
+	        return Color.accessor(x, 1);
+	    };
+	    types.colorBlue = function (x) {
+	        return Color.accessor(x, 2);
+	    };
+	    types.colorAlpha = function (x) {
+	        return Color.accessor(x, 3);
+	    };
+	
+	    types.arityAtLeast = ArityAtLeast.constructor;
+	    types.arityValue = function (arity) {
+	        return ArityAtLeast.accessor(arity, 0);
+	    };
+	
+	    types.FALSE = Logic.FALSE;
+	    types.TRUE = Logic.TRUE;
+	    types.EMPTY = Empty.EMPTY;
+	
+	    types.isEqual = _isEqual;
+	    types.isNumber = isNumber;
+	    types.isSymbol = function (x) {
+	        return x instanceof Symbol;
+	    };
+	    types.isChar = function (x) {
+	        return x instanceof Char;
+	    };
+	    types.isString = isString;
+	    types.isPair = function (x) {
+	        return x instanceof Cons;
+	    };
+	    types.isVector = function (x) {
+	        return x instanceof Vector;
+	    };
+	    types.isBox = function (x) {
+	        return x instanceof Box;
+	    };
+	    types.isHash = function (x) {
+	        return x instanceof EqHashTable || x instanceof EqualHashTable;
+	    };
+	    types.isByteString = function (x) {
+	        return x instanceof Bytes;
+	    };
+	    types.isStruct = function (x) {
+	        return x instanceof Struct;
+	    };
+	    types.isPosn = Posn.predicate;
+	    types.isArityAtLeast = ArityAtLeast.predicate;
+	    types.isColor = Color.predicate;
+	    types.isFunction = function (x) {
+	        return x instanceof PrimProc || x instanceof CasePrimitive || x instanceof ClosureValue || x instanceof CaseLambdaValue || x instanceof ContinuationClosureValue;
+	    };
+	    types.getProcedureType = function (x) {
+	        return x instanceof PrimProc ? "PrimProc" : x instanceof CasePrimitive ? "CasePrimitive" : x instanceof ClosureValue ? "ClosureValue" : x instanceof CaseLambdaValue ? "CaseLambdaValue" : x instanceof ContinuationClosureValue ? "ContinuationClosureValue" :
+	        /* else */false;
+	    };
+	
+	    types.isJsObject = function (x) {
+	        return x instanceof JsObject;
+	    };
+	
+	    types.UnionFind = UnionFind;
+	    types.cons = Cons.makeInstance;
+	
+	    types.UNDEFINED = UNDEFINED_VALUE;
+	    types.VOID = VOID_VALUE;
+	    types.EOF = EOF_VALUE;
+	
+	    types.ValuesWrapper = ValuesWrapper;
+	    types.ClosureValue = ClosureValue;
+	    types.ContinuationPrompt = ContinuationPrompt;
+	    types.defaultContinuationPrompt = defaultContinuationPrompt;
+	    types.ContinuationClosureValue = ContinuationClosureValue;
+	    types.CaseLambdaValue = CaseLambdaValue;
+	    types.PrimProc = PrimProc;
+	    types.CasePrimitive = CasePrimitive;
+	
+	    types.contMarkRecordControl = function (dict) {
+	        return new ContMarkRecordControl(dict);
+	    };
+	    types.isContMarkRecordControl = function (x) {
+	        return x instanceof ContMarkRecordControl;
+	    };
+	    types.continuationMarkSet = function (dict) {
+	        return new ContinuationMarkSet(dict);
+	    };
+	    types.isContinuationMarkSet = function (x) {
+	        return x instanceof ContinuationMarkSet;
+	    };
+	
+	    types.PrefixValue = PrefixValue;
+	    types.GlobalBucket = GlobalBucket;
+	    types.ModuleVariableRecord = ModuleVariableRecord;
+	    types.VariableReference = VariableReference;
+	
+	    types.Box = Box;
+	    types.ThreadCell = ThreadCell;
+	
+	    types.makeStructureType = makeStructureType;
+	    types.isStructType = function (x) {
+	        return x instanceof StructType;
+	    };
+	
+	    types.makeLowLevelEqHash = makeLowLevelEqHash;
+	
+	    // Error type exports
+	    var InternalError = function InternalError(val, contMarks) {
+	        this.val = val;
+	        this.contMarks = contMarks ? contMarks : false;
+	    };
+	    types.internalError = function (v, contMarks) {
+	        return new InternalError(v, contMarks);
+	    };
+	    types.isInternalError = function (x) {
+	        return x instanceof InternalError;
+	    };
+	
+	    var SchemeError = function SchemeError(val) {
+	        this.val = val;
+	    };
+	    types.schemeError = function (v) {
+	        return new SchemeError(v);
+	    };
+	    types.isSchemeError = function (v) {
+	        return v instanceof SchemeError;
+	    };
+	
+	    var IncompleteExn = function IncompleteExn(constructor, msg, otherArgs) {
+	        this.constructor = constructor;
+	        this.msg = msg;
+	        this.otherArgs = otherArgs;
+	    };
+	    types.incompleteExn = function (constructor, msg, args) {
+	        return new IncompleteExn(constructor, msg, args);
+	    };
+	    types.isIncompleteExn = function (x) {
+	        return x instanceof IncompleteExn;
+	    };
+	
+	    var Exn = makeStructureType('exn', false, 2, 0, false, function (k, msg, contMarks, name) {
+	        // helpers.check(msg, isString, name, 'string', 1, [msg, contMarks]);
+	        helpers.check(undefined, contMarks, types.isContinuationMarkSet, name, 'continuation mark set', 2);
+	        k(new ValuesWrapper([msg, contMarks]));
+	    });
+	    types.exn = Exn.constructor;
+	    types.isExn = Exn.predicate;
+	    types.exnMessage = function (exn) {
+	        return Exn.accessor(exn, 0);
+	    };
+	    types.exnContMarks = function (exn) {
+	        return Exn.accessor(exn, 1);
+	    };
+	    types.exnSetContMarks = function (exn, v) {
+	        Exn.mutator(exn, 1, v);
+	    };
+	
+	    // (define-struct (exn:break exn) (continuation))
+	    var ExnBreak = makeStructureType('exn:break', Exn, 1, 0, false, function (k, msg, contMarks, cont, name) {
+	        // FIXME: what type is a continuation here?
+	        //			helpers.check(cont, isContinuation, name, 'continuation', 3);
+	        k(new ValuesWrapper([msg, contMarks, cont]));
+	    });
+	    types.exnBreak = ExnBreak.constructor;
+	    types.isExnBreak = ExnBreak.predicate;
+	    types.exnBreakContinuation = function (exn) {
+	        return ExnBreak.accessor(exn, 0);
+	    };
+	
+	    var ExnFail = makeStructureType('exn:fail', Exn, 0, 0, false, false);
+	    types.exnFail = ExnFail.constructor;
+	    types.isExnFail = ExnFail.predicate;
+	
+	    var ExnFailContract = makeStructureType('exn:fail:contract', ExnFail, 0, 0, false, false);
+	    types.exnFailContract = ExnFailContract.constructor;
+	    types.isExnFailContract = ExnFailContract.predicate;
+	
+	    var ExnFailContractArity = makeStructureType('exn:fail:contract:arity', ExnFailContract, 0, 0, false, false);
+	    types.exnFailContractArity = ExnFailContract.constructor;
+	    types.isExnFailContractArity = ExnFailContract.predicate;
+	
+	    var ExnFailContractVariable = makeStructureType('exn:fail:contract:variable', ExnFailContract, 1, 0, false, false);
+	    types.exnFailContractVariable = ExnFailContract.constructor;
+	    types.isExnFailContractVariable = ExnFailContract.predicate;
+	    types.exnFailContractVariableId = function (exn) {
+	        return ExnFailContractVariable.accessor(exn, 0);
+	    };
+	
+	    var ExnFailContractDivisionByZero = makeStructureType('exn:fail:contract:division-by-zero', ExnFailContract, 0, 0, false, false);
+	    types.exnFailContractDivisionByZero = ExnFailContractDivisionByZero.constructor;
+	    types.isExnFailContractDivisionByZero = ExnFailContractDivisionByZero.predicate;
+	
+	    var ExnFailContractArityWithPosition = makeStructureType('exn:fail:contract:arity:position', ExnFailContractArity, 1, 0, false, false);
+	    types.exnFailContractArityWithPosition = ExnFailContractArityWithPosition.constructor;
+	    types.isExnFailContractArityWithPosition = ExnFailContractArityWithPosition.predicate;
+	
+	    types.exnFailContractArityWithPositionLocations = function (exn) {
+	        return ExnFailContractArityWithPosition.accessor(exn, 0);
+	    };
+	
+	    ///////////////////////////////////////
+	    // World-specific exports
+	
+	    types.worldConfig = function (startup, shutdown, args) {
+	        return new WorldConfig(startup, shutdown, args);
+	    };
+	    types.isWorldConfig = function (x) {
+	        return x instanceof WorldConfig;
+	    };
+	
+	    types.makeEffectType = makeEffectType;
+	    types.isEffectType = function (x) {
+	        return x instanceof StructType && x.type.prototype.invokeEffect ? true : false;
+	    };
+	
+	    types.isEffect = Effect.predicate;
+	
+	    //types.EffectDoNothing = makeEffectType('effect:do-nothing',
+	    //				       false,
+	    //				       0,
+	    //				       function(k) { k(); },
+	    //				       [],
+	    //				       function(k) { k(new ValuesWrapper([])); },
+	    //				       function(f, args, k) { f(k); });
+	    //types.effectDoNothing = EffectDoNothing.constructor;
+	    //types.isEffectDoNothing = EffectDoNothing.predicate;
+	
+	    //RenderEffect = makeStructureType('render-effect', false, 2, 0, false,
+	    //		function(k, domNode, effects, name) {
+	    //			helpers.checkListOf(effects, helpers.procArityContains(0), name, 'procedure (arity 0)', 2);
+	    //			k( new ValuesWrapper([domNode, effects]) );
+	    //		});
+	
+	    types.makeRenderEffectType = makeRenderEffectType;
+	    types.isRenderEffectType = function (x) {
+	        return x instanceof StructType && x.type.prototype.callImplementation ? true : false;
+	    };
+	
+	    //types.RenderEffect = RenderEffect;
+	    //types.makeRenderEffect = RenderEffect.constructor;
+	    types.isRenderEffect = RenderEffect.predicate;
+	    //types.renderEffectDomNode = function(x) { return RenderEffect.accessor(x, 0); };
+	    //types.renderEffectEffects = function(x) { return RenderEffect.accessor(x, 1); };
+	    //types.setRenderEffectEffects = function(x, v) { RenderEffect.mutator(x, 1, v); };
+	
+	    types.NoLocation = NoLocation;
+	    types.isNoLocation = isNoLocation;
+	
+	    types.ColoredPart = ColoredPart;
+	    types.Message = Message;
+	    types.isColoredPart = isColoredPart;
+	    types.isMessage = isMessage;
+	    types.GradientPart = GradientPart;
+	    types.isGradientPart = isGradientPart;
+	    types.MultiPart = MultiPart;
+	    types.isMultiPart = isMultiPart;
+	    types.Vector = Vector;
+	    types.Char = Char;
 	})();
 	
 	module.exports = types;
 
 /***/ },
-/* 255 */
+/* 259 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict'; // Scheme numbers.
@@ -25590,7 +25650,7 @@
 	Numbers['BigInteger'] = BigInteger;Numbers['Rational'] = Rational;Numbers['FloatPoint'] = FloatPoint;Numbers['Complex'] = Complex;Numbers['MIN_FIXNUM'] = MIN_FIXNUM;Numbers['MAX_FIXNUM'] = MAX_FIXNUM;})();
 
 /***/ },
-/* 256 */
+/* 260 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -25840,14 +25900,20 @@
 	module.exports = _Hashtable;
 
 /***/ },
-/* 257 */
+/* 261 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
-	__webpack_require__(253);
-	var jsnums = __webpack_require__(255);
-	var types = __webpack_require__(254);
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+	
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	__webpack_require__(257);
+	var jsnums = __webpack_require__(259);
+	var types = __webpack_require__(258);
 	
 	// if not defined, declare the compiler object as part of plt
 	window.plt = window.plt || {};
@@ -25924,26 +25990,78 @@
 	    return 'types[\'char\'](String.fromCharCode(' + this.val.charCodeAt(0) + '))';
 	  };
 	  // STACKREF STRUCTS ////////////////////////////////////////////////////////////////
-	  function stackReference() {}
-	  function localStackReference(name, isBoxed, depth) {
-	    stackReference.call(this);
-	    this.name = name;
-	    this.isBoxed = isBoxed;
-	    this.depth = depth;
-	  }
-	  localStackReference.prototype = heir(stackReference.prototype);
-	  function globalStackReference(name, depth, pos) {
-	    stackReference.call(this);
-	    this.name = name;
-	    this.pos = pos;
-	    this.depth = depth;
-	  }
-	  globalStackReference.prototype = heir(stackReference.prototype);
-	  function unboundStackReference(name) {
-	    stackReference.call(this);
-	    this.name = name;
-	  }
-	  unboundStackReference.prototype = heir(stackReference.prototype);
+	
+	  var baseStackReference = function baseStackReference() {
+	    _classCallCheck(this, baseStackReference);
+	
+	    this.type = 'base';
+	  };
+	
+	  var localStackReference = (function (_baseStackReference) {
+	    _inherits(localStackReference, _baseStackReference);
+	
+	    function localStackReference(name, isBoxed, depth) {
+	      _classCallCheck(this, localStackReference);
+	
+	      var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(localStackReference).call(this));
+	
+	      _this.type = 'local';
+	      _this.name = name;
+	      _this.isBoxed = isBoxed;
+	      _this.depth = depth;
+	      return _this;
+	    }
+	
+	    return localStackReference;
+	  })(baseStackReference);
+	
+	  var globalStackReference = (function (_baseStackReference2) {
+	    _inherits(globalStackReference, _baseStackReference2);
+	
+	    function globalStackReference(name, depth, pos) {
+	      _classCallCheck(this, globalStackReference);
+	
+	      var _this2 = _possibleConstructorReturn(this, Object.getPrototypeOf(globalStackReference).call(this));
+	
+	      _this2.type = 'global';
+	      _this2.name = name;
+	      _this2.pos = pos;
+	      _this2.depth = depth;
+	      return _this2;
+	    }
+	
+	    return globalStackReference;
+	  })(baseStackReference);
+	
+	  var unboundStackReference = (function (_baseStackReference3) {
+	    _inherits(unboundStackReference, _baseStackReference3);
+	
+	    function unboundStackReference(name) {
+	      _classCallCheck(this, unboundStackReference);
+	
+	      var _this3 = _possibleConstructorReturn(this, Object.getPrototypeOf(unboundStackReference).call(this));
+	
+	      _this3.type = 'unbound';
+	      _this3.name = name;
+	      return _this3;
+	    }
+	
+	    return unboundStackReference;
+	  })(baseStackReference);
+	
+	  var isLocalStackRef = function isLocalStackRef(r) {
+	    return r.type === 'local';
+	    // TODO: figure out why the below doesn't work.
+	    return r instanceof localStackReference;
+	  };
+	  var isGlobalStackRef = function isGlobalStackRef(r) {
+	    return r.type === 'global';
+	    return r instanceof globalStackReference;
+	  };
+	  var isUnboundStackRef = function isUnboundStackRef(r) {
+	    return r.type === 'unbound';
+	    return r instanceof unboundStackReference;
+	  };
 	
 	  /**************************************************************************
 	   *
@@ -26732,15 +26850,6 @@
 	      ormap = function ormap(f, l) {
 	        return l.length === 0 ? false : f(l[0]) ? l[0] : ormap(f, l.slice(1));
 	      },
-	          isLocalStackRef = function isLocalStackRef(r) {
-	        return r instanceof localStackReference;
-	      },
-	          isGlobalStackRef = function isGlobalStackRef(r) {
-	        return r instanceof globalStackReference;
-	      },
-	          isUnboundStackRef = function isUnboundStackRef(r) {
-	        return r instanceof unboundStackReference;
-	      },
 	          getDepthFromRef = function getDepthFromRef(r) {
 	        return r.depth;
 	      },
@@ -26915,13 +27024,13 @@
 	  };
 	
 	  symbolExpr.prototype.compile = function (env, pinfo) {
-	    var stackReference = env.lookup(this.val, 0),
-	        bytecode;
-	    if (stackReference instanceof localStackReference) {
+	    var stackReference = env.lookup(this.val, 0);
+	    var bytecode;
+	    if (isLocalStackRef(stackReference)) {
 	      bytecode = new localRef(stackReference.isBoxed, stackReference.depth, false, false, false);
-	    } else if (stackReference instanceof globalStackReference) {
+	    } else if (isGlobalStackRef(stackReference)) {
 	      bytecode = new topLevel(stackReference.depth, stackReference.pos, false, false, this.location);
-	    } else if (stackReference instanceof unboundStackReference) {
+	    } else if (isUnboundStackRef(stackReference)) {
 	      throw "Couldn't find '" + this.val + "' in the environment";
 	    } else {
 	      throw "IMPOSSIBLE: env.lookup failed for '" + this.val + "'! A reference should be added to the environment!";
@@ -26971,17 +27080,16 @@
 	      makeModuleVariablefromBinding = function makeModuleVariablefromBinding(b) {
 	        return new moduleVariable(modulePathIndexJoin(b.moduleSource, b.imported ? false : modulePathIndexJoin(false, false)), new symbolExpr(b.name), -1, 0);
 	      };
-	      var globalNames = pinfo.freeVariables.concat(pinfo.definedNames.keys()),
-	
+	      var globalNames = pinfo.freeVariables.concat(pinfo.definedNames.keys());
 	      // FIXME: we have to make uniqueGlobalNames because a function name can also be a free variable,
 	      // due to a bug in analyze-lambda-expression in which the base pinfo is used for the function body.
-	      uniqueGlobalNames = sortAndUnique(globalNames, function (a, b) {
+	      var uniqueGlobalNames = sortAndUnique(globalNames, function (a, b) {
 	        return a < b;
 	      }, function (a, b) {
 	        return a == b;
-	      }),
-	          topLevels = [false].concat(uniqueGlobalNames.map(makeGlobalBucket), allModuleBindings.map(makeModuleVariablefromBinding)),
-	          globals = [false].concat(uniqueGlobalNames, allModuleBindings.map(function (b) {
+	      });
+	      var topLevels = [false].concat(uniqueGlobalNames.map(makeGlobalBucket), allModuleBindings.map(makeModuleVariablefromBinding));
+	      var globals = [false].concat(uniqueGlobalNames, allModuleBindings.map(function (b) {
 	        return b.name;
 	      }));
 	      return [new prefix(0, topLevels, []), new plt.compiler.globalEnv(globals, false, new plt.compiler.emptyEnv())];
@@ -27041,14 +27149,14 @@
 	module.exports = plt.compiler;
 
 /***/ },
-/* 258 */
+/* 262 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 	
 	// if not defined, declare the compiler object as part of plt
 	window.plt = window.plt || {};
-	plt.compiler = __webpack_require__(253);
+	plt.compiler = __webpack_require__(257);
 	/*
 	 TODO
 	 -
@@ -27269,7 +27377,7 @@
 	module.exports = plt.compiler;
 
 /***/ },
-/* 259 */
+/* 263 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -27281,14 +27389,14 @@
 	exports.provideBindingId = provideBindingId;
 	exports.provideBindingStructId = provideBindingStructId;
 	
-	var _structures = __webpack_require__(253);
+	var _structures = __webpack_require__(257);
 	
 	var structures = _interopRequireWildcard(_structures);
 	
 	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 	
-	__webpack_require__(258);
-	var types = __webpack_require__(254);
+	__webpack_require__(262);
+	var types = __webpack_require__(258);
 	
 	/*
 	 TODO
@@ -27976,11 +28084,11 @@
 	              window.COLLECTIONS = [];
 	            }
 	            // extract the sourcecode
-	            var lexemes = __webpack_require__(252).lex(program.source.src, moduleName);
-	            var AST = __webpack_require__(260).parse(lexemes);
+	            var lexemes = __webpack_require__(256).lex(program.source.src, moduleName);
+	            var AST = __webpack_require__(264).parse(lexemes);
 	            var desugared = desugar(AST)[0]; // includes [AST, pinfo]
 	            var pinfo = analyze(desugared);
-	            var objectCode = __webpack_require__(257).compile(desugared, pinfo);
+	            var objectCode = __webpack_require__(261).compile(desugared, pinfo);
 	            window.COLLECTIONS[moduleName] = {
 	              'name': moduleName,
 	              'bytecode': (0, eval)('(' + objectCode.bytecode + ')'),
@@ -28226,15 +28334,15 @@
 	};
 
 /***/ },
-/* 260 */
+/* 264 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
 	// if not defined, declare the compiler object as part of plt
 	window.plt = window.plt || {};
-	plt.compiler = __webpack_require__(253);
-	var types = __webpack_require__(254);
+	plt.compiler = __webpack_require__(257);
+	var types = __webpack_require__(258);
 	
 	/*
 	 
@@ -29091,10 +29199,10 @@
 	module.exports = plt.compiler;
 
 /***/ },
-/* 261 */
+/* 265 */
 /***/ function(module, exports) {
 
-	module.exports = "; This is a comment\n\n; we can define variables\n(define SOME-FUNC (bitmap/url \"http://world.cs.brown.edu/1/clipart/cow-left.png\"))\n\n; we can have structs\n(define-struct cow (p dir))\n\n; we can define functions with conditionals\n(define (draw-cows aloc scene)\n  (cond\n    [(empty? aloc) scene]\n    [(cons? aloc) (place-image (cond\n                                 [(string=? (cow-dir (first aloc)) \"right\")\n                                  COW-RIGHT]\n                                 [(string=? (cow-dir (first aloc)) \"left\")\n                                  COW-LEFT])\n                               (posn-x (cow-p (first aloc)))\n                               (posn-y (cow-p (first aloc)))\n                               (draw-cows (rest aloc) scene))]))\n\n\n\n(define (draw w)\n  (draw-cows (world-cows w)\n             (draw-ufo (world-ufo w)\n                       BACKGROUND (if (anything-touching-cow? (world-ufo w)\n                                                              HALF-UFO-WIDTH\n                                                              HALF-UFO-HEIGHT\n                                                              (world-cows w)) UFO-CAPTURE UFO))))\n\n; move-ufo-y: world -> world\n; move-ufo-y consumes a world and produces a world with the ufo moved down\n(define (move-ufo-y w)\n  (make-world (make-posn (posn-x (world-ufo w))\n                         (+ UFO-SPEED (posn-y (world-ufo w))))\n              (world-cows w)))\n\n(check-expect (move-ufo-y world-test) (make-world (make-posn 10 15)\n                                                  (list cow0 cow1)))\n\n; move-ufo-x: world key -> world\n; move-ufo-x consumes a world and key and produces a world with the ufo moved by keys\n(define (move-ufo-x w key)\n  (make-world \n   (make-posn  \n    (cond\n      [(and (key=? key \"left\") (not (hitting-wall? (world-ufo w) \"left\")))\n       (- (posn-x (world-ufo w)) UFO-SPEED)]\n      [(and (key=? key \"right\") (not (hitting-wall? (world-ufo w) \"right\")))\n       (+ (posn-x (world-ufo w)) UFO-SPEED)]\n      [else (posn-x (world-ufo w))])\n    (posn-y (world-ufo w)))\n   (world-cows w)))\n\n(check-expect (move-ufo-x world-test \"left\") (make-world (make-posn 5 10) \n                                                         (list cow0 cow1)))\n(check-expect (move-ufo-x world-test \"right\") (make-world (make-posn 15 10) \n                                                          (list cow0 cow1)))\n(check-expect (move-ufo-x world-test \"\") (make-world (make-posn 10 10) \n                                                     (list cow0 cow1)))\n\n;ufo-done? : world -> boolean\n;consumes a world and returns true if the ufo is touching any cow or the ground; otherwise, returns false\n(define (ufo-done? w)\n  (or\n   (anything-touching-cow? (world-ufo w)\n                           HALF-UFO-WIDTH\n                           HALF-UFO-HEIGHT\n                           (world-cows w))\n   (hitting-wall? (world-ufo w) \"down\")))\n\n(check-expect (ufo-done? world-test) false)\n(check-expect (ufo-done? (make-world (make-posn 20 (- SCREEN-HEIGHT 20)) (list (make-cow\n                                                                                (make-posn 20 (- SCREEN-HEIGHT 20))\n                                                                                \"right\"))))\n              true)\n(check-expect (ufo-done? (make-world (make-posn 0 (+ SCREEN-HEIGHT 5)) empty)) true)\n\n;anything-touching-cow? : posn num num list-of-posns -> boolean\n;anything-touching-cow? consumes a posn, an image height, an image width, and a list-of-cows and returns true if the image at the posns is touching any of the cows in the list based on the image height and width, otherwise returns false\n(define (anything-touching-cow? img-p img-w img-h aloc)\n  (cond\n    [(empty? aloc) false]\n    [(cons? aloc)\n     (or \n      (and\n       (or\n        (and (>= (- (posn-x img-p) img-w) (- (posn-x (cow-p (first aloc))) HALF-COW-WIDTH))\n             (<= (- (posn-x img-p) img-w) (+ (posn-x (cow-p (first aloc))) HALF-COW-WIDTH)))\n        (and (>= (+ (posn-x img-p) img-w) (- (posn-x (cow-p (first aloc))) HALF-COW-WIDTH))\n             (<= (+ (posn-x img-p) img-w) (+ (posn-x (cow-p (first aloc))) HALF-COW-WIDTH))))\n       (>= (+ (posn-y img-p) img-h) (- (posn-y (cow-p (first aloc))) HALF-COW-HEIGHT)))\n      (anything-touching-cow? img-p img-w img-h (rest aloc)))]))\n\n(check-expect (anything-touching-cow? (make-posn 0 0) 0 0 empty) false)\n(check-expect (anything-touching-cow? (make-posn (/ SCREEN-WIDTH 2) 20) \n                                      HALF-UFO-WIDTH \n                                      HALF-UFO-HEIGHT \n                                      (list cow0))\n              false)\n(check-expect (anything-touching-cow? (make-posn 20 (- SCREEN-HEIGHT HALF-COW-HEIGHT)) \n                                      HALF-UFO-WIDTH \n                                      HALF-UFO-HEIGHT \n                                      (list cow0))\n              false)\n(check-expect (anything-touching-cow? (make-posn (/ SCREEN-WIDTH 2) (- SCREEN-HEIGHT HALF-COW-HEIGHT)) \n                                      HALF-UFO-WIDTH \n                                      HALF-UFO-HEIGHT \n                                      (list cow0))\n              true)\n\n;remove-cow-from-list : cow list-of-cows -> list-of-cows\n;remove-cow-from-list consumes a cow and a list-of-cows and returns a list-of-cows with cow removed\n(define (remove-cow-from-list c aloc)\n  (cond\n    [(empty? aloc) empty]\n    [(cons? aloc) (cond\n                    [(posn=? (cow-p c) (cow-p (first aloc))) (rest aloc)]\n                    [else (cons (first aloc) (remove-cow-from-list c (rest aloc)))])]))\n\n(check-expect (remove-cow-from-list cow0 empty) empty)\n(check-expect (remove-cow-from-list cow0 (list cow1 cow0 cow2)) (list cow1 cow2))\n\n;process-cows : world  -> world\n;process-cows consumes a world  and produces a world with the cows moved and hit-tested\n(define (process-cows w)\n  (make-world (world-ufo w) (move-cows (new-dirs (world-cows w) (world-cows w)))))\n\n(check-expect (process-cows world-test) (make-world (make-posn 10 10)\n                                                    (list\n                                                     (make-cow (make-posn (+ 2 (/ SCREEN-WIDTH 2))\n                                                                          (- SCREEN-HEIGHT HALF-COW-HEIGHT))\n                                                               \"right\")\n                                                     (make-cow (make-posn (+ 2 (/ SCREEN-WIDTH 4))\n                                                                          (- SCREEN-HEIGHT HALF-COW-HEIGHT))\n                                                               \"right\"))))\n\n;move-all-on-tick : world -> world\n;move-all-on-tick consumes a world and produces a world with all objects inside of it moved every \"tick\" of big-bang\n(define (move-all-on-tick w)\n  (process-cows (move-ufo-y w)))\n\n(check-expect (move-all-on-tick world-test) \n              (make-world (make-posn 10 15) (list\n                                             (make-cow (make-posn (+ 2 (/ SCREEN-WIDTH 2))\n                                                                  (- SCREEN-HEIGHT HALF-COW-HEIGHT)) \"right\")\n                                             (make-cow (make-posn (+ 2 (/ SCREEN-WIDTH 4))\n                                                                  (- SCREEN-HEIGHT HALF-COW-HEIGHT))\"right\"))))\n\n;move-cows : list-of-cows -> list-of-cows\n;move-cows consumes a list-of-cows and produces a list of cows moved to the left or right depending on the cows' directions\n(define (move-cows aloc)\n  (cond\n    [(empty? aloc) empty]\n    [(cons? aloc) (cons\n                   (make-cow\n                    (make-posn\n                     (\n                      (cond\n                        [(string=? (cow-dir (first aloc)) \"right\") +]\n                        [(string=? (cow-dir (first aloc)) \"left\") -])\n                      (posn-x (cow-p (first aloc))) COW-SPEED)\n                     (posn-y (cow-p (first aloc))))\n                    (cow-dir (first aloc))) \n                   (move-cows (rest aloc)))]))\n\n(check-expect (move-cows empty) empty)\n(check-expect (move-cows (list cow0)) (list (make-cow (make-posn (+ 2 (/ SCREEN-WIDTH 2)) (- SCREEN-HEIGHT HALF-COW-HEIGHT)) \"right\")))\n\n;new-dirs : list-of-cows list-of-cows -> list-of-cows\n;consumes two identical lists-of-cows and produces a list-of-cows in which all cows' dirs are updated\n;e.g. changes the cow's direction if it collides with another cow or reaches the edge of the screen, otherwise leaves it unchanged\n(define (new-dirs aloc1 aloc2)\n  (cond\n    [(empty? aloc1) empty]\n    [(cons? aloc1) (cons (make-cow (cow-p (first aloc1))\n                                   (update-dir (first aloc1) aloc2))\n                         (new-dirs (rest aloc1) aloc2))]))\n\n(check-expect (new-dirs empty empty) empty)\n(check-expect (new-dirs (list cow0 cow1) (list cow0 cow1)) (list cow0 cow1))\n(check-expect (new-dirs (list cow0 cow0) (list cow0 cow0)) (list\n                                                            (make-cow (make-posn\n                                                                       (/ SCREEN-WIDTH 2)\n                                                                       (- SCREEN-HEIGHT HALF-COW-HEIGHT))\n                                                                      \"left\")\n                                                            (make-cow (make-posn\n                                                                       (/ SCREEN-WIDTH 2)\n                                                                       (- SCREEN-HEIGHT HALF-COW-HEIGHT))\n                                                                      \"left\")))\n\n;update-dir : cow list-of-cows -> String\n;update-dir consumes a cow and a list-of-cows and changes it's direction if it hits a wall or another cow\n(define (update-dir c aloc)\n  (cond\n    [(hitting-wall? (cow-p c) \"right\") \"left\"]\n    [(hitting-wall? (cow-p c) \"left\") \"right\"]\n    [(anything-touching-cow? (cow-p c) HALF-COW-WIDTH HALF-COW-HEIGHT (remove-cow-from-list c aloc))\n     (cond\n       [(string=? (cow-dir c) \"left\") \"right\"]\n       [(string=? (cow-dir c) \"right\") \"left\"])]\n    [else (cow-dir c)]))\n\n(check-expect (update-dir cow0 (list cow0 cow1)) \"right\")\n(check-expect (update-dir (make-cow (make-posn (+ SCREEN-WIDTH 5) 0) \"right\") (list cow0 cow1)) \"left\") \n(check-expect (update-dir (make-cow (make-posn -5 0) \"left\") (list cow0 cow1)) \"right\")\n(check-expect (update-dir cow0 (list cow0 (make-cow (make-posn (/ SCREEN-WIDTH 2) (- SCREEN-HEIGHT HALF-COW-HEIGHT)) \"left\"))) \"left\")\n\n;hitting-wall? : posn String -> boolean\n;hitting-wall? consumes a posn and a direction and returns true if the posn is past the edge of the screen in that direction\n;otherwise returns false\n(define (hitting-wall? p dir)\n  (cond\n    [(string=? dir \"right\") (> (posn-x p) SCREEN-WIDTH)]\n    [(string=? dir \"left\") (< (posn-x p) 0)]\n    [(string=? dir \"down\") (> (posn-y p) SCREEN-HEIGHT)]))\n\n(check-expect (hitting-wall? (make-posn -5 5) \"left\") true)\n(check-expect (hitting-wall? (make-posn (+ SCREEN-WIDTH 5) 5) \"right\") true)\n(check-expect (hitting-wall? (make-posn 5 (+ SCREEN-HEIGHT 5)) \"down\") true)\n(check-expect (hitting-wall? (make-posn 5 5) \"left\") false)\n\n;posn=? : posn posn -> boolean\n;posn=? consumes two posns and returns true if they are equal, otherwise returns false\n(define (posn=? p1 p2)\n  (and\n   (= (posn-x p1) (posn-x p2))\n   (= (posn-y p1) (posn-y p2))))\n\n(check-expect (posn=? (make-posn 5 5) (make-posn 5 5)) true)\n(check-expect (posn=? (make-posn 5 5) (make-posn 10 10)) false)\n\n;big-bang creates the world\n(js-big-bang world0\n             (to-draw draw)\n             (on-key move-ufo-x)\n             (on-tick move-all-on-tick)\n             (stop-when ufo-done?))\n"
+	module.exports = "; This is a comment. It just stays where it is.\n\n; We can have literals of various types\n42   ; number\n\"hello\"   ; string\n#\\m    ; character\n#t     ; boolean\nquuz   ; symbol\n\n\n; let's define a variable or two\n(define FIRST-NAME \"John\")\n(define LAST-NAME \"Doe\")\n\n; we can have structures\n(define-struct person (first-name last-name age country))\n\n(define john (make-person FIRST-NAME LAST-NAME 28 \"USA\"))\n\n; we can define functions\n(define (years-to-seconds years) (* years 360 24 60 60))\n\n(define (greet p)\n  (format \"Hello ~a from ~a. You've been alive for ~a seconds.\"\n          (person-first-name p)\n          (person-country p)\n          (years-to-seconds (person-age p))))\n\n(greet john)"
 
 /***/ }
 /******/ ]);
