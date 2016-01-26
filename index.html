@@ -28,37 +28,101 @@
         </ul>
       </header>
       <section>
-        <h3>
-<a id="demo" class="anchor" href="#demo" aria-hidden="true"><span class="octicon octicon-link"></span></a>Demo</h3>
+        <p><a href="https://travis-ci.org/bootstrapworld/codemirror-blocks"><img src="https://travis-ci.org/bootstrapworld/codemirror-blocks.svg?branch=master" alt="Build Status"></a>
+<a href="https://coveralls.io/github/bootstrapworld/codemirror-blocks?branch=master"><img src="https://coveralls.io/repos/bootstrapworld/codemirror-blocks/badge.svg?branch=master&amp;service=github" alt="Coverage Status"></a></p>
 
-<p>Checkout a demo of this library in action <a href="example.html">here</a>.</p>
+<h1>
+<a id="codemirror-blocks" class="anchor" href="#codemirror-blocks" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>codemirror-blocks</h1>
 
-<h3>
-<a id="development" class="anchor" href="#development" aria-hidden="true"><span class="octicon octicon-link"></span></a>Development</h3>
+<p>A library for making functional languages editable using visual blocks inside of codemirror</p>
+
+<h2>
+<a id="usage" class="anchor" href="#usage" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Usage</h2>
+
+<ol>
+<li>
+<p>Install this library with npm:</p>
+
+<pre><code>npm install --save codemirror-blocks
+</code></pre>
+</li>
+<li>
+<p>Install the peer dependencies:</p>
+
+<pre><code>npm install --save babel-polyfill codemirror
+</code></pre>
+</li>
+<li>
+<p>Make sure <code>babel-polyfill</code> is required at the top of your entry point:</p>
+
+<pre><code>require('babel-polyfill')
+</code></pre>
+</li>
+<li>
+<p>Hook it up:</p>
+
+<pre><code>import CodeMirror from 'CodeMirror'
+import CodeMirrorBlocks from 'codemirror-blocks'
+import MyParser from './MyParser.js' //See example/parser.js for an example
+
+// feel free to include the example css, or roll your own!
+require('codemirror-blocks/example/example.css')
+
+let cm = CodeMirror.fromTextArea(document.getElementById('mytextarea'))
+let blocks = new CodeMirrorBlocks(cm, new MyParser())
+blocks.setBlockMode(true)
+</code></pre>
+</li>
+</ol>
+
+<h2>
+<a id="development" class="anchor" href="#development" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Development</h2>
 
 <p>To get your dev environment up and running, follow these steps</p>
 
 <ol>
-<li>
-<p>Checkout the repository in your favorite manner</p>
-
-<p><code>git clone git@github.com:pcardune/codemirror-blocks.git</code>
-<code>cd codemirror-blocks</code></p>
-</li>
+<li><p>Checkout the repository in your favorite manner</p></li>
 <li>
 <p>install dependencies with npm</p>
 
-<p><code>npm install</code></p>
+<pre><code>npm install
+</code></pre>
 </li>
 <li>
-<p>start the webpack development server</p>
+<p>start the webpack development server:</p>
 
-<p><code>npm start</code></p>
+<pre><code>npm start
+</code></pre>
 </li>
 <li><p>browse to http://localhost:8080/webpack-dev-server/ and fire away!</p></li>
+<li>
+<p>while you work, be sure to continuously run the unit tests with:</p>
+
+<pre><code>npm run test-watch
+</code></pre>
+</li>
 </ol>
 
-<p>Library code is in the <strong>src/</strong> directory. An example of how it should be used is in the <strong>example/</strong> directory.</p>
+<p>Library code is in the <strong>src/</strong> directory. An example of how it should be used
+is in the <strong>example/</strong> directory.</p>
+
+<ol>
+<li>
+<p>documentation can be generated from the source code by running:</p>
+
+<pre><code>npm run docs
+</code></pre>
+</li>
+</ol>
+
+<h2>
+<a id="updating-demo-on-project-site" class="anchor" href="#updating-demo-on-project-site" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Updating demo on project site</h2>
+
+<p>To update the demo on the project site with the latest version of the example in
+this repository, just run:</p>
+
+<pre><code>./deploy-example.sh
+</code></pre>
       </section>
       <footer>
         <p>This project is maintained by <a href="https://github.com/bootstrapworld">bootstrapworld</a></p>
